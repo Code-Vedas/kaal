@@ -85,9 +85,9 @@ module RailsCron
 
     ##
     # Load gem i18n files into Rails I18n load path for host applications.
-    initializer 'rails_cron.i18n' do |_app|
+    initializer 'rails_cron.i18n', before: 'i18n.load_path' do |app|
       locales = Dir[File.expand_path('../../config/locales/*.yml', __dir__)]
-      I18n.load_path |= locales
+      app.config.i18n.load_path |= locales
     end
 
     ##

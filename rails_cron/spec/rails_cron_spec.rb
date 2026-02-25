@@ -800,9 +800,9 @@ RSpec.describe RailsCron do
                                             monthly: 'Mensual',
                                             hourly: 'Cada hora',
                                             yearly: 'Anual',
-                                            at_time: 'A las %<time>s',
-                                            every_interval: 'Cada %<count>s %<unit>s',
-                                            cron_expression: 'Cron: %<expression>s'
+                                            at_time: ['A las ', '%{', 'time', '}'].join,
+                                            every_interval: ['Cada ', '%{', 'count', '}', ' ', '%{', 'unit', '}'].join,
+                                            cron_expression: ['Cron: ', '%{', 'expression', '}'].join
                                           }
                                         }
                                       })
