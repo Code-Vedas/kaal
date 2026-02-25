@@ -24,6 +24,8 @@ module RailsCron
     CANONICAL_MACROS = {
       '0 0 1 1 *' => '@yearly',
       '0 0 1 * *' => '@monthly',
+      '0 0 * * 0' => '@weekly',
+      '0 0 * * 7' => '@weekly',
       '0 0 * * *' => '@daily',
       '0 * * * *' => '@hourly'
     }.freeze
@@ -67,10 +69,16 @@ module RailsCron
     end
 
     def simplify(expression)
-      normalized = normalize(expression)
+      normalized = safe_normalize(expression)
+      raise ArgumentError, invalid_expression_message('') unless normalized
+
       downcased = normalized.downcase
 
-      return canonical_macro_for(downcased) if macro?(normalized) && MACRO_MAP.key?(downcased)
+      if macro?(normalized)
+        return canonical_macro_for(downcased) if MACRO_MAP.key?(downcased)
+
+        raise ArgumentError, unsupported_macro_message(normalized)
+      end
 
       raise ArgumentError, invalid_expression_message(normalized) unless valid?(normalized)
 
@@ -78,7 +86,9 @@ module RailsCron
     end
 
     def lint(expression)
-      normalized = normalize(expression)
+      normalized = safe_normalize(expression)
+      return [invalid_expression_message('')] unless normalized
+
       invalid_message = invalid_expression_message(normalized)
       return [invalid_message] if normalized.empty?
 
@@ -184,6 +194,13 @@ module RailsCron
       expression.to_s.strip.gsub(/\s+/, ' ')
     end
     private_class_method :normalize
+
+    def safe_normalize(expression)
+      normalize(expression)
+    rescue StandardError
+      nil
+    end
+    private_class_method :safe_normalize
 
     def macro?(expression)
       expression.start_with?('@')

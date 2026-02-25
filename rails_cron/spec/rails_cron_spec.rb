@@ -624,6 +624,11 @@ RSpec.describe RailsCron do
       expect(described_class.simplify('0 0 * * *')).to eq('@daily')
     end
 
+    it 'simplifies weekly expressions to @weekly' do
+      expect(described_class.simplify('0 0 * * 0')).to eq('@weekly')
+      expect(described_class.simplify('0 0 * * 7')).to eq('@weekly')
+    end
+
     it 'returns canonical macro for macro aliases' do
       expect(described_class.simplify('@midnight')).to eq('@daily')
     end
@@ -641,6 +646,21 @@ RSpec.describe RailsCron do
     it 'raises a helpful error for empty expressions' do
       expect do
         described_class.simplify('   ')
+      end.to raise_error(ArgumentError, /Invalid cron expression '<empty>'/)
+    end
+
+    it 'raises unsupported macro errors for unknown macros' do
+      expect do
+        described_class.simplify('@every_5m')
+      end.to raise_error(ArgumentError, /Unsupported cron macro '@every_5m'/)
+    end
+
+    it 'raises invalid-expression errors when normalization fails' do
+      invalid_expression = Object.new
+      allow(invalid_expression).to receive(:to_s).and_raise(StandardError, 'boom')
+
+      expect do
+        described_class.simplify(invalid_expression)
       end.to raise_error(ArgumentError, /Invalid cron expression '<empty>'/)
     end
   end
@@ -718,6 +738,13 @@ RSpec.describe RailsCron do
 
     it 'supports named month and day tokens' do
       expect(described_class.lint('0 9 * jan mon')).to eq([])
+    end
+
+    it 'returns invalid-expression warnings when normalization fails' do
+      invalid_expression = Object.new
+      allow(invalid_expression).to receive(:to_s).and_raise(StandardError, 'boom')
+
+      expect(described_class.lint(invalid_expression)).to eq(["Invalid cron expression '<empty>'. Examples: '*/5 * * * *', '@daily'."])
     end
   end
 end
