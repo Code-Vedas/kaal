@@ -417,8 +417,7 @@ RSpec.describe RailsCron::Railtie do
 
   describe 'i18n initialization' do
     it 'loads gem locale files into I18n.load_path' do
-      locale_path_pattern = %r{/config/locales/en\.yml\z}
-      expect(I18n.load_path.any? { |path| path.match?(locale_path_pattern) }).to be(true)
+      expect(I18n.load_path.any? { |path| path.tr('\\', '/').end_with?('/config/locales/en.yml') }).to be(true)
     end
   end
 end

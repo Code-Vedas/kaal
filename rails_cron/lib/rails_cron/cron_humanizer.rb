@@ -23,9 +23,9 @@ module RailsCron
     module_function
 
     def to_human(expression, locale: nil)
-      normalized = safe_normalize(expression)
-      raise ArgumentError, invalid_expression_message('') unless normalized
-      raise ArgumentError, invalid_expression_message(normalized) if normalized.empty?
+      normalized = CronUtils.safe_normalize_expression(expression)
+      raise ArgumentError, CronUtils.invalid_expression_error_message('') unless normalized
+      raise ArgumentError, CronUtils.invalid_expression_error_message(normalized) if normalized.empty?
 
       resolved_locale = locale || I18n.locale
       I18n.with_locale(resolved_locale) do
@@ -37,7 +37,7 @@ module RailsCron
     end
 
     def humanize_expression(normalized)
-      error_message = invalid_expression_message(normalized)
+      error_message = CronUtils.invalid_expression_error_message(normalized)
       return humanize_macro(normalized) if macro?(normalized)
 
       cron = Fugit.parse_cron(normalized)
@@ -49,7 +49,7 @@ module RailsCron
 
     def humanize_macro(expression)
       macro = expression.downcase
-      raise ArgumentError, unsupported_macro_message(expression) unless CronUtils::MACRO_MAP.key?(macro)
+      raise ArgumentError, CronUtils.unsupported_macro_error_message(expression) unless CronUtils::MACRO_MAP.key?(macro)
 
       canonical_macro = CronUtils::CANONICAL_MACROS.fetch(CronUtils::MACRO_MAP.fetch(macro), macro)
       phrase_key = MACRO_PHRASES.fetch(canonical_macro, nil)
@@ -169,18 +169,6 @@ module RailsCron
     end
     private_class_method :interval_unit
 
-    def normalize(expression)
-      expression.to_s.strip.gsub(/\s+/, ' ')
-    end
-    private_class_method :normalize
-
-    def safe_normalize(expression)
-      normalize(expression)
-    rescue StandardError
-      nil
-    end
-    private_class_method :safe_normalize
-
     def macro?(expression)
       expression.start_with?('@')
     end
@@ -190,17 +178,5 @@ module RailsCron
       I18n.t("rails_cron.#{key}", **)
     end
     private_class_method :translate_phrase
-
-    def unsupported_macro_message(expression)
-      supported = CronUtils::MACRO_MAP.keys.sort.join(', ')
-      "Unsupported cron macro '#{expression}'. Supported macros: #{supported}."
-    end
-    private_class_method :unsupported_macro_message
-
-    def invalid_expression_message(expression)
-      shown = expression.empty? ? '<empty>' : expression
-      "Invalid cron expression '#{shown}'. Examples: '*/5 * * * *', '@daily'."
-    end
-    private_class_method :invalid_expression_message
   end
 end

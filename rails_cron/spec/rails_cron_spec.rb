@@ -806,9 +806,12 @@ RSpec.describe RailsCron do
                                           }
                                         }
                                       })
-      example.run
-      I18n.locale = original_locale
-      I18n.available_locales = original_available_locales
+      begin
+        example.run
+      ensure
+        I18n.locale = original_locale
+        I18n.available_locales = original_available_locales
+      end
     end
 
     it 'humanizes weekly fixed-time expressions' do

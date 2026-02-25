@@ -55,8 +55,28 @@ module RailsCron
 
     module_function
 
+    def normalize_expression(expression)
+      expression.to_s.strip.gsub(/\s+/, ' ')
+    end
+
+    def safe_normalize_expression(expression)
+      normalize_expression(expression)
+    rescue StandardError
+      nil
+    end
+
+    def unsupported_macro_error_message(expression)
+      supported = MACRO_MAP.keys.sort.join(', ')
+      "Unsupported cron macro '#{expression}'. Supported macros: #{supported}."
+    end
+
+    def invalid_expression_error_message(expression)
+      shown = expression.empty? ? '<empty>' : expression
+      "Invalid cron expression '#{shown}'. Examples: '*/5 * * * *', '@daily'."
+    end
+
     def valid?(expression)
-      normalized = normalize(expression)
+      normalized = normalize_expression(expression)
       return false if normalized.empty?
 
       return MACRO_MAP.key?(normalized.downcase) if macro?(normalized)
@@ -69,34 +89,34 @@ module RailsCron
     end
 
     def simplify(expression)
-      normalized = safe_normalize(expression)
-      raise ArgumentError, invalid_expression_message('') unless normalized
+      normalized = safe_normalize_expression(expression)
+      raise ArgumentError, invalid_expression_error_message('') unless normalized
 
       downcased = normalized.downcase
 
       if macro?(normalized)
         return canonical_macro_for(downcased) if MACRO_MAP.key?(downcased)
 
-        raise ArgumentError, unsupported_macro_message(normalized)
+        raise ArgumentError, unsupported_macro_error_message(normalized)
       end
 
-      raise ArgumentError, invalid_expression_message(normalized) unless valid?(normalized)
+      raise ArgumentError, invalid_expression_error_message(normalized) unless valid?(normalized)
 
       CANONICAL_MACROS.fetch(normalized, normalized)
     end
 
     def lint(expression)
-      normalized = safe_normalize(expression)
-      return [invalid_expression_message('')] unless normalized
+      normalized = safe_normalize_expression(expression)
+      return [invalid_expression_error_message('')] unless normalized
 
-      invalid_message = invalid_expression_message(normalized)
+      invalid_message = invalid_expression_error_message(normalized)
       return [invalid_message] if normalized.empty?
 
       if macro?(normalized)
         downcased = normalized.downcase
         return [] if MACRO_MAP.key?(downcased)
 
-        return [unsupported_macro_message(normalized)]
+        return [unsupported_macro_error_message(normalized)]
       end
 
       return [field_count_message(normalized)] unless five_fields?(normalized)
@@ -190,18 +210,6 @@ module RailsCron
     end
     private_class_method :parse_value
 
-    def normalize(expression)
-      expression.to_s.strip.gsub(/\s+/, ' ')
-    end
-    private_class_method :normalize
-
-    def safe_normalize(expression)
-      normalize(expression)
-    rescue StandardError
-      nil
-    end
-    private_class_method :safe_normalize
-
     def macro?(expression)
       expression.start_with?('@')
     end
@@ -217,21 +225,9 @@ module RailsCron
     end
     private_class_method :canonical_macro_for
 
-    def unsupported_macro_message(expression)
-      supported = MACRO_MAP.keys.sort.join(', ')
-      "Unsupported cron macro '#{expression}'. Supported macros: #{supported}."
-    end
-    private_class_method :unsupported_macro_message
-
     def field_count_message(expression)
       "Invalid cron expression '#{expression}'. Expected 5 fields: minute hour day-of-month month day-of-week."
     end
     private_class_method :field_count_message
-
-    def invalid_expression_message(expression)
-      shown = expression.empty? ? '<empty>' : expression
-      "Invalid cron expression '#{shown}'. Examples: '*/5 * * * *', '@daily'."
-    end
-    private_class_method :invalid_expression_message
   end
 end
