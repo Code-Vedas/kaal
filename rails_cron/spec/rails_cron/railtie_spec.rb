@@ -414,4 +414,10 @@ RSpec.describe RailsCron::Railtie do
       expect { described_class.handle_shutdown }.not_to raise_error
     end
   end
+
+  describe 'i18n initialization' do
+    it 'loads gem locale files into I18n.load_path' do
+      expect(I18n.load_path.any? { |path| path.tr('\\', '/').end_with?('/config/locales/en.yml') }).to be(true)
+    end
+  end
 end
