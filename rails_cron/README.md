@@ -90,6 +90,8 @@ RailsCron.register(
 
 Start the scheduler:
 
+`RailsCron` does **not** auto-start by default. Start it explicitly via `RailsCron.start!` or `rails_cron:start`.
+
 ```bash
 bundle exec rails rails_cron:start
 ```

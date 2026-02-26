@@ -348,6 +348,20 @@ RSpec.describe RailsCron::Railtie do
     it 'responds to register_signal_handlers' do
       expect(described_class).to respond_to(:register_signal_handlers)
     end
+
+    it 'registers rake task loader for rails_cron tasks' do
+      original_rake = Rake.application
+      Rake.application = Rake::Application.new
+
+      Rails.application.load_tasks
+
+      expect(Rake::Task.task_defined?('rails_cron:tick')).to be(true)
+      expect(Rake::Task.task_defined?('rails_cron:status')).to be(true)
+      expect(Rake::Task.task_defined?('rails_cron:explain')).to be(true)
+      expect(Rake::Task.task_defined?('rails_cron:start')).to be(true)
+    ensure
+      Rake.application = original_rake
+    end
   end
 
   describe '.handle_shutdown' do

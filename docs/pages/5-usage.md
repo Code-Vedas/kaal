@@ -40,6 +40,8 @@ RailsCron.register(
 
 ## 🕒 Starting the Scheduler
 
+`RailsCron` does **not** auto-start by default. Start it explicitly via `RailsCron.start!` or `rails_cron:start`.
+
 You can start the scheduler loop in one of two ways:
 
 ### Option 1 — Inline in Rails
