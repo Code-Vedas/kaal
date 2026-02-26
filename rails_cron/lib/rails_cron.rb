@@ -21,6 +21,7 @@ require 'rails_cron/lock/sqlite_adapter'
 require 'rails_cron/idempotency_key_generator'
 require 'rails_cron/cron_utils'
 require 'rails_cron/cron_humanizer'
+require 'rails_cron/rake_tasks'
 require 'rails_cron/coordinator'
 require 'rails_cron/railtie'
 

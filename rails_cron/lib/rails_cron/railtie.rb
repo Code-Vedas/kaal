@@ -91,6 +91,12 @@ module RailsCron
     end
 
     ##
+    # Load rake tasks into host Rails applications.
+    rake_tasks do
+      load File.expand_path('../tasks/rails_crons_tasks.rake', __dir__)
+    end
+
+    ##
     # Load the default initializer after Rails has finished initialization.
     # This ensures Rails.logger is fully available and sets up signal handlers.
     config.after_initialize do
