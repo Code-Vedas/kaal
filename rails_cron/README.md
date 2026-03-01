@@ -195,20 +195,15 @@ spec:
         - name: scheduler
           image: your-app:latest
           command: ["bash", "-lc", "bundle exec rails rails_cron:start"]
-          readinessProbe:
-            exec:
-              command: ["bash", "-lc", "bundle exec rails rails_cron:status"]
-            initialDelaySeconds: 20
-            periodSeconds: 30
-          livenessProbe:
-            exec:
-              command: ["bash", "-lc", "bundle exec rails rails_cron:status"]
-            initialDelaySeconds: 30
-            periodSeconds: 60
 ```
 
-`rails_cron:status` is a practical command probe for operations.  
-If your environment needs cheaper probes, expose an app health endpoint that checks scheduler status and use that endpoint.
+For Kubernetes, the scheduler process is the container's main process; if it exits, Kubernetes restarts it.  
+Do not use `rails_cron:status` as a liveness/readiness probe for scheduler thread health because it runs in a separate process.
+
+Use one of these for health checks:
+
+- Process-level checks from your runtime/supervisor for the main scheduler process.
+- A shared heartbeat/lease signal (Redis, Postgres, pidfile, etc.) written by the scheduler and read by probes.
 
 ---
 

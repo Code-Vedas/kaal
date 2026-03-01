@@ -97,12 +97,21 @@ RSpec.describe RailsCron::RakeTasks do
 
   describe 'rails_cron:start' do
     let(:captured_signal_handlers) { {} }
+    let(:previous_handler_calls) { [] }
+    let(:previous_handlers) do
+      {
+        'TERM' => proc { previous_handler_calls << 'TERM' },
+        'INT' => proc { previous_handler_calls << 'INT' }
+      }
+    end
 
     before do
-      allow(Signal).to receive(:trap) do |signal, _handler = nil, &block|
+      allow(Signal).to receive(:trap) do |signal, handler = nil, &block|
         if block
           captured_signal_handlers[signal] = block
-          'DEFAULT'
+          previous_handlers.fetch(signal, 'DEFAULT')
+        elsif handler
+          nil
         end
       end
     end
@@ -144,6 +153,7 @@ RSpec.describe RailsCron::RakeTasks do
 
       expect { task('rails_cron:start').invoke }.to output(/Received TERM.*scheduler stopped/m).to_stdout
       expect(RailsCron).to have_received(:stop!).with(timeout: 30).once
+      expect(previous_handler_calls).to include('TERM')
     end
 
     it 'stops only once when multiple signals are received' do
@@ -159,18 +169,31 @@ RSpec.describe RailsCron::RakeTasks do
       expect { task('rails_cron:start').invoke }.to output(/Received TERM.*scheduler stopped/m).to_stdout
 
       expect(RailsCron).to have_received(:stop!).with(timeout: 30).once
+      expect(previous_handler_calls).to include('TERM', 'INT')
     end
 
-    it 'prints timeout message when scheduler stop times out' do
+    it 'forces task termination after a second signal when graceful stop times out' do
       thread = instance_double(Thread)
       allow(RailsCron).to receive(:start!).and_return(thread)
       allow(RailsCron).to receive(:stop!).with(timeout: 30).and_return(false)
 
       allow(thread).to receive(:join) do
-        captured_signal_handlers.fetch('TERM').call
+        signal_thread = Thread.new do
+          sleep 0.01
+          captured_signal_handlers.fetch('TERM').call
+          sleep 0.01
+          captured_signal_handlers.fetch('INT').call
+        end
+        Queue.new.pop
+      ensure
+        signal_thread&.join(0.1)
       end
 
-      expect { task('rails_cron:start').invoke }.to output(/scheduler stop timed out/).to_stdout
+      expect { task('rails_cron:start').invoke }
+        .to raise_error(SystemExit)
+        .and output(%r{stop timed out; send TERM/INT again to force exit.*forcing scheduler shutdown.*shutdown timed out; forced exit requested}m).to_stderr
+        .and output(/started in foreground.*Received TERM, stopping RailsCron scheduler/m).to_stdout
+      expect(RailsCron).to have_received(:stop!).with(timeout: 30).once
     end
 
     it 'aborts when start raises unexpected errors' do
@@ -192,13 +215,73 @@ RSpec.describe RailsCron::RakeTasks do
 
   describe '.shutdown_scheduler' do
     it 'logs warning to stderr when stop raises' do
-      signal_state = { shutdown_requested: false }
+      signal_state = {
+        graceful_shutdown_started: false,
+        shutdown_complete: false,
+        force_exit_requested: false
+      }
       allow(RailsCron).to receive(:stop!).and_raise(StandardError, 'stop blew up')
 
       expect do
         described_class.shutdown_scheduler(signal: 'TERM', signal_state: signal_state)
       end.to output(/Received TERM, stopping RailsCron scheduler/).to_stdout
                                                                   .and output(/shutdown failed: stop blew up/).to_stderr
+    end
+
+    it 'marks force exit and raises interrupt on second signal after timeout' do
+      signal_state = {
+        graceful_shutdown_started: false,
+        shutdown_complete: false,
+        force_exit_requested: false
+      }
+      allow(RailsCron).to receive(:stop!).with(timeout: 30).and_return(false)
+
+      expect do
+        described_class.shutdown_scheduler(signal: 'TERM', signal_state: signal_state)
+      end.to output(/Received TERM, stopping RailsCron scheduler/).to_stdout
+                                                                  .and output(%r{stop timed out; send TERM/INT again to force exit}).to_stderr
+
+      expect do
+        described_class.shutdown_scheduler(signal: 'INT', signal_state: signal_state)
+      end.to raise_error(Interrupt).and output(/forcing scheduler shutdown/).to_stderr
+      expect(signal_state[:force_exit_requested]).to be(true)
+    end
+  end
+
+  describe '.chain_previous_handler' do
+    it 'warns when previous handler is a command string' do
+      expect do
+        described_class.chain_previous_handler('TERM', 'custom_handler')
+      end.to output(/previous TERM handler is a command: custom_handler/).to_stderr
+    end
+
+    it 'swallows errors raised by previous callable handlers' do
+      crashing_handler = proc { raise StandardError, 'previous crash' }
+
+      expect do
+        described_class.chain_previous_handler('INT', crashing_handler)
+      end.not_to raise_error
+    end
+
+    it 'supports previous method handlers' do
+      method_handler = 'scheduler'.method(:upcase)
+
+      expect do
+        described_class.chain_previous_handler('TERM', method_handler)
+      end.not_to raise_error
+    end
+
+    it 'does not warn for DEFAULT or IGNORE handlers' do
+      expect do
+        described_class.chain_previous_handler('TERM', 'DEFAULT')
+        described_class.chain_previous_handler('TERM', 'IGNORE')
+      end.not_to output.to_stderr
+    end
+
+    it 'ignores unsupported previous handler types' do
+      expect do
+        described_class.chain_previous_handler('TERM', 42)
+      end.not_to output.to_stderr
     end
   end
 

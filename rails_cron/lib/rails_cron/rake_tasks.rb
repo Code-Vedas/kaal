@@ -86,7 +86,11 @@ module RailsCron
           abort('rails_cron:start failed: scheduler is already running') unless thread
 
           puts 'RailsCron scheduler started in foreground'
-          signal_state = { shutdown_requested: false }
+          signal_state = {
+            graceful_shutdown_started: false,
+            shutdown_complete: false,
+            force_exit_requested: false
+          }
           previous_handlers = RailsCron::RakeTasks.install_foreground_signal_handlers(signal_state)
 
           begin
@@ -95,7 +99,9 @@ module RailsCron
             RailsCron::RakeTasks.restore_signal_handlers(previous_handlers)
           end
         rescue Interrupt
-          RailsCron::RakeTasks.shutdown_scheduler(signal: 'INT', signal_state: { shutdown_requested: false })
+          abort('rails_cron:start failed: shutdown timed out; forced exit requested') if signal_state[:force_exit_requested]
+
+          RailsCron::RakeTasks.shutdown_scheduler(signal: 'INT', signal_state: signal_state)
         rescue StandardError => e
           abort("rails_cron:start failed: #{e.message}")
         end
@@ -104,9 +110,11 @@ module RailsCron
 
     def install_foreground_signal_handlers(signal_state)
       SIGNALS.each_with_object({}) do |signal, handlers|
-        handlers[signal] = Signal.trap(signal) do
-          shutdown_scheduler(signal: signal, signal_state: signal_state)
+        previous_handler = nil
+        previous_handler = Signal.trap(signal) do
+          shutdown_scheduler(signal: signal, signal_state: signal_state, previous_handler: previous_handler)
         end
+        handlers[signal] = previous_handler
       end
     end
 
@@ -118,15 +126,44 @@ module RailsCron
       end
     end
 
-    def shutdown_scheduler(signal:, signal_state:)
-      return if signal_state[:shutdown_requested]
+    def shutdown_scheduler(signal:, signal_state:, previous_handler: nil)
+      return if signal_state[:shutdown_complete]
 
-      signal_state[:shutdown_requested] = true
+      if signal_state[:graceful_shutdown_started]
+        signal_state[:force_exit_requested] = true
+        warn("Received #{signal} again; forcing scheduler shutdown")
+        Thread.main.raise(Interrupt)
+        return
+      end
+
+      signal_state[:graceful_shutdown_started] = true
       puts "Received #{signal}, stopping RailsCron scheduler..."
       stopped = RailsCron.stop!(timeout: SHUTDOWN_TIMEOUT)
-      puts(stopped ? 'RailsCron scheduler stopped' : 'RailsCron scheduler stop timed out')
+      if stopped
+        signal_state[:shutdown_complete] = true
+        puts 'RailsCron scheduler stopped'
+      else
+        warn('RailsCron scheduler stop timed out; send TERM/INT again to force exit')
+      end
     rescue StandardError => e
       warn("rails_cron:start shutdown failed: #{e.message}")
+    ensure
+      chain_previous_handler(signal, previous_handler)
+    end
+
+    def chain_previous_handler(signal, previous_handler)
+      return unless previous_handler
+
+      case previous_handler
+      when Proc, Method
+        previous_handler.call
+      when String
+        return if %w[DEFAULT IGNORE].include?(previous_handler)
+
+        warn("rails_cron:start previous #{signal} handler is a command: #{previous_handler}")
+      end
+    rescue StandardError
+      nil
     end
   end
 end
