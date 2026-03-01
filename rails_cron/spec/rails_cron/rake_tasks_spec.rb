@@ -107,10 +107,12 @@ RSpec.describe RailsCron::RakeTasks do
 
     before do
       allow(Signal).to receive(:trap) do |signal, handler = nil, &block|
-        if block
-          captured_signal_handlers[signal] = block
+        if handler == 'IGNORE'
           previous_handlers.fetch(signal, 'DEFAULT')
-        elsif handler
+        elsif block
+          captured_signal_handlers[signal] = block
+          nil
+        elsif !handler.nil?
           nil
         end
       end
@@ -203,6 +205,15 @@ RSpec.describe RailsCron::RakeTasks do
         .to raise_error(SystemExit)
         .and output(/rails_cron:start failed: boom/).to_stderr
     end
+
+    it 'handles interrupt raised before scheduler thread starts' do
+      allow(RailsCron).to receive(:start!).and_raise(Interrupt)
+      allow(RailsCron).to receive(:stop!).with(timeout: 30).and_return(true)
+
+      expect { task('rails_cron:start').invoke }
+        .to output(/Received INT, stopping RailsCron scheduler.*RailsCron scheduler stopped/m).to_stdout
+      expect(RailsCron).to have_received(:stop!).with(timeout: 30).once
+    end
   end
 
   describe '.restore_signal_handlers' do
@@ -275,6 +286,8 @@ RSpec.describe RailsCron::RakeTasks do
       expect do
         described_class.chain_previous_handler('TERM', 'DEFAULT')
         described_class.chain_previous_handler('TERM', 'IGNORE')
+        described_class.chain_previous_handler('TERM', 'SYSTEM_DEFAULT')
+        described_class.chain_previous_handler('TERM', 'EXIT')
       end.not_to output.to_stderr
     end
 

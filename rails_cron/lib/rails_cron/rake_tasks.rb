@@ -13,6 +13,7 @@ module RailsCron
   module RakeTasks
     SIGNALS = %w[TERM INT].freeze
     SHUTDOWN_TIMEOUT = 30
+    RESERVED_SIGNAL_HANDLERS = %w[DEFAULT IGNORE SYSTEM_DEFAULT EXIT].freeze
 
     module_function
 
@@ -82,15 +83,16 @@ module RailsCron
       context.instance_eval do
         desc 'Start scheduler loop in foreground (blocks until stopped)'
         task start: :environment do
-          thread = RailsCron.start!
-          abort('rails_cron:start failed: scheduler is already running') unless thread
-
-          puts 'RailsCron scheduler started in foreground'
           signal_state = {
             graceful_shutdown_started: false,
             shutdown_complete: false,
             force_exit_requested: false
           }
+
+          thread = RailsCron.start!
+          abort('rails_cron:start failed: scheduler is already running') unless thread
+
+          puts 'RailsCron scheduler started in foreground'
           previous_handlers = RailsCron::RakeTasks.install_foreground_signal_handlers(signal_state)
 
           begin
@@ -110,12 +112,18 @@ module RailsCron
 
     def install_foreground_signal_handlers(signal_state)
       SIGNALS.each_with_object({}) do |signal, handlers|
-        previous_handler = nil
-        previous_handler = Signal.trap(signal) do
+        previous_handler = capture_previous_signal_handler(signal)
+        Signal.trap(signal) do
           shutdown_scheduler(signal: signal, signal_state: signal_state, previous_handler: previous_handler)
         end
         handlers[signal] = previous_handler
       end
+    end
+
+    def capture_previous_signal_handler(signal)
+      previous_handler = Signal.trap(signal, 'IGNORE')
+      Signal.trap(signal, previous_handler)
+      previous_handler
     end
 
     def restore_signal_handlers(previous_handlers)
@@ -158,7 +166,7 @@ module RailsCron
       when Proc, Method
         previous_handler.call
       when String
-        return if %w[DEFAULT IGNORE].include?(previous_handler)
+        return if RESERVED_SIGNAL_HANDLERS.include?(previous_handler)
 
         warn("rails_cron:start previous #{signal} handler is a command: #{previous_handler}")
       end

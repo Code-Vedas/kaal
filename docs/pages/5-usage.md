@@ -90,7 +90,7 @@ RestartSec=5
 WantedBy=multi-user.target
 ```
 
-### Kubernetes Example (with probes)
+### Kubernetes Example
 
 ```yaml
 apiVersion: apps/v1
