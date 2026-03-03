@@ -142,7 +142,10 @@ RailsCron.to_human("0 9 * * 1")   # => "À 09h00 chaque lundi"
 
 ## 🧱 Running the Scheduler
 
-**Procfile (Heroku / Foreman):**
+Run the scheduler as a dedicated process in production.  
+Do not run it inside web server processes by default.
+
+**Procfile (process manager):**
 
 ```procfile
 web:       bundle exec puma -C config/puma.rb
@@ -152,11 +155,23 @@ scheduler: bundle exec rails rails_cron:start
 **systemd unit:**
 
 ```ini
+[Unit]
+Description=RailsCron scheduler
+After=network.target
+
 [Service]
 Type=simple
+User=deploy
 WorkingDirectory=/var/apps/myapp/current
+Environment=RAILS_ENV=production
 ExecStart=/usr/bin/bash -lc 'bundle exec rails rails_cron:start'
+ExecStartPre=/usr/bin/bash -lc 'bundle exec rails rails_cron:status'
+ExecReload=/bin/kill -TERM $MAINPID
 Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
 ```
 
 **Kubernetes Deployment:**
@@ -165,16 +180,30 @@ Restart=always
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: rails-cron
+  name: rails-cron-scheduler
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: rails-cron-scheduler
   template:
+    metadata:
+      labels:
+        app: rails-cron-scheduler
     spec:
       containers:
         - name: scheduler
           image: your-app:latest
           command: ["bash", "-lc", "bundle exec rails rails_cron:start"]
 ```
+
+For Kubernetes, the scheduler process is the container's main process; if it exits, Kubernetes restarts it.  
+Do not use `rails_cron:status` as a liveness/readiness probe for scheduler thread health because it runs in a separate process.
+
+Use one of these for health checks:
+
+- Process-level checks from your runtime/supervisor for the main scheduler process.
+- A shared heartbeat/lease signal (Redis, Postgres, pidfile, etc.) written by the scheduler and read by probes.
 
 ---
 
