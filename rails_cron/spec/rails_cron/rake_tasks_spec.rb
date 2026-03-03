@@ -282,6 +282,24 @@ RSpec.describe RailsCron::RakeTasks do
       end.not_to raise_error
     end
 
+    it 'passes signal number to handlers expecting arguments' do
+      received = nil
+      handler = proc { |signo| received = signo }
+
+      described_class.chain_previous_handler('TERM', handler)
+
+      expect(received).to eq(Signal.list['TERM'])
+    end
+
+    it 'calls zero-arity handlers without arguments' do
+      called = false
+      handler = proc { called = true }
+
+      described_class.chain_previous_handler('INT', handler)
+
+      expect(called).to be(true)
+    end
+
     it 'does not warn for DEFAULT or IGNORE handlers' do
       expect do
         described_class.chain_previous_handler('TERM', 'DEFAULT')

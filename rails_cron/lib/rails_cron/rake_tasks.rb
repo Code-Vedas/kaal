@@ -164,7 +164,7 @@ module RailsCron
 
       case previous_handler
       when Proc, Method
-        previous_handler.call
+        invoke_previous_handler(previous_handler, signal)
       when String
         return if RESERVED_SIGNAL_HANDLERS.include?(previous_handler)
 
@@ -172,6 +172,14 @@ module RailsCron
       end
     rescue StandardError
       nil
+    end
+
+    def invoke_previous_handler(handler, signal)
+      signal_number = Signal.list[signal]
+      callable_arity = handler.arity
+      return handler.call if callable_arity.zero?
+
+      handler.call(signal_number)
     end
   end
 end
