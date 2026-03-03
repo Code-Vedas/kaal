@@ -180,7 +180,7 @@ WantedBy=multi-user.target
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: rails-cron
+  name: rails-cron-scheduler
 spec:
   replicas: 1
   selector:
