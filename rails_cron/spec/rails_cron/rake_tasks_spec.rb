@@ -178,14 +178,18 @@ RSpec.describe RailsCron::RakeTasks do
       thread = instance_double(Thread)
       allow(RailsCron).to receive(:start!).and_return(thread)
       allow(RailsCron).to receive(:stop!).with(timeout: 30).and_return(false)
+      first_signal_processed = Queue.new
+      release_second_signal = Queue.new
 
       allow(thread).to receive(:join) do
         signal_thread = Thread.new do
-          sleep 0.01
           captured_signal_handlers.fetch('TERM').call
-          sleep 0.01
+          first_signal_processed << true
+          release_second_signal.pop
           captured_signal_handlers.fetch('INT').call
         end
+        first_signal_processed.pop
+        release_second_signal << true
         Queue.new.pop
       ensure
         signal_thread&.join(0.1)

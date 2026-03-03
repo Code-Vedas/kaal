@@ -88,14 +88,13 @@ module RailsCron
             shutdown_complete: false,
             force_exit_requested: false
           }
-
-          thread = RailsCron.start!
-          abort('rails_cron:start failed: scheduler is already running') unless thread
-
-          puts 'RailsCron scheduler started in foreground'
           previous_handlers = RailsCron::RakeTasks.install_foreground_signal_handlers(signal_state)
 
           begin
+            thread = RailsCron.start!
+            abort('rails_cron:start failed: scheduler is already running') unless thread
+
+            puts 'RailsCron scheduler started in foreground'
             thread.join
           ensure
             RailsCron::RakeTasks.restore_signal_handlers(previous_handlers)
