@@ -8,11 +8,12 @@
 require 'digest'
 require 'socket'
 require_relative 'dispatch_logging'
+require_relative '../definition/database_engine'
 
 module RailsCron
-  module Lock
+  module Backend
     ##
-    # Distributed lock adapter using PostgreSQL advisory locks.
+    # Distributed backend adapter using PostgreSQL advisory locks.
     #
     # This adapter uses PostgreSQL's pg_try_advisory_lock function for
     # distributed locking across multiple nodes. Locks are connection-based
@@ -32,7 +33,7 @@ module RailsCron
     #
     # @example Using the PostgreSQL adapter
     #   RailsCron.configure do |config|
-    #     config.lock_adapter = RailsCron::Lock::PostgresAdapter.new
+    #     config.backend = RailsCron::Backend::PostgresAdapter.new
     #     config.enable_log_dispatch_registry = true  # Enable dispatch logging
     #   end
     class PostgresAdapter < Adapter
@@ -40,6 +41,12 @@ module RailsCron
 
       ##
       # Initialize a new PostgreSQL adapter.
+      def initialize
+        super
+        @signed_64_max = 9_223_372_036_854_775_807
+        @unsigned_64_range = 18_446_744_073_709_551_616
+        @false_value_pattern = /\A(f|false|0|)\z/i
+      end
 
       ##
       # Get the dispatch registry for database logging.
@@ -47,6 +54,14 @@ module RailsCron
       # @return [RailsCron::Dispatch::DatabaseEngine] database engine instance
       def dispatch_registry
         @dispatch_registry ||= RailsCron::Dispatch::DatabaseEngine.new
+      end
+
+      ##
+      # Get the definition registry for database-backed definition persistence.
+      #
+      # @return [RailsCron::Definition::DatabaseEngine] database definition engine instance
+      def definition_registry
+        @definition_registry ||= RailsCron::Definition::DatabaseEngine.new
       end
 
       ##
@@ -103,7 +118,7 @@ module RailsCron
         when true, false
           value
         else
-          !value.to_s.match?(/\A(f|false|0|)\z/i)
+          !value.to_s.match?(@false_value_pattern)
         end
       end
 
@@ -112,7 +127,7 @@ module RailsCron
         # Ensure it's in the range of a signed 64-bit integer
         hash = Digest::MD5.digest(key).unpack1('Q>')
         # Convert to signed 64-bit integer
-        hash > 9_223_372_036_854_775_807 ? hash - 18_446_744_073_709_551_616 : hash
+        hash > @signed_64_max ? hash - @unsigned_64_range : hash
       end
     end
   end

@@ -1,0 +1,49 @@
+# frozen_string_literal: true
+
+module RailsCron
+  # Persistent scheduler definition model.
+  class CronDefinition < ApplicationRecord
+    self.table_name = 'rails_cron_definitions'
+
+    validates :key, presence: true, uniqueness: true
+    validates :cron, presence: true
+    validates :source, presence: true
+    validates :enabled, inclusion: { in: [true, false] }
+
+    scope :enabled, -> { where(enabled: true) }
+    scope :disabled, -> { where(enabled: false) }
+    scope :by_source, ->(source) { where(source: source) }
+
+    def self.upsert_definition!(key:, cron:, enabled:, source:, metadata:)
+      record = find_or_initialize_by(key: key)
+      record.assign_attributes(
+        cron: cron,
+        enabled: enabled,
+        source: source,
+        metadata: metadata,
+        disabled_at: enabled ? nil : Time.current
+      )
+      record.save!
+      record
+    end
+
+    def to_definition_hash
+      {
+        key: key,
+        cron: cron,
+        enabled: enabled,
+        source: source,
+        metadata: metadata || {},
+        created_at: created_at,
+        updated_at: updated_at,
+        disabled_at: disabled_at
+      }
+    end
+
+    def destroy_and_return_definition_hash
+      definition_hash = to_definition_hash
+      destroy!
+      definition_hash
+    end
+  end
+end
