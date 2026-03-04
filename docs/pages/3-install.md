@@ -44,12 +44,12 @@ Example:
 ```ruby
 # config/initializers/rails_cron.rb
 RailsCron.configure do |c|
-  # Choose your distributed lock adapter
+  # Choose your distributed backend adapter
   # Redis (recommended)
-  # c.lock_adapter = RailsCron::Lock::RedisAdapter.new(Redis.new(url: ENV.fetch("REDIS_URL")))
+  # c.backend = RailsCron::Backend::RedisAdapter.new(Redis.new(url: ENV.fetch("REDIS_URL")))
 
   # or Postgres advisory locks
-  # c.lock_adapter = RailsCron::Lock::PostgresAdapter.new
+  # c.backend = RailsCron::Backend::PostgresAdapter.new
 
   # Frequency of scheduler ticks (seconds)
   c.tick_interval    = 5
@@ -57,7 +57,7 @@ RailsCron.configure do |c|
   # Time window to recover missed runs (seconds)
   c.window_lookback  = 120
 
-  # Lease duration for distributed locks (seconds)
+  # Lease duration for distributed coordination (seconds)
   c.lease_ttl        = 60
 end
 ```

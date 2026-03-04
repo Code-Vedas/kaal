@@ -16,10 +16,10 @@ All configuration options are optional and can be customized per environment.
 ```ruby
 # config/initializers/rails_cron.rb
 RailsCron.configure do |c|
-  # Choose your distributed lock adapter
-  # c.lock_adapter = RailsCron::Lock::RedisAdapter.new(Redis.new(url: ENV["REDIS_URL"]))
-  # c.lock_adapter = RailsCron::Lock::PostgresAdapter.new
-  # c.lock_adapter = RailsCron::Lock::MemoryAdapter.new # single-node only (not for production)
+  # Choose your distributed backend adapter
+  # c.backend = RailsCron::Backend::RedisAdapter.new(Redis.new(url: ENV["REDIS_URL"]))
+  # c.backend = RailsCron::Backend::PostgresAdapter.new
+  # c.backend = RailsCron::Backend::MemoryAdapter.new # single-node only (not for production)
 
   # Frequency of scheduler ticks (in seconds)
   c.tick_interval    = 5
@@ -30,7 +30,7 @@ RailsCron.configure do |c|
   # Optional: trigger ticks slightly early for lookahead scenarios
   c.window_lookahead = 0
 
-  # Lock duration (seconds) — should exceed your longest tick/dispatch
+  # Lease duration (seconds) — should exceed your longest tick/dispatch
   c.lease_ttl        = 60
 
   # Optional prefix for Redis/Postgres keys
@@ -57,12 +57,12 @@ end
 
 | Setting                        | Type    | Default                     | Description                                                                                |
 | ------------------------------ | ------- | --------------------------- | ------------------------------------------------------------------------------------------ |
-| `lock_adapter`                 | Object  | `nil`                       | Distributed lock implementation. Use **Redis** or **Postgres** in multi-node environments. |
+| `backend`                 | Object  | `nil`                       | Distributed backend implementation. Use **Redis** or **Postgres** in multi-node environments. |
 | `tick_interval`                | Integer | `5`                         | Seconds between scheduler ticks.                                                           |
 | `window_lookback`              | Integer | `120`                       | How far back the scheduler will replay missed ticks.                                       |
 | `window_lookahead`             | Integer | `0`                         | How far ahead to pre-trigger upcoming ticks (optional).                                    |
-| `lease_ttl`                    | Integer | `60`                        | Duration for distributed lock lease in seconds.                                            |
-| `namespace`                    | String  | `"railscron"`               | Key prefix used for locks and dispatch logs.                                               |
+| `lease_ttl`                    | Integer | `60`                        | Duration for distributed coordination lease in seconds.                                    |
+| `namespace`                    | String  | `"railscron"`               | Key prefix used for coordination keys and dispatch records.                                |
 | `logger`                       | Logger  | `Rails.logger` (if present) | Logger used for scheduler messages.                                                        |
 | `time_zone`                    | String  | System default              | Optional timezone for evaluating cron expressions.                                         |
 | `enable_log_dispatch_registry` | Boolean | `false`                     | Enable dispatch logging for audit trail and recovery.                                      |
@@ -72,19 +72,19 @@ end
 
 ---
 
-## 🔐 Lock Adapters
+## 🔐 Backend Adapters
 
 ### Redis Adapter
 
 ```ruby
 RailsCron.configure do |c|
-  c.lock_adapter = RailsCron::Lock::RedisAdapter.new(
+  c.backend = RailsCron::Backend::RedisAdapter.new(
     Redis.new(url: ENV.fetch("REDIS_URL", "redis://127.0.0.1:6379/0"))
   )
 end
 ```
 
-- Uses `SET NX PX` semantics for distributed locks.
+- Uses `SET NX PX` semantics for distributed coordination.
 - Low latency, great for production.
 
 ---
@@ -93,7 +93,7 @@ end
 
 ```ruby
 RailsCron.configure do |c|
-  c.lock_adapter = RailsCron::Lock::PostgresAdapter.new
+  c.backend = RailsCron::Backend::PostgresAdapter.new
 end
 ```
 
@@ -106,7 +106,7 @@ end
 
 ```ruby
 RailsCron.configure do |c|
-  c.lock_adapter = RailsCron::Lock::MemoryAdapter.new
+  c.backend = RailsCron::Backend::MemoryAdapter.new
 end
 ```
 
@@ -207,8 +207,8 @@ end
 
 1. **On Startup**: Before the main scheduler loop begins, RailsCron looks back over a configurable window (default: 24 hours)
 2. **Computes Missed Runs**: For each registered cron job, it calculates which executions should have occurred
-3. **Checks Dispatch Log**: If dispatch logging is enabled, it skips runs that were already executed
-4. **Re-enqueues**: Missed runs are enqueued using the same lock mechanism to prevent duplicates
+3. **Checks Dispatch Records**: If dispatch logging is enabled, it skips runs that were already executed
+4. **Re-enqueues**: Missed runs are enqueued using the same coordination mechanism to prevent duplicates
 
 ### Configuration
 
@@ -235,7 +235,7 @@ end
 | `enable_dispatch_recovery`     | Boolean | `true`  | Automatically recover missed runs on startup.                                                       |
 | `recovery_window`              | Integer | `86400` | How far back to look for missed runs (in seconds). 24 hours covers typical overnight downtimes.     |
 | `recovery_startup_jitter`      | Integer | `5`     | Max random delay (0-N seconds) before recovery starts. Reduces lock contention on cluster restarts. |
-| `enable_log_dispatch_registry` | Boolean | `false` | When enabled, recovery checks dispatch log first to avoid re-enqueueing already-executed jobs.      |
+| `enable_log_dispatch_registry` | Boolean | `false` | When enabled, recovery checks dispatch records first to avoid re-enqueueing already-executed jobs.   |
 
 ### Interaction with Dispatch Logging
 
@@ -245,21 +245,21 @@ When both recovery and dispatch logging are enabled:
 RailsCron.configure do |c|
   c.enable_dispatch_recovery = true
   c.enable_log_dispatch_registry = true
-  c.lock_adapter = RailsCron::Lock::RedisAdapter.new(Redis.new(url: ENV["REDIS_URL"]))
+  c.backend = RailsCron::Backend::RedisAdapter.new(Redis.new(url: ENV["REDIS_URL"]))
 end
 ```
 
 **Benefits:**
 
-- **Efficient Recovery**: The dispatch log is checked first, avoiding unnecessary lock attempts for already-executed jobs
+- **Efficient Recovery**: Dispatch records are checked first, avoiding unnecessary lease attempts for already-executed jobs
 - **Audit Trail**: See exactly which jobs were recovered vs. which were already executed
-- **Reduced Contention**: Fewer lock acquisition attempts = less load on your lock adapter
+- **Reduced Contention**: Fewer lease attempts = less load on your backend adapter
 
 **Without Dispatch Logging:**
 
-- Recovery still works but relies solely on distributed locks to prevent duplicates
-- Each missed run will attempt to acquire a lock (even if it was already dispatched)
-- Still safe, but may cause more lock contention during recovery
+- Recovery still works but relies solely on distributed lease coordination to prevent duplicates
+- Each missed run will attempt to acquire a lease (even if it was already dispatched)
+- Still safe, but may cause more coordination contention during recovery
 
 ### Example Scenarios
 
@@ -295,11 +295,11 @@ end
 ## 🧩 Multiple Nodes
 
 You can safely run multiple schedulers (e.g., in Kubernetes, ECS, or multiple scheduler processes).
-Distributed locks ensure **only one** node dispatches jobs for each tick.
+Distributed lease coordination ensures **only one** node dispatches jobs for each tick.
 
 **Checklist:**
 
-- Use Redis or Postgres lock adapter.
+- Use Redis or Postgres backend adapter.
 - Ensure `lease_ttl` is longer than your job dispatch time.
 - Avoid heavy logic inside the `enqueue` lambda — just enqueue your job.
 

@@ -59,10 +59,10 @@ Example initializer (`config/initializers/rails_cron.rb`):
 RailsCron.configure do |c|
   # Choose your distributed lock adapter
   # Redis (recommended)
-  # c.lock_adapter = RailsCron::Lock::RedisAdapter.new(Redis.new(url: ENV["REDIS_URL"]))
+  # c.backend = RailsCron::Backend::RedisAdapter.new(Redis.new(url: ENV["REDIS_URL"]))
 
   # or Postgres advisory locks
-  # c.lock_adapter = RailsCron::Lock::PostgresAdapter.new
+  # c.backend = RailsCron::Backend::PostgresAdapter.new
 
   c.tick_interval    = 5      # seconds between scheduler ticks
   c.window_lookback  = 120    # recover missed runs (seconds)
@@ -226,8 +226,8 @@ Use one of these for health checks:
 RSpec.describe "multi-node safety" do
   it "dispatches exactly once across two threads" do
     redis = FakeRedis::Redis.new
-    lock  = RailsCron::Lock::RedisAdapter.new(redis)
-    RailsCron.configure { |c| c.lock_adapter = lock }
+    lock  = RailsCron::Backend::RedisAdapter.new(redis)
+    RailsCron.configure { |c| c.backend = lock }
 
     threads = 2.times.map { Thread.new { RailsCron.tick! } }
     threads.each(&:join)

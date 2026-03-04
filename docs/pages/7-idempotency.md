@@ -85,7 +85,7 @@ REDIS_POOL = ConnectionPool.new(size: 5) { Redis.new(url: ENV['REDIS_URL']) }
 RailsCron.configure do |config|
   # Pass the ConnectionPool directly to the adapter
   # The pool will check out connections as needed for each lock operation
-  config.lock_adapter = RailsCron::Lock::RedisAdapter.new(REDIS_POOL)
+  config.backend = RailsCron::Backend::RedisAdapter.new(REDIS_POOL)
   # Note: enable_log_dispatch_registry can be false - deduplication happens in Redis
 end
 
@@ -114,7 +114,7 @@ RailsCron.register(
 - Fast in-memory lookups with Redis
 - Custom TTL windows per job type
 - Works across multiple app instances
-- **Connection pooling for both lock operations and dispatch registry** - connections checked out and released as needed
+- **Connection pooling for both lease coordination operations and dispatch registry** - connections checked out and released as needed
 - No connection exhaustion in production
 
 **How it Works:**
@@ -135,7 +135,7 @@ For development and testing, use the memory adapter:
 
 ```ruby
   RailsCron.configure do |config|
-    config.lock_adapter = RailsCron::Lock::MemoryAdapter.new
+    config.backend = RailsCron::Backend::MemoryAdapter.new
     config.enable_log_dispatch_registry = true  # Optional: audit trail in-memory
   end
 
@@ -162,7 +162,7 @@ Combine cache checking with dispatch registry for production:
 
 ```ruby
   RailsCron.configure do |config|
-    config.lock_adapter = RailsCron::Lock::PostgresAdapter.new
+    config.backend = RailsCron::Backend::PostgresAdapter.new
     config.enable_log_dispatch_registry = true  # Enable audit trail
   end
 
@@ -289,7 +289,7 @@ Use `RailsCron.dispatched?` to check if a job has been dispatched:
    RailsCron.configuration.enable_log_dispatch_registry  # Should be true
    ```
 
-2. Verify your lock adapter supports dispatch logging:
+2. Verify your backend adapter supports dispatch logging:
    - **DatabaseEngine** (MySQL, PostgreSQL, SQLite): Requires `rails_cron_dispatches` table
      - Run migrations: `rails db:migrate` (migrations are installed in your host Rails app)
      - Check table: `ActiveRecord::Base.connection.table_exists?('rails_cron_dispatches')`
@@ -302,7 +302,7 @@ Use `RailsCron.dispatched?` to check if a job has been dispatched:
 
 ```ruby
   RailsCron.configure do |config|
-    config.lock_adapter = RailsCron::Lock::PostgresAdapter.new
+    config.backend = RailsCron::Backend::PostgresAdapter.new
     config.enable_log_dispatch_registry = true
   end
 ```
@@ -312,7 +312,7 @@ Use `RailsCron.dispatched?` to check if a job has been dispatched:
 ```ruby
   RailsCron.configure do |config|
     redis = Redis.new(url: ENV['REDIS_URL'])
-    config.lock_adapter = RailsCron::Lock::RedisAdapter.new(redis)
+    config.backend = RailsCron::Backend::RedisAdapter.new(redis)
     config.enable_log_dispatch_registry = true
   end
 ```
@@ -321,7 +321,7 @@ Use `RailsCron.dispatched?` to check if a job has been dispatched:
 
 ```ruby
   RailsCron.configure do |config|
-    config.lock_adapter = RailsCron::Lock::MemoryAdapter.new
+    config.backend = RailsCron::Backend::MemoryAdapter.new
     config.enable_log_dispatch_registry = true
   end
 ```
