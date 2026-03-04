@@ -47,6 +47,17 @@ RSpec.describe RailsCron::Definition::MemoryEngine do
       stored_definition = engine.find_definition('job:daily')
       expect(stored_definition[:metadata]).to eq(team: 'ops', tags: ['daily'])
     end
+
+    it 'preserves disabled_at when re-upserting an already-disabled definition' do
+      first_time = Time.current.change(usec: 0)
+      second_time = first_time + 1.second
+      allow(Time).to receive(:current).and_return(first_time, second_time)
+
+      first_result = engine.upsert_definition(key: 'job:daily', cron: '0 9 * * *', enabled: false)
+      second_result = engine.upsert_definition(key: 'job:daily', cron: '0 10 * * *', enabled: false)
+
+      expect(second_result[:disabled_at]).to eq(first_result[:disabled_at])
+    end
   end
 
   it 'finds and removes definitions' do

@@ -42,12 +42,20 @@ module RailsCron
     end
 
     def self.persist_definition(record, cron:, enabled:, source:, metadata:)
+      disabled_at = if enabled
+                      nil
+                    elsif record.new_record? || record.enabled != false
+                      Time.current
+                    else
+                      record.disabled_at
+                    end
+
       record.assign_attributes(
         cron: cron,
         enabled: enabled,
         source: source,
         metadata: metadata,
-        disabled_at: enabled ? nil : Time.current
+        disabled_at:
       )
       record.save!
       record

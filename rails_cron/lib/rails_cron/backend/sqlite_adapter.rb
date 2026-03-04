@@ -109,7 +109,7 @@ module RailsCron
 
       def wrapped_contention_error?(error)
         cause = error.cause
-        cause.is_a?(ActiveRecord::RecordNotUnique) || error.message.match?(/unique|constraint/i)
+        cause.is_a?(ActiveRecord::RecordNotUnique) || error.message.match?(/unique|duplicate/i)
       end
     end
   end

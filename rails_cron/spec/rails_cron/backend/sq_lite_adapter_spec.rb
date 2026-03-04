@@ -82,6 +82,14 @@ RSpec.describe RailsCron::Backend::SQLiteAdapter do
       end.to raise_error(RailsCron::Backend::LockAdapterError, /SQLite acquire failed/)
     end
 
+    it 'raises LockAdapterError for non-unique constraint StatementInvalid failures' do
+      allow(RailsCron::CronLock).to receive(:create!).and_raise(ActiveRecord::StatementInvalid.new('CHECK constraint failed'))
+
+      expect do
+        adapter.acquire('test:key:constraint-error', 60)
+      end.to raise_error(RailsCron::Backend::LockAdapterError, /SQLite acquire failed/)
+    end
+
     it 'stores correct TTL expiration time' do
       now = Time.current
       adapter.acquire('test:key:ttl', 120)

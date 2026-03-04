@@ -18,6 +18,13 @@ module RailsCron
           now = Time.current
           existing = @definitions[key]
           stored_metadata = (metadata || {}).deep_dup
+          disabled_at = if enabled
+                          nil
+                        elsif existing && existing[:enabled] == false
+                          existing[:disabled_at]
+                        else
+                          now
+                        end
           definition = {
             key: key,
             cron: cron,
@@ -26,7 +33,7 @@ module RailsCron
             metadata: stored_metadata,
             created_at: existing ? existing[:created_at] : now,
             updated_at: now,
-            disabled_at: enabled ? nil : now
+            disabled_at:
           }
           @definitions[key] = definition
 

@@ -59,5 +59,27 @@ RSpec.describe RailsCron::CronDefinition, type: :model do
       )
       expect(existing_record).to have_received(:save!)
     end
+
+    it 'preserves disabled_at when re-upserting an already-disabled definition' do
+      disabled_at = 2.days.ago.change(usec: 0)
+      described_class.create!(
+        key: 'job:disabled',
+        cron: '0 9 * * *',
+        enabled: false,
+        source: 'code',
+        metadata: {},
+        disabled_at:
+      )
+
+      result = described_class.upsert_definition!(
+        key: 'job:disabled',
+        cron: '0 10 * * *',
+        enabled: false,
+        source: 'api',
+        metadata: { team: 'ops' }
+      )
+
+      expect(result.reload.disabled_at.change(usec: 0)).to eq(disabled_at)
+    end
   end
 end
