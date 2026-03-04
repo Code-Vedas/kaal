@@ -46,7 +46,7 @@ ActiveRecord::Schema[7.2].define(version: 3) do
     t.string 'cron', limit: 255, null: false
     t.boolean 'enabled', default: true, null: false
     t.string 'source', limit: 50, default: 'code', null: false
-    t.json 'metadata', default: {}, null: false
+    t.json 'metadata', null: false
     t.datetime 'disabled_at'
     t.datetime 'created_at', null: false
     t.datetime 'updated_at', null: false

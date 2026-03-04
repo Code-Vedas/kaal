@@ -5,6 +5,8 @@ module RailsCron
   class CronDefinition < ApplicationRecord
     self.table_name = 'rails_cron_definitions'
 
+    before_validation :ensure_metadata
+
     validates :key, presence: true, uniqueness: true
     validates :cron, presence: true
     validates :source, presence: true
@@ -44,6 +46,12 @@ module RailsCron
       definition_hash = to_definition_hash
       destroy!
       definition_hash
+    end
+
+    private
+
+    def ensure_metadata
+      self.metadata ||= {}
     end
   end
 end

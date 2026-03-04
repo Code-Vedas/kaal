@@ -7,7 +7,7 @@ class CreateRailsCronDefinitions < ActiveRecord::Migration[7.0]
       t.string :cron, null: false, limit: 255
       t.boolean :enabled, null: false, default: true
       t.string :source, null: false, limit: 50, default: 'code'
-      t.json :metadata, null: false, default: {}
+      t.json :metadata, null: false
       t.datetime :disabled_at
 
       t.timestamps
