@@ -55,20 +55,20 @@ end
 
 ## 🔧 Configuration Reference
 
-| Setting                        | Type    | Default                     | Description                                                                                |
-| ------------------------------ | ------- | --------------------------- | ------------------------------------------------------------------------------------------ |
-| `backend`                 | Object  | `nil`                       | Distributed backend implementation. Use **Redis** or **Postgres** in multi-node environments. |
-| `tick_interval`                | Integer | `5`                         | Seconds between scheduler ticks.                                                           |
-| `window_lookback`              | Integer | `120`                       | How far back the scheduler will replay missed ticks.                                       |
-| `window_lookahead`             | Integer | `0`                         | How far ahead to pre-trigger upcoming ticks (optional).                                    |
-| `lease_ttl`                    | Integer | `60`                        | Duration for distributed coordination lease in seconds.                                    |
-| `namespace`                    | String  | `"railscron"`               | Key prefix used for coordination keys and dispatch records.                                |
-| `logger`                       | Logger  | `Rails.logger` (if present) | Logger used for scheduler messages.                                                        |
-| `time_zone`                    | String  | System default              | Optional timezone for evaluating cron expressions.                                         |
-| `enable_log_dispatch_registry` | Boolean | `false`                     | Enable dispatch logging for audit trail and recovery.                                      |
-| `enable_dispatch_recovery`     | Boolean | `true`                      | Automatically recover missed runs after downtime.                                          |
-| `recovery_window`              | Integer | `86400` (24 hours)          | How far back to look for missed runs during recovery (in seconds).                         |
-| `recovery_startup_jitter`      | Integer | `5`                         | Max random delay (seconds) before recovery to reduce lock contention on cluster restarts.  |
+| Setting                        | Type    | Default                     | Description                                                                                   |
+| ------------------------------ | ------- | --------------------------- | --------------------------------------------------------------------------------------------- |
+| `backend`                      | Object  | `nil`                       | Distributed backend implementation. Use **Redis** or **Postgres** in multi-node environments. |
+| `tick_interval`                | Integer | `5`                         | Seconds between scheduler ticks.                                                              |
+| `window_lookback`              | Integer | `120`                       | How far back the scheduler will replay missed ticks.                                          |
+| `window_lookahead`             | Integer | `0`                         | How far ahead to pre-trigger upcoming ticks (optional).                                       |
+| `lease_ttl`                    | Integer | `60`                        | Duration for distributed coordination lease in seconds.                                       |
+| `namespace`                    | String  | `"railscron"`               | Key prefix used for coordination keys and dispatch records.                                   |
+| `logger`                       | Logger  | `Rails.logger` (if present) | Logger used for scheduler messages.                                                           |
+| `time_zone`                    | String  | System default              | Optional timezone for evaluating cron expressions.                                            |
+| `enable_log_dispatch_registry` | Boolean | `false`                     | Enable dispatch logging for audit trail and recovery.                                         |
+| `enable_dispatch_recovery`     | Boolean | `true`                      | Automatically recover missed runs after downtime.                                             |
+| `recovery_window`              | Integer | `86400` (24 hours)          | How far back to look for missed runs during recovery (in seconds).                            |
+| `recovery_startup_jitter`      | Integer | `5`                         | Max random delay (seconds) before recovery to reduce lock contention on cluster restarts.     |
 
 ---
 
@@ -235,7 +235,7 @@ end
 | `enable_dispatch_recovery`     | Boolean | `true`  | Automatically recover missed runs on startup.                                                       |
 | `recovery_window`              | Integer | `86400` | How far back to look for missed runs (in seconds). 24 hours covers typical overnight downtimes.     |
 | `recovery_startup_jitter`      | Integer | `5`     | Max random delay (0-N seconds) before recovery starts. Reduces lock contention on cluster restarts. |
-| `enable_log_dispatch_registry` | Boolean | `false` | When enabled, recovery checks dispatch records first to avoid re-enqueueing already-executed jobs.   |
+| `enable_log_dispatch_registry` | Boolean | `false` | When enabled, recovery checks dispatch records first to avoid re-enqueueing already-executed jobs.  |
 
 ### Interaction with Dispatch Logging
 
