@@ -54,6 +54,34 @@ RSpec.describe RailsCron::Backend::SQLiteAdapter do
       expect(result).to be(false)
     end
 
+    it 'treats RecordNotUnique contention as not acquired' do
+      allow(RailsCron::CronLock).to receive(:create!).and_raise(ActiveRecord::RecordNotUnique.new('duplicate key'))
+      allow(RailsCron::CronLock).to receive(:cleanup_expired)
+
+      result = adapter.acquire('test:key:db-unique', 60)
+
+      expect(result).to be(false)
+      expect(RailsCron::CronLock).to have_received(:cleanup_expired).once
+    end
+
+    it 'treats wrapped uniqueness StatementInvalid as not acquired' do
+      allow(RailsCron::CronLock).to receive(:create!).and_raise(ActiveRecord::StatementInvalid.new('UNIQUE constraint failed'))
+      allow(RailsCron::CronLock).to receive(:cleanup_expired)
+
+      result = adapter.acquire('test:key:statement-unique', 60)
+
+      expect(result).to be(false)
+      expect(RailsCron::CronLock).to have_received(:cleanup_expired).once
+    end
+
+    it 'raises LockAdapterError for non-contention StatementInvalid failures' do
+      allow(RailsCron::CronLock).to receive(:create!).and_raise(ActiveRecord::StatementInvalid.new('syntax error'))
+
+      expect do
+        adapter.acquire('test:key:statement-error', 60)
+      end.to raise_error(RailsCron::Backend::LockAdapterError, /SQLite acquire failed/)
+    end
+
     it 'stores correct TTL expiration time' do
       now = Time.current
       adapter.acquire('test:key:ttl', 120)

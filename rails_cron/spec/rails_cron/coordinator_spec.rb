@@ -515,6 +515,7 @@ RSpec.describe RailsCron::Coordinator do
       coordinator.send(:each_enabled_entry) { |entry| yielded << entry.key }
 
       expect(yielded).to eq(['job:registry'])
+      expect(logger).not_to have_received(:warn).with(/Failed to iterate enabled definitions/)
     end
 
     it 'iterates over enabled definitions and yields resolved entries' do

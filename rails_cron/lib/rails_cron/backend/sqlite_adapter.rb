@@ -77,7 +77,11 @@ module RailsCron
             )
             acquired = true
             break
-          rescue ActiveRecord::RecordInvalid
+          rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
+            attempt_cleanup = true
+          rescue ActiveRecord::StatementInvalid => e
+            raise unless wrapped_contention_error?(e)
+
             attempt_cleanup = true
           end
         end
@@ -99,6 +103,13 @@ module RailsCron
         deleted.positive?
       rescue StandardError => e
         raise LockAdapterError, "SQLite release failed for #{key}: #{e.message}"
+      end
+
+      private
+
+      def wrapped_contention_error?(error)
+        cause = error.cause
+        cause.is_a?(ActiveRecord::RecordNotUnique) || error.message.match?(/unique|constraint/i)
       end
     end
   end

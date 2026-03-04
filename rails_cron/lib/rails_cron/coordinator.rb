@@ -374,8 +374,10 @@ module RailsCron
 
       begin
         definition_registry = RailsCron.definition_registry
-        definitions = definition_registry&.enabled_definitions || []
-        use_registry_entries = definitions.empty? && definition_registry&.all_definitions.to_a.empty?
+        return each_registry_entry(&) unless definition_registry
+
+        definitions = definition_registry.enabled_definitions || []
+        use_registry_entries = definitions.empty? && definition_registry.all_definitions.to_a.empty?
 
         definitions
           .filter_map { |definition| build_entry_from_definition(definition) }

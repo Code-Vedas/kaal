@@ -30,6 +30,7 @@ detectors:
     enabled: true
     exclude:
       - RailsCron::Railtie#self.register_signal_handlers
+      - RailsCron::Coordinator#each_enabled_entry
   MissingSafeMethod:
     enabled: true
     exclude:
@@ -57,6 +58,7 @@ detectors:
       - RailsCron::Dispatch::MemoryEngine#build_key
       - RailsCron::Dispatch::RedisEngine#convert_timestamps
       - RailsCron::Backend::DispatchLogging#parse_lock_key
+      - RailsCron::Backend::SQLiteAdapter#wrapped_contention_error?
   FeatureEnvy:
     enabled: true
     exclude:
