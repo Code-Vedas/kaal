@@ -1,13 +1,20 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
+require 'fileutils'
 require 'tmpdir'
 require 'rails/generators'
 require 'generators/rails_cron/install/install_generator'
 
 RSpec.describe RailsCron::Generators::InstallGenerator do
+  let(:destination_root) { Dir.mktmpdir }
+
+  after do
+    FileUtils.rm_rf(destination_root)
+  end
+
   def build_generator(backend:)
-    described_class.new([], { 'backend' => backend }, destination_root: Dir.mktmpdir)
+    described_class.new([], { 'backend' => backend }, destination_root:)
   end
 
   describe '.next_migration_number' do
