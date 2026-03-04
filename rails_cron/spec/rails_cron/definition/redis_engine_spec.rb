@@ -6,7 +6,7 @@ require 'fakeredis'
 RSpec.describe RailsCron::Definition::RedisEngine do
   subject(:engine) { described_class.new(redis, namespace: 'railscron') }
 
-  let(:redis) { Redis.new }
+  let(:redis) { FakeRedis::Redis.new }
 
   before { redis.flushdb }
 
