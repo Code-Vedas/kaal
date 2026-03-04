@@ -17,16 +17,9 @@ module RailsCron
     scope :by_source, ->(source) { where(source: source) }
 
     def self.upsert_definition!(key:, cron:, enabled:, source:, metadata:)
-      record = find_or_initialize_by(key: key)
-      record.assign_attributes(
-        cron: cron,
-        enabled: enabled,
-        source: source,
-        metadata: metadata,
-        disabled_at: enabled ? nil : Time.current
-      )
-      record.save!
-      record
+      persist_definition(find_or_initialize_by(key: key), cron:, enabled:, source:, metadata:)
+    rescue ActiveRecord::RecordNotUnique
+      persist_definition(find_by!(key: key), cron:, enabled:, source:, metadata:)
     end
 
     def to_definition_hash
@@ -47,6 +40,19 @@ module RailsCron
       destroy!
       definition_hash
     end
+
+    def self.persist_definition(record, cron:, enabled:, source:, metadata:)
+      record.assign_attributes(
+        cron: cron,
+        enabled: enabled,
+        source: source,
+        metadata: metadata,
+        disabled_at: enabled ? nil : Time.current
+      )
+      record.save!
+      record
+    end
+    private_class_method :persist_definition
 
     private
 

@@ -36,6 +36,17 @@ RSpec.describe RailsCron::Definition::MemoryEngine do
       expect(stored_definition[:cron]).to eq('0 9 * * *')
       expect(stored_definition[:metadata]).to eq(team: 'ops')
     end
+
+    it 'stores a defensive copy of the input metadata' do
+      metadata = { team: 'ops', tags: ['daily'] }
+
+      engine.upsert_definition(key: 'job:daily', cron: '0 9 * * *', metadata:)
+      metadata[:team] = 'platform'
+      metadata[:tags] << 'critical'
+
+      stored_definition = engine.find_definition('job:daily')
+      expect(stored_definition[:metadata]).to eq(team: 'ops', tags: ['daily'])
+    end
   end
 
   it 'finds and removes definitions' do

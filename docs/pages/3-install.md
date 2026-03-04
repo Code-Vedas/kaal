@@ -6,7 +6,7 @@ permalink: /install
 
 # ⚙️ Installation & Setup
 
-This page explains how to install the `rails-crons` gem and set up the initializer for your Rails application.
+This page explains how to install the `rails-crons` gem, generate any backend-specific database migrations, and set up the initializer for your Rails application.
 
 ---
 
@@ -25,15 +25,27 @@ Then run:
 # Install the gem
 bundle install
 
-# Generate the initializer
-bin/rails g rails_cron:install
+# Generate the initializer and any backend-specific migrations
+bin/rails g rails_cron:install --backend=sqlite
+```
+
+Use the backend option that matches your deployment:
+
+- `--backend=sqlite`: generates dispatches, locks, and definitions tables
+- `--backend=postgres` or `--backend=mysql`: generates dispatches and definitions tables
+- `--backend=redis` or `--backend=memory`: no database migrations are generated
+
+For database-backed backends, run your app migrations after generating them:
+
+```bash
+bin/rails db:migrate
 ```
 
 ---
 
 ## ⚙️ Initializer
 
-If you ran the generator, you’ll find the file at:
+If you ran the generator, you will find the initializer at:
 
 ```bash
 config/initializers/rails_cron.rb
@@ -44,7 +56,10 @@ Example:
 ```ruby
 # config/initializers/rails_cron.rb
 RailsCron.configure do |c|
-  # Choose your distributed backend adapter
+  # Choose the backend that matches your deployment.
+  # See the RailsCron documentation for backend-specific setup and the full
+  # configuration reference.
+  #
   # Redis (recommended)
   # c.backend = RailsCron::Backend::RedisAdapter.new(Redis.new(url: ENV.fetch("REDIS_URL")))
 
@@ -59,6 +74,15 @@ RailsCron.configure do |c|
 
   # Lease duration for distributed coordination (seconds)
   c.lease_ttl        = 60
+
+  # Startup recovery window (seconds)
+  c.recovery_window = 3600
+
+  # Recover missed runs on startup
+  c.enable_dispatch_recovery = true
+
+  # Persist dispatch records for recovery/idempotency checks
+  c.enable_log_dispatch_registry = false
 end
 ```
 

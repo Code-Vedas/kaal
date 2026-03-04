@@ -17,12 +17,13 @@ module RailsCron
         @mutex.synchronize do
           now = Time.current
           existing = @definitions[key]
+          stored_metadata = (metadata || {}).deep_dup
           definition = {
             key: key,
             cron: cron,
             enabled: enabled,
             source: source,
-            metadata: metadata,
+            metadata: stored_metadata,
             created_at: existing ? existing[:created_at] : now,
             updated_at: now,
             disabled_at: enabled ? nil : now

@@ -1,0 +1,23 @@
+# frozen_string_literal: true
+
+RailsCron.configure do |config|
+  # Select the backend that matches your deployment.
+  # See the RailsCron documentation for backend-specific setup and the full
+  # configuration reference.
+  #
+  # Redis (recommended for multi-node deployments):
+  # config.backend = RailsCron::Backend::RedisAdapter.new(Redis.new(url: ENV.fetch('REDIS_URL')))
+  #
+  # PostgreSQL advisory locks:
+  # config.backend = RailsCron::Backend::PostgresAdapter.new
+  #
+  # MySQL / SQLite database-backed coordination:
+  # config.backend = RailsCron::Backend::SQLiteAdapter.new
+
+  config.tick_interval = 5
+  config.window_lookback = 120
+  config.lease_ttl = 60
+  config.recovery_window = 3600
+  config.enable_dispatch_recovery = true
+  config.enable_log_dispatch_registry = false
+end

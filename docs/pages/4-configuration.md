@@ -36,9 +36,6 @@ RailsCron.configure do |c|
   # Optional prefix for Redis/Postgres keys
   c.namespace        = "railscron"
 
-  # Optional timezone for cron evaluation
-  # c.time_zone = "America/Toronto"
-
   # Optional logger override
   # c.logger = Logger.new($stdout, level: :info)
 
@@ -64,7 +61,6 @@ end
 | `lease_ttl`                    | Integer | `60`                        | Duration for distributed coordination lease in seconds.                                       |
 | `namespace`                    | String  | `"railscron"`               | Key prefix used for coordination keys and dispatch records.                                   |
 | `logger`                       | Logger  | `Rails.logger` (if present) | Logger used for scheduler messages.                                                           |
-| `time_zone`                    | String  | System default              | Optional timezone for evaluating cron expressions.                                            |
 | `enable_log_dispatch_registry` | Boolean | `false`                     | Enable dispatch logging for audit trail and recovery.                                         |
 | `enable_dispatch_recovery`     | Boolean | `true`                      | Automatically recover missed runs after downtime.                                             |
 | `recovery_window`              | Integer | `86400` (24 hours)          | How far back to look for missed runs during recovery (in seconds).                            |
@@ -171,19 +167,6 @@ scheduler: bundle exec rails rails_cron:start
 ```
 
 > ✅ Best practice: run one scheduler per environment — multiple nodes can start it safely (only one acquires the lock per tick).
-
----
-
-## 🌍 Time Zone Control
-
-By default, cron expressions use the system’s timezone.
-To override:
-
-```ruby
-RailsCron.configure do |c|
-  c.time_zone = "America/Toronto"
-end
-```
 
 ---
 

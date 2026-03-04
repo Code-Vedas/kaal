@@ -26,4 +26,38 @@ RSpec.describe RailsCron::CronDefinition, type: :model do
     expect(described_class.enabled.pluck(:key)).to eq(['job:enabled'])
     expect(described_class.disabled.pluck(:key)).to eq(['job:disabled'])
   end
+
+  describe '.upsert_definition!' do
+    it 'retries with the persisted record when a unique constraint race occurs' do
+      new_record = instance_double(described_class)
+      existing_record = instance_double(described_class)
+
+      allow(described_class).to receive(:find_or_initialize_by).with(key: 'job:daily').and_return(new_record)
+      allow(described_class).to receive(:find_by!).with(key: 'job:daily').and_return(existing_record)
+      allow(new_record).to receive(:assign_attributes)
+      allow(new_record).to receive(:save!).and_raise(ActiveRecord::RecordNotUnique.new('duplicate key'))
+      allow(existing_record).to receive(:assign_attributes)
+      allow(existing_record).to receive(:save!).and_return(true)
+
+      result = described_class.upsert_definition!(
+        key: 'job:daily',
+        cron: '0 9 * * *',
+        enabled: true,
+        source: 'code',
+        metadata: { team: 'ops' }
+      )
+
+      expect(result).to be(existing_record)
+      expect(existing_record).to have_received(:assign_attributes).with(
+        hash_including(
+          cron: '0 9 * * *',
+          enabled: true,
+          source: 'code',
+          metadata: { team: 'ops' },
+          disabled_at: nil
+        )
+      )
+      expect(existing_record).to have_received(:save!)
+    end
+  end
 end

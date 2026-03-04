@@ -50,14 +50,23 @@ Then run:
 
 ```bash
 bundle install
-bin/rails g rails_cron:install
+bin/rails g rails_cron:install --backend=sqlite
 ```
+
+The install generator creates `config/initializers/rails_cron.rb` and, for database-backed backends, generates only the migrations you need:
+
+- `--backend=sqlite`: dispatches, locks, and definitions tables
+- `--backend=postgres` or `--backend=mysql`: dispatches and definitions tables
+- `--backend=redis` or `--backend=memory`: no database migrations
 
 Example initializer (`config/initializers/rails_cron.rb`):
 
 ```ruby
 RailsCron.configure do |c|
   # Choose your backend adapter
+  # See the RailsCron documentation for backend-specific setup and the full
+  # configuration reference.
+  #
   # Redis (recommended)
   # c.backend = RailsCron::Backend::RedisAdapter.new(Redis.new(url: ENV["REDIS_URL"]))
 
@@ -67,6 +76,9 @@ RailsCron.configure do |c|
   c.tick_interval    = 5      # seconds between scheduler ticks
   c.window_lookback  = 120    # recover missed runs (seconds)
   c.lease_ttl        = 60     # lease TTL in seconds
+  c.recovery_window = 3600
+  c.enable_dispatch_recovery = true
+  c.enable_log_dispatch_registry = false
 end
 ```
 
