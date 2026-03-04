@@ -7,7 +7,7 @@
 
 require 'rails_helper'
 
-describe RailsCron::Lock::SQLiteAdapter do
+RSpec.describe RailsCron::Backend::SQLiteAdapter do
   let(:adapter) { described_class.new }
 
   before do
@@ -26,6 +26,10 @@ describe RailsCron::Lock::SQLiteAdapter do
 
     it 'returns a DatabaseEngine for dispatch_registry' do
       expect(adapter.dispatch_registry).to be_a(RailsCron::Dispatch::DatabaseEngine)
+    end
+
+    it 'returns a DatabaseEngine for definition_registry' do
+      expect(adapter.definition_registry).to be_a(RailsCron::Definition::DatabaseEngine)
     end
   end
 
@@ -50,6 +54,42 @@ describe RailsCron::Lock::SQLiteAdapter do
       expect(result).to be(false)
     end
 
+    it 'treats RecordNotUnique contention as not acquired' do
+      allow(RailsCron::CronLock).to receive(:create!).and_raise(ActiveRecord::RecordNotUnique.new('duplicate key'))
+      allow(RailsCron::CronLock).to receive(:cleanup_expired)
+
+      result = adapter.acquire('test:key:db-unique', 60)
+
+      expect(result).to be(false)
+      expect(RailsCron::CronLock).to have_received(:cleanup_expired).once
+    end
+
+    it 'treats wrapped uniqueness StatementInvalid as not acquired' do
+      allow(RailsCron::CronLock).to receive(:create!).and_raise(ActiveRecord::StatementInvalid.new('UNIQUE constraint failed'))
+      allow(RailsCron::CronLock).to receive(:cleanup_expired)
+
+      result = adapter.acquire('test:key:statement-unique', 60)
+
+      expect(result).to be(false)
+      expect(RailsCron::CronLock).to have_received(:cleanup_expired).once
+    end
+
+    it 'raises LockAdapterError for non-contention StatementInvalid failures' do
+      allow(RailsCron::CronLock).to receive(:create!).and_raise(ActiveRecord::StatementInvalid.new('syntax error'))
+
+      expect do
+        adapter.acquire('test:key:statement-error', 60)
+      end.to raise_error(RailsCron::Backend::LockAdapterError, /SQLite acquire failed/)
+    end
+
+    it 'raises LockAdapterError for non-unique constraint StatementInvalid failures' do
+      allow(RailsCron::CronLock).to receive(:create!).and_raise(ActiveRecord::StatementInvalid.new('CHECK constraint failed'))
+
+      expect do
+        adapter.acquire('test:key:constraint-error', 60)
+      end.to raise_error(RailsCron::Backend::LockAdapterError, /SQLite acquire failed/)
+    end
+
     it 'stores correct TTL expiration time' do
       now = Time.current
       adapter.acquire('test:key:ttl', 120)
@@ -63,7 +103,7 @@ describe RailsCron::Lock::SQLiteAdapter do
 
       expect do
         adapter.acquire('test:key:error', 60)
-      end.to raise_error(RailsCron::Lock::LockAdapterError, /SQLite acquire failed/)
+      end.to raise_error(RailsCron::Backend::LockAdapterError, /SQLite acquire failed/)
     end
 
     it 'allows reacquiring after lock expires' do
@@ -182,7 +222,7 @@ describe RailsCron::Lock::SQLiteAdapter do
 
       expect do
         adapter.release('test:key:error')
-      end.to raise_error(RailsCron::Lock::LockAdapterError, /SQLite release failed/)
+      end.to raise_error(RailsCron::Backend::LockAdapterError, /SQLite release failed/)
     end
   end
 

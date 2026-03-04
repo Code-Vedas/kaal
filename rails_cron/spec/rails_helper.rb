@@ -17,6 +17,11 @@ unless ENV['NO_COVERAGE'] == '1'
     minimum_coverage 100
   end
 end
+
+# Shell-escaped passwords are often passed as `\!` in DATABASE_URL. Normalize that
+# before Rails boots so Active Record can parse the URL.
+ENV['DATABASE_URL'] = ENV['DATABASE_URL'].gsub('\!', '!') if ENV['DATABASE_URL']
+
 require 'rails'
 ENV['RAILS_ENV'] ||= 'test'
 abort('The Rails environment is running in production mode!') if Rails.env.production?
@@ -41,6 +46,19 @@ RSpec.configure do |config|
 
   config.before do
     RailsCron::CronDispatch.delete_all
+    RailsCron::CronDefinition.delete_all if defined?(RailsCron::CronDefinition)
+  end
+
+  config.after do
+    coordinator = RailsCron.instance_variable_get(:@coordinator)
+    coordinator&.stop! if coordinator.respond_to?(:stop!)
+
+    RailsCron.instance_variable_set(:@coordinator, nil)
+    RailsCron.instance_variable_set(:@registry, RailsCron::Registry.new)
+    RailsCron.instance_variable_set(:@configuration, RailsCron::Configuration.new)
+    RailsCron.instance_variable_set(:@definition_registry, nil)
+  rescue StandardError
+    # Test cleanup should not mask the original failure.
   end
 end
 

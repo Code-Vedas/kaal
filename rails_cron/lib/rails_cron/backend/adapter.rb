@@ -6,15 +6,15 @@
 # LICENSE file in the root directory of this source tree.
 
 module RailsCron
-  module Lock
+  module Backend
     ##
-    # Abstract base class for distributed lock adapters.
+    # Abstract base class for distributed backend adapters.
     #
-    # Lock adapters are responsible for acquiring and releasing distributed locks
-    # to ensure that each scheduled cron job runs exactly once across multiple nodes.
+    # Backend adapters are responsible for distributed coordination (acquire/release)
+    # and may also expose cron definition and dispatch registries for persistence.
     #
-    # @example Implementing a lock adapter
-    #   class MyLockAdapter < RailsCron::Lock::Adapter
+    # @example Implementing a backend adapter
+    #   class MyBackendAdapter < RailsCron::Backend::Adapter
     #     def acquire(key, ttl)
     #       # Try to acquire a lock with key and TTL
     #       # Return true if acquired, false otherwise
@@ -35,7 +35,7 @@ module RailsCron
       # @raise [NotImplementedError] if not implemented by subclass
       #
       # @example
-      #   adapter = MyLockAdapter.new
+      #   adapter = MyBackendAdapter.new
       #   acquired = adapter.acquire("railscron:job1:1234567890", 60)
       #   if acquired
       #     # Do work...
@@ -85,18 +85,28 @@ module RailsCron
           release(key)
         end
       end
+
+      ##
+      # Optional definition registry for persistent cron definitions.
+      #
+      # Backends may override this to provide a concrete implementation.
+      #
+      # @return [RailsCron::Definition::Registry, nil]
+      def definition_registry
+        nil
+      end
     end
 
     ##
-    # Null adapter that always succeeds (useful for development/testing).
+    # Null backend adapter that always succeeds (useful for development/testing).
     #
     # This adapter provides a no-op implementation: it always returns true
     # for acquire and does nothing on release. Use this when you want to run
-    # the scheduler without distributed locking (e.g., single-node development).
+    # the scheduler without distributed coordination (e.g., single-node development).
     #
     # @example Using the null adapter
     #   RailsCron.configure do |config|
-    #     config.lock_adapter = RailsCron::Lock::NullAdapter.new
+    #     config.backend = RailsCron::Backend::NullAdapter.new
     #   end
     class NullAdapter < Adapter
       ##
@@ -131,7 +141,7 @@ module RailsCron
     end
 
     ##
-    # Error raised when a lock adapter operation fails.
+    # Error raised when a backend adapter operation fails.
     class LockAdapterError < StandardError; end
   end
 end

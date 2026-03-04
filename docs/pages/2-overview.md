@@ -18,10 +18,10 @@ Then, the same cron tick may run **N times** where N = number of processes or po
 
 ## 🚀 Why Rails Cron?
 
-- **Scheduler-agnostic** — No dependency on Sidekiq, Resque, or Rufus; just Ruby and locks.
+- **Scheduler-agnostic** — No dependency on Sidekiq, Resque, or Rufus; just Ruby and backend adapters.
 - **Multi-node safe** — Guarantees _exactly-once_ dispatch even across multiple app instances.
 - **Centralized registry** — All crons defined in one place, version-controlled with your code.
-- **Redis or Postgres locks** — Choose your preferred distributed locking mechanism.
+- **Redis or Postgres backends** — Choose where lock coordination, cron definitions, and dispatch records are stored.
 - **Portable & lightweight** — Runs as a standalone process, Rake task, or inline with Rails.
 - **Developer-friendly** — Validate, lint, and simplify cron expressions with clear feedback.
 

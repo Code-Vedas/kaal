@@ -7,11 +7,12 @@
 
 require 'securerandom'
 require_relative 'dispatch_logging'
+require_relative '../definition/redis_engine'
 
 module RailsCron
-  module Lock
+  module Backend
     ##
-    # Distributed lock adapter using Redis.
+    # Distributed backend adapter using Redis.
     #
     # This adapter uses Redis SET command with NX (only set if not exists) and
     # PX (expire in milliseconds) options to implement atomic lock acquisition
@@ -23,7 +24,7 @@ module RailsCron
     # @example Using the Redis adapter
     #   redis = Redis.new(url: ENV["REDIS_URL"])
     #   RailsCron.configure do |config|
-    #     config.lock_adapter = RailsCron::Lock::RedisAdapter.new(redis)
+    #     config.backend = RailsCron::Backend::RedisAdapter.new(redis)
     #     config.enable_log_dispatch_registry = true  # Enable dispatch logging
     #   end
     class RedisAdapter < Adapter
@@ -37,11 +38,11 @@ module RailsCron
       # @raise [ArgumentError] if redis is not provided or does not implement the required interface
       def initialize(redis, namespace: 'railscron')
         super()
-        raise ArgumentError, 'redis client is required' if redis.nil?
         raise ArgumentError, 'redis client must respond to :set and :eval' unless redis.respond_to?(:set) && redis.respond_to?(:eval)
 
         @redis = redis
         @namespace = namespace
+        @lock_value_generator = -> { SecureRandom.uuid }
         # Store lock values with expiration timestamps to enable safe release and prevent unbounded memory growth.
         # Since lock keys include fire_time.to_i, each dispatch creates a unique key. In the coordinator's
         # normal flow, release is never called (TTL is relied upon), so we must expire local entries.
@@ -55,6 +56,14 @@ module RailsCron
       # @return [RailsCron::Dispatch::RedisEngine] Redis engine instance
       def dispatch_registry
         @dispatch_registry ||= RailsCron::Dispatch::RedisEngine.new(@redis, namespace: @namespace)
+      end
+
+      ##
+      # Get the definition registry for Redis-backed definition persistence.
+      #
+      # @return [RailsCron::Definition::RedisEngine] redis definition engine instance
+      def definition_registry
+        @definition_registry ||= RailsCron::Definition::RedisEngine.new(@redis, namespace: @namespace)
       end
 
       ##
@@ -124,7 +133,7 @@ module RailsCron
       private
 
       def generate_lock_value
-        SecureRandom.uuid
+        @lock_value_generator.call
       end
 
       def prune_expired_lock_values

@@ -10,7 +10,7 @@ require 'fugit'
 module RailsCron
   ##
   # Coordinator manages the main scheduler loop that calculates due fire times
-  # and dispatches cron work safely across multiple nodes using distributed locks.
+  # and dispatches cron work safely across multiple nodes using backend lease coordination.
   #
   # The coordinator:
   # 1. Runs a background thread on tick_interval
@@ -169,7 +169,7 @@ module RailsCron
     end
 
     def execute_tick
-      @registry.each do |entry|
+      each_enabled_entry do |entry|
         calculate_and_dispatch_due_times(entry)
       end
     rescue StandardError => e
@@ -234,10 +234,10 @@ module RailsCron
       logger = @configuration.logger
       cron_key = entry.key
 
-      # Generate a unique lock key for this fire time
+      # Generate a unique backend coordination key for this fire time
       lock_key = generate_lock_key(cron_key, fire_time)
 
-      # Try to acquire the lock
+      # Try to acquire the coordination lease
       if acquire_lock(lock_key)
         dispatch_work(entry, fire_time)
       else
@@ -252,8 +252,8 @@ module RailsCron
     # Recover missed cron runs after downtime.
     #
     # Looks back over the recovery window to find cron jobs that should have executed
-    # but were missed due to downtime. Uses the dispatch log (if enabled) to skip
-    # already-dispatched jobs, and relies on locks for duplicate prevention.
+    # but were missed due to downtime. Uses dispatch records (if enabled) to skip
+    # already-dispatched jobs, and relies on lease coordination for duplicate prevention.
     #
     # @return [void]
     def recover_missed_runs
@@ -272,7 +272,7 @@ module RailsCron
       logger&.info("Starting missed-run recovery for window: #{recovery_start} to #{recovery_end}")
 
       total_recovered = 0
-      @registry.each do |entry|
+      each_enabled_entry do |entry|
         recovered = recover_entry(entry, recovery_start, recovery_end)
         total_recovered += recovered
       end
@@ -326,7 +326,7 @@ module RailsCron
     # @return [void]
     def cleanup_old_dispatch_records(recovery_window)
       logger = @configuration.logger
-      adapter = @configuration.lock_adapter
+      adapter = @configuration.backend
       return if adapter.nil? || !adapter.respond_to?(:dispatch_registry)
 
       registry = adapter.dispatch_registry
@@ -345,7 +345,7 @@ module RailsCron
     # @param fire_time [Time] the fire time to check
     # @return [Boolean] true if already dispatched, false otherwise
     def already_dispatched?(key, fire_time)
-      adapter = @configuration.lock_adapter
+      adapter = @configuration.backend
       return false if adapter.nil? || !adapter.respond_to?(:dispatch_registry)
 
       adapter.dispatch_registry.dispatched?(key, fire_time)
@@ -355,16 +355,50 @@ module RailsCron
     end
 
     def acquire_lock(lock_key)
-      lock_adapter = @configuration.lock_adapter
+      backend = @configuration.backend
       logger = @configuration.logger
 
       # No adapter = no locking (dev/test)
-      return true unless lock_adapter
+      return true unless backend
 
-      lock_adapter.acquire(lock_key, @configuration.lease_ttl)
+      backend.acquire(lock_key, @configuration.lease_ttl)
     rescue StandardError => e
       logger&.error("Lock acquisition failed for #{lock_key}: #{e.message}")
       false
+    end
+
+    def each_enabled_entry(&)
+      use_registry_entries = false
+      logger = @configuration.logger
+      warn_iteration_failure = ->(target, error) { logger&.warn("Failed to iterate #{target}: #{error.message}") }
+
+      begin
+        definition_registry = RailsCron.definition_registry
+        return each_registry_entry(&) unless definition_registry
+
+        definitions = definition_registry.enabled_definitions || []
+        use_registry_entries = definitions.empty? && definition_registry.all_definitions.to_a.empty?
+
+        definitions
+          .filter_map { |definition| build_entry_from_definition(definition) }
+          .each(&)
+      rescue StandardError => e
+        warn_iteration_failure.call('enabled definitions', e)
+        use_registry_entries = true
+      end
+
+      each_registry_entry(&) if use_registry_entries
+    end
+
+    def build_entry_from_definition(definition)
+      key = definition[:key]
+      callback_entry = @registry.find(key)
+      unless callback_entry&.enqueue
+        @configuration.logger&.warn("No enqueue callback registered for definition '#{key}', skipping")
+        return nil
+      end
+
+      Registry::Entry.new(key: key, cron: definition[:cron], enqueue: callback_entry.enqueue).freeze
     end
 
     def dispatch_work(entry, fire_time)
@@ -394,6 +428,10 @@ module RailsCron
       end
     rescue StandardError => e
       @configuration.logger&.error("Sleep interrupted: #{e.message}")
+    end
+
+    def each_registry_entry(&)
+      @registry.each(&)
     end
   end
 end

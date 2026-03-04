@@ -192,13 +192,13 @@ RailsCron.simplify("not-a-cron")
 bin/rails rails_cron:status
 ```
 
-Displays the current configuration, lock adapter, and registered jobs.
+Displays the current configuration, backend adapter, and registered jobs.
 
 Example output:
 
 ```bash
 RailsCron v1.0.0
-Lock adapter: Redis
+Backend adapter: Redis
 Tick interval: 5s
 Registered jobs:
   - reports:weekly_summary ("0 9 * * 1")

@@ -8,11 +8,12 @@
 require 'socket'
 require 'digest'
 require_relative 'dispatch_logging'
+require_relative '../definition/database_engine'
 
 module RailsCron
-  module Lock
+  module Backend
     ##
-    # Distributed lock adapter using MySQL named locks (GET_LOCK/RELEASE_LOCK).
+    # Distributed backend adapter using MySQL named locks (GET_LOCK/RELEASE_LOCK).
     #
     # This adapter uses MySQL's GET_LOCK and RELEASE_LOCK functions for
     # distributed locking across multiple nodes. Locks are connection-based
@@ -36,7 +37,7 @@ module RailsCron
     #
     # @example Using the MySQL adapter
     #   RailsCron.configure do |config|
-    #     config.lock_adapter = RailsCron::Lock::MySQLAdapter.new
+    #     config.backend = RailsCron::Backend::MySQLAdapter.new
     #     config.enable_log_dispatch_registry = true  # Enable dispatch logging
     #   end
     class MySQLAdapter < Adapter
@@ -44,6 +45,12 @@ module RailsCron
 
       # MySQL named locks have a maximum length of 64 characters
       MAX_LOCK_NAME_LENGTH = 64
+
+      def initialize
+        super
+        @lock_name_length_limit = MAX_LOCK_NAME_LENGTH
+        @false_value_pattern = /\A(0|f|false|)\z/i
+      end
 
       ##
       # Initialize a new MySQL adapter.
@@ -54,6 +61,14 @@ module RailsCron
       # @return [RailsCron::Dispatch::DatabaseEngine] database engine instance
       def dispatch_registry
         @dispatch_registry ||= RailsCron::Dispatch::DatabaseEngine.new
+      end
+
+      ##
+      # Get the definition registry for database-backed definition persistence.
+      #
+      # @return [RailsCron::Definition::DatabaseEngine] database definition engine instance
+      def definition_registry
+        @definition_registry ||= RailsCron::Definition::DatabaseEngine.new
       end
 
       ##
@@ -116,12 +131,12 @@ module RailsCron
         case value
         when 1
           true
-        when 0, nil
+        when 0
           false
         when true, false
           value
         else
-          !value.to_s.match?(/\A(0|f|false|)\z/i)
+          !value.to_s.match?(@false_value_pattern)
         end
       end
 
@@ -134,17 +149,17 @@ module RailsCron
       # @param key [String] the lock key to normalize
       # @return [String] normalized key (max 64 characters)
       def normalize_lock_name(key)
-        return key if key.length <= MAX_LOCK_NAME_LENGTH
+        return key if key.length <= @lock_name_length_limit
 
         # Use SHA256 digest to ensure uniqueness while respecting the 64-char limit.
         # Format: "prefix:hash" where hash is first 16 hex chars (~8 bytes entropy)
         digest = Digest::SHA256.hexdigest(key)
         # Reserve 17 chars for `:` + 16 hex chars, use remainder for prefix
-        prefix_length = MAX_LOCK_NAME_LENGTH - 17
+        prefix_length = @lock_name_length_limit - 17
         normalized = "#{key[0...prefix_length]}:#{digest[0...16]}"
 
         RailsCron.logger&.warn(
-          "Lock key '#{key}' exceeds MySQL named lock limit of #{MAX_LOCK_NAME_LENGTH} characters. " \
+          "Lock key '#{key}' exceeds MySQL named lock limit of #{@lock_name_length_limit} characters. " \
           "Using hash-based shortening to avoid collisions: '#{normalized}'."
         )
 

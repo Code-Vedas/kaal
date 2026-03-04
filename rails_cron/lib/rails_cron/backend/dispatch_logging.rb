@@ -8,9 +8,9 @@
 require 'socket'
 
 module RailsCron
-  module Lock
+  module Backend
     ##
-    # Shared module for dispatch logging across lock adapters.
+    # Shared module for dispatch logging across backend adapters.
     #
     # Provides methods to log cron job dispatch attempts via the dispatch registry
     # for audit and observability purposes. Adapters that support dispatch logging
@@ -33,16 +33,23 @@ module RailsCron
       # @param key [String] the lock key (format: "namespace:dispatch:cron_key:fire_time")
       # @return [void]
       def log_dispatch_attempt(key)
-        config = RailsCron.configuration
-        return unless config.enable_log_dispatch_registry
+        logger = nil
+        logging_enabled = RailsCron.configuration.then do |configuration|
+          logger = configuration.logger
+          configuration.enable_log_dispatch_registry
+        end
+        return unless logging_enabled
         return unless respond_to?(:dispatch_registry)
+
+        registry = dispatch_registry
+        return unless registry
 
         cron_key, fire_time = parse_lock_key(key)
         node_id = Socket.gethostname
 
-        dispatch_registry.log_dispatch(cron_key, fire_time, node_id, 'dispatched')
+        registry.log_dispatch(cron_key, fire_time, node_id, 'dispatched')
       rescue StandardError => e
-        config.logger&.error("Failed to log dispatch for #{key}: #{e.message}")
+        logger&.error("Failed to log dispatch for #{key}: #{e.message}")
       end
 
       ##
@@ -55,6 +62,10 @@ module RailsCron
       # @param key [String] the lock key to parse
       # @return [Array<String, Time>] tuple of [cron_key, fire_time]
       def parse_lock_key(key)
+        DispatchLogging.parse_lock_key(key)
+      end
+
+      def self.parse_lock_key(key)
         parts = key.split(':')
         fire_time_unix = parts.pop.to_i
         2.times { parts.shift } # Remove namespace and "dispatch"

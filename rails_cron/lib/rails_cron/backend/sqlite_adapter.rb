@@ -6,11 +6,12 @@
 # LICENSE file in the root directory of this source tree.
 
 require_relative 'dispatch_logging'
+require_relative '../definition/database_engine'
 
 module RailsCron
-  module Lock
+  module Backend
     ##
-    # Distributed lock adapter using any ActiveRecord-backed SQL database.
+    # Distributed backend adapter using any ActiveRecord-backed SQL database.
     #
     # Despite the "SQLiteAdapter" name, this adapter works with any SQL database
     # supported by Rails (SQLite, PostgreSQL, MySQL, etc.) via ActiveRecord. It stores
@@ -22,7 +23,7 @@ module RailsCron
     #
     # @example Using the adapter with any SQL database
     #   RailsCron.configure do |config|
-    #     config.lock_adapter = RailsCron::Lock::SQLiteAdapter.new
+    #     config.backend = RailsCron::Backend::SQLiteAdapter.new
     #     config.enable_log_dispatch_registry = true  # Enable dispatch logging
     #   end
     class SQLiteAdapter < Adapter
@@ -43,6 +44,14 @@ module RailsCron
       end
 
       ##
+      # Get the definition registry for database-backed definition persistence.
+      #
+      # @return [RailsCron::Definition::DatabaseEngine] database definition engine instance
+      def definition_registry
+        @definition_registry ||= RailsCron::Definition::DatabaseEngine.new
+      end
+
+      ##
       # Attempt to acquire a distributed lock in the database.
       #
       # Attempts to insert a new lock record. If the key already exists, cleans up
@@ -55,36 +64,33 @@ module RailsCron
       def acquire(key, ttl)
         now = Time.current
         expires_at = now + ttl.seconds
+        acquired = false
+        attempt_cleanup = false
 
-        acquired = begin
-          # Try to create a new lock record
-          RailsCron::CronLock.create!(
-            key: key,
-            acquired_at: now,
-            expires_at: expires_at
-          )
-          true
-        rescue ActiveRecord::RecordInvalid
-          # Key already exists (uniqueness validation failed) or other validation failed.
-          # Always clean up any expired locks and retry once in case the existing lock was expired.
-          RailsCron::CronLock.cleanup_expired
+        2.times do
+          RailsCron::CronLock.cleanup_expired if attempt_cleanup
           begin
             RailsCron::CronLock.create!(
               key: key,
               acquired_at: now,
               expires_at: expires_at
             )
-            true
-          rescue ActiveRecord::RecordInvalid
-            false
+            acquired = true
+            break
+          rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
+            attempt_cleanup = true
+          rescue ActiveRecord::StatementInvalid => e
+            raise unless wrapped_contention_error?(e)
+
+            attempt_cleanup = true
           end
-        rescue StandardError => e
-          raise LockAdapterError, "SQLite acquire failed for #{key}: #{e.message}"
         end
 
         log_dispatch_attempt(key) if acquired
 
         acquired
+      rescue StandardError => e
+        raise LockAdapterError, "SQLite acquire failed for #{key}: #{e.message}"
       end
 
       ##
@@ -97,6 +103,13 @@ module RailsCron
         deleted.positive?
       rescue StandardError => e
         raise LockAdapterError, "SQLite release failed for #{key}: #{e.message}"
+      end
+
+      private
+
+      def wrapped_contention_error?(error)
+        cause = error.cause
+        cause.is_a?(ActiveRecord::RecordNotUnique) || error.message.match?(/unique|duplicate/i)
       end
     end
   end

@@ -10,7 +10,7 @@ detectors:
     max_statements: 25
   TooManyMethods:
     enabled: true
-    max_methods: 25
+    max_methods: 30
   BooleanParameter:
     enabled: false
   ControlParameter:
@@ -30,7 +30,7 @@ detectors:
     enabled: true
     exclude:
       - RailsCron::Railtie#self.register_signal_handlers
-      - RailsCron::Lock::SQLiteAdapter#acquire
+      - RailsCron::Coordinator#each_enabled_entry
   MissingSafeMethod:
     enabled: true
     exclude:
@@ -38,15 +38,14 @@ detectors:
   ManualDispatch:
     enabled: true
     exclude:
-      - RailsCron::Registry#callable?
       - RailsCron::Railtie#self.chain_previous_handler
-      - RailsCron::Lock::RedisAdapter#initialize
-      - RailsCron::Lock::DispatchLogging#log_dispatch_attempt
       - RailsCron::Registry#validate_entry
       - RailsCron::Coordinator#already_dispatched?
       - RailsCron::Coordinator#cleanup_old_dispatch_records
       - RailsCron#dispatch_log_registry
       - RailsCron#dispatched?
+      - RailsCron::Backend::DispatchLogging#log_dispatch_attempt
+      - RailsCron::Backend::RedisAdapter#initialize
   UtilityFunction:
     enabled: true
     exclude:
@@ -58,27 +57,21 @@ detectors:
       - RailsCron::Dispatch::DatabaseEngine#log_dispatch
       - RailsCron::Dispatch::MemoryEngine#build_key
       - RailsCron::Dispatch::RedisEngine#convert_timestamps
-      - RailsCron::Lock::DispatchLogging#parse_lock_key
-      - RailsCron::Lock::MySQLAdapter#cast_to_boolean
-      - RailsCron::Lock::MySQLAdapter#normalize_lock_name
-      - RailsCron::Lock::PostgresAdapter#calculate_lock_id
-      - RailsCron::Lock::PostgresAdapter#cast_to_boolean
-      - RailsCron::Lock::RedisAdapter#generate_lock_value
+      - RailsCron::Backend::DispatchLogging#parse_lock_key
+      - RailsCron::Backend::SQLiteAdapter#wrapped_contention_error?
   FeatureEnvy:
     enabled: true
     exclude:
-      - RailsCron::Configuration#handle_known_key
       - RailsCron::Configuration#handle_known_key
       - RailsCron::Configuration#normalize_value
       - RailsCron::Coordinator#find_occurrences
       - RailsCron::Coordinator#already_dispatched?
       - RailsCron::Coordinator#cleanup_old_dispatch_records
+      - RailsCron::Backend::DispatchLogging#log_dispatch_attempt
   NilCheck:
     enabled: true
     exclude:
       - RailsCron::Coordinator#stop!
-      - RailsCron::Lock::RedisAdapter#initialize
-      - RailsCron::Lock::MySQLAdapter#cast_to_boolean
       - RailsCron::Coordinator#already_dispatched?
       - RailsCron::Coordinator#cleanup_old_dispatch_records
       - RailsCron#dispatch_log_registry

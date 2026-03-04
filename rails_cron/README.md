@@ -50,23 +50,35 @@ Then run:
 
 ```bash
 bundle install
-bin/rails g rails_cron:install
+bin/rails g rails_cron:install --backend=sqlite
 ```
+
+The install generator creates `config/initializers/rails_cron.rb` and, for database-backed backends, generates only the migrations you need:
+
+- `--backend=sqlite`: dispatches, locks, and definitions tables
+- `--backend=postgres` or `--backend=mysql`: dispatches and definitions tables
+- `--backend=redis` or `--backend=memory`: no database migrations
 
 Example initializer (`config/initializers/rails_cron.rb`):
 
 ```ruby
 RailsCron.configure do |c|
-  # Choose your distributed lock adapter
+  # Choose your backend adapter
+  # See the RailsCron documentation for backend-specific setup and the full
+  # configuration reference.
+  #
   # Redis (recommended)
-  # c.lock_adapter = RailsCron::Lock::RedisAdapter.new(Redis.new(url: ENV["REDIS_URL"]))
+  # c.backend = RailsCron::Backend::RedisAdapter.new(Redis.new(url: ENV["REDIS_URL"]))
 
   # or Postgres advisory locks
-  # c.lock_adapter = RailsCron::Lock::PostgresAdapter.new
+  # c.backend = RailsCron::Backend::PostgresAdapter.new
 
   c.tick_interval    = 5      # seconds between scheduler ticks
   c.window_lookback  = 120    # recover missed runs (seconds)
-  c.lease_ttl        = 60     # lock TTL in seconds
+  c.lease_ttl        = 125    # must be >= window_lookback + tick_interval
+  c.recovery_window = 3600
+  c.enable_dispatch_recovery = true
+  c.enable_log_dispatch_registry = false
 end
 ```
 
@@ -226,8 +238,8 @@ Use one of these for health checks:
 RSpec.describe "multi-node safety" do
   it "dispatches exactly once across two threads" do
     redis = FakeRedis::Redis.new
-    lock  = RailsCron::Lock::RedisAdapter.new(redis)
-    RailsCron.configure { |c| c.lock_adapter = lock }
+    lock  = RailsCron::Backend::RedisAdapter.new(redis)
+    RailsCron.configure { |c| c.backend = lock }
 
     threads = 2.times.map { Thread.new { RailsCron.tick! } }
     threads.each(&:join)

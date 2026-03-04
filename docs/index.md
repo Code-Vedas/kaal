@@ -48,7 +48,7 @@ bin/rails g rails_cron:install
 
 - **Scheduler-agnostic**: Works with any job system (`ActiveJob`, `Sidekiq`, `Resque`, etc.)
 - **Multi-node safe**: Ensures single-dispatch execution across all app instances
-- **Lock adapters**: Redis (`SET NX PX`) and Postgres (`pg_try_advisory_lock`), plus in-memory fallback
+- **Backend adapters**: Redis and Postgres (with in-memory fallback) persist lock coordination, cron definitions, and dispatch records
 - **Registry & API**: Centralized job registration with deterministic idempotency keys
 - **Dispatch recovery**: Replays missed runs within a configurable lookback window
 - **Cron utilities**: Validate, lint, simplify, and humanize via `RailsCron.valid?`, `RailsCron.lint`, `RailsCron.simplify`, and `RailsCron.to_human`

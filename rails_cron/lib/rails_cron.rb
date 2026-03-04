@@ -12,12 +12,16 @@ require 'rails_cron/dispatch/registry'
 require 'rails_cron/dispatch/memory_engine'
 require 'rails_cron/dispatch/redis_engine'
 require 'rails_cron/dispatch/database_engine'
-require 'rails_cron/lock/adapter'
-require 'rails_cron/lock/memory_adapter'
-require 'rails_cron/lock/redis_adapter'
-require 'rails_cron/lock/postgres_adapter'
-require 'rails_cron/lock/mysql_adapter'
-require 'rails_cron/lock/sqlite_adapter'
+require 'rails_cron/definition/registry'
+require 'rails_cron/definition/memory_engine'
+require 'rails_cron/definition/redis_engine'
+require 'rails_cron/definition/database_engine'
+require 'rails_cron/backend/adapter'
+require 'rails_cron/backend/memory_adapter'
+require 'rails_cron/backend/redis_adapter'
+require 'rails_cron/backend/postgres_adapter'
+require 'rails_cron/backend/mysql_adapter'
+require 'rails_cron/backend/sqlite_adapter'
 require 'rails_cron/idempotency_key_generator'
 require 'rails_cron/cron_utils'
 require 'rails_cron/cron_humanizer'
@@ -32,7 +36,7 @@ require 'rails_cron/railtie'
 # @example Configure RailsCron
 #   RailsCron.configure do |config|
 #     config.tick_interval = 5
-#     config.lock_adapter = RailsCron::Lock::RedisAdapter.new(Redis.new(url: ENV["REDIS_URL"]))
+#     config.backend = RailsCron::Backend::RedisAdapter.new(Redis.new(url: ENV["REDIS_URL"]))
 #   end
 #
 # @example Register a cron job
@@ -74,6 +78,7 @@ module RailsCron
     def reset_configuration!
       @configuration = Configuration.new
       @coordinator = nil # Invalidate coordinator so it rebuilds with new config
+      @definition_registry = nil
     end
 
     ##
@@ -82,6 +87,7 @@ module RailsCron
     # @return [Registry] a fresh registry object
     def reset_registry!
       @registry = Registry.new
+      @definition_registry&.clear
       @coordinator = nil # Invalidate coordinator so it rebuilds with new registry
     end
 
@@ -138,7 +144,27 @@ module RailsCron
     #     enqueue: ->(fire_time:, idempotency_key:) { WeeklySummaryJob.perform_later }
     #   )
     def register(key:, cron:, enqueue:)
-      registry.add(key: key, cron: cron, enqueue: enqueue)
+      raise RegistryError, "Key '#{key}' is already registered" if registry.registered?(key)
+
+      existing_definition = definition_registry.find_definition(key)
+      persisted_attributes = {
+        enabled: true,
+        source: 'code',
+        metadata: {}
+      }.merge(existing_definition&.slice(:enabled, :source, :metadata) || {})
+
+      definition_registry.upsert_definition(key: key, cron: cron, **persisted_attributes)
+      begin
+        registry.add(key: key, cron: cron, enqueue: enqueue)
+      rescue StandardError
+        begin
+          rollback_registered_definition(key, existing_definition)
+        rescue StandardError => rollback_error
+          configuration.logger&.error("Failed to rollback persisted definition for #{key}: #{rollback_error.message}")
+        end
+
+        raise
+      end
     end
 
     ##
@@ -150,8 +176,24 @@ module RailsCron
     # @example
     #   RailsCron.unregister(key: "reports:daily")
     def unregister(key:)
+      definition_registry.remove_definition(key)
       registry.remove(key)
     end
+
+    def rollback_registered_definition(key, existing_definition)
+      if existing_definition
+        definition_registry.upsert_definition(
+          key: existing_definition[:key],
+          cron: existing_definition[:cron],
+          enabled: existing_definition[:enabled],
+          source: existing_definition[:source],
+          metadata: existing_definition[:metadata]
+        )
+      elsif !registry.registered?(key)
+        definition_registry.remove_definition(key)
+      end
+    end
+    private :rollback_registered_definition
 
     ##
     # Get all registered cron jobs.
@@ -161,7 +203,11 @@ module RailsCron
     # @example
     #   RailsCron.registered.each { |entry| puts entry.key }
     def registered
-      registry.all
+      definition_registry.all_definitions.map do |definition|
+        key = definition[:key]
+        callback = registry.find(key)&.enqueue
+        Registry::Entry.new(key: key, cron: definition[:cron], enqueue: callback).freeze
+      end
     end
 
     ##
@@ -173,7 +219,25 @@ module RailsCron
     # @example
     #   RailsCron.registered?(key: "reports:daily") # => true
     def registered?(key:)
-      registry.registered?(key)
+      definition_registry.find_definition(key).present?
+    end
+
+    ##
+    # Enable a registered cron definition by key.
+    #
+    # @param key [String] the unique identifier to enable
+    # @return [Hash, nil] enabled definition hash or nil if missing
+    def enable(key:)
+      definition_registry.enable_definition(key)
+    end
+
+    ##
+    # Disable a registered cron definition by key.
+    #
+    # @param key [String] the unique identifier to disable
+    # @return [Hash, nil] disabled definition hash or nil if missing
+    def disable(key:)
+      definition_registry.disable_definition(key)
     end
 
     ##
@@ -287,7 +351,7 @@ module RailsCron
     #   RailsCron.dispatched?('reports:daily', Time.current)
     #   # => true if already dispatched, false otherwise
     def dispatched?(key, fire_time)
-      adapter = configuration.lock_adapter
+      adapter = configuration.backend
       return false if adapter.nil? || !adapter.respond_to?(:dispatch_registry)
 
       registry = adapter.dispatch_registry
@@ -342,7 +406,7 @@ module RailsCron
     #   total = registry.size
     #   registry.clear
     def dispatch_log_registry
-      adapter = configuration.lock_adapter
+      adapter = configuration.backend
       return nil if adapter.nil? || !adapter.respond_to?(:dispatch_registry)
 
       registry = adapter.dispatch_registry
@@ -396,12 +460,29 @@ module RailsCron
       configuration.namespace = value
     end
 
-    def lock_adapter
-      configuration.lock_adapter
+    def backend
+      configuration.backend
     end
 
-    def lock_adapter=(value)
-      configuration.lock_adapter = value
+    def backend=(value)
+      configuration.backend = value
+    end
+
+    ##
+    # Definition registry access.
+    #
+    # Uses backend-provided definition registry when available, otherwise a
+    # process-local in-memory fallback.
+    #
+    # @return [RailsCron::Definition::Registry]
+    def definition_registry
+      configured_backend = configuration.backend
+      registry = configured_backend&.definition_registry
+      return registry if registry
+
+      @definition_registry ||= Definition::MemoryEngine.new
+    rescue NoMethodError
+      @definition_registry ||= Definition::MemoryEngine.new
     end
 
     def logger

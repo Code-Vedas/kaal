@@ -21,7 +21,7 @@ RailsCron.configure do |config|
   config.enable_log_dispatch_registry = true
 
   # Choose your backend (determines storage and available methods)
-  config.lock_adapter = RailsCron::Lock::PostgresAdapter.new
+  config.backend = RailsCron::Backend::PostgresAdapter.new
 end
 ```
 
@@ -75,7 +75,7 @@ already_dispatched = registry.dispatched?('reports:daily', Time.current)
 
 ## Database Backend API
 
-When using `RailsCron::Lock::PostgresAdapter`, `RailsCron::Lock::MySQLAdapter`, or `RailsCron::Lock::SQLiteAdapter` adapters, the dispatch registry provides advanced querying:
+When using `RailsCron::Backend::PostgresAdapter`, `RailsCron::Backend::MySQLAdapter`, or `RailsCron::Backend::SQLiteAdapter` adapters, the dispatch registry provides advanced querying:
 
 ### `find_by_key(key)`
 
@@ -140,7 +140,7 @@ registry.cleanup  # Deletes records older than 86400 seconds
 
 ## Memory Backend API
 
-When using `RailsCron::Lock::MemoryAdapter` adapter, the registry provides in-memory inspection:
+When using `RailsCron::Backend::MemoryAdapter` adapter, the registry provides in-memory inspection:
 
 ### `clear()`
 
@@ -167,13 +167,13 @@ puts "#{count} dispatch records in memory"
 
 ## Redis Backend
 
-When using `RailsCron::Lock::RedisAdapter` adapter, dispatch records are automatically expired based on TTL:
+When using `RailsCron::Backend::RedisAdapter` adapter, dispatch records are automatically expired based on TTL:
 
 ```ruby
 # config/initializers/rails_cron.rb
 redis = Redis.new(url: ENV['REDIS_URL'])
 RailsCron.configure do |config|
-  config.lock_adapter = RailsCron::Lock::RedisAdapter.new(redis, namespace: 'myapp')
+  config.backend = RailsCron::Backend::RedisAdapter.new(redis, namespace: 'myapp')
   config.enable_log_dispatch_registry = true
 end
 
@@ -303,8 +303,8 @@ registry = RailsCron.dispatch_log_registry
 RailsCron.configuration.enable_log_dispatch_registry
 # => false
 
-# Check if lock adapter is configured
-RailsCron.configuration.lock_adapter
+# Check if backend adapter is configured
+RailsCron.configuration.backend
 # => nil
 ```
 

@@ -6,11 +6,12 @@
 # LICENSE file in the root directory of this source tree.
 
 require_relative 'dispatch_logging'
+require_relative '../definition/memory_engine'
 
 module RailsCron
-  module Lock
+  module Backend
     ##
-    # In-memory lock adapter using Mutex and Hash.
+    # In-memory backend adapter using Mutex and Hash.
     #
     # This adapter stores locks in memory with TTL tracking. Locks are stored
     # with an expiration time and automatically considered released if the TTL
@@ -22,7 +23,7 @@ module RailsCron
     #
     # @example Using the memory adapter
     #   RailsCron.configure do |config|
-    #     config.lock_adapter = RailsCron::Lock::MemoryAdapter.new
+    #     config.backend = RailsCron::Backend::MemoryAdapter.new
     #     config.enable_log_dispatch_registry = true  # Enable dispatch logging
     #   end
     class MemoryAdapter < Adapter
@@ -40,6 +41,14 @@ module RailsCron
       # @return [RailsCron::Dispatch::MemoryEngine] memory engine instance
       def dispatch_registry
         @dispatch_registry ||= RailsCron::Dispatch::MemoryEngine.new
+      end
+
+      ##
+      # Get the definition registry for in-memory definition persistence.
+      #
+      # @return [RailsCron::Definition::MemoryEngine] memory engine instance
+      def definition_registry
+        @definition_registry ||= RailsCron::Definition::MemoryEngine.new
       end
 
       ##

@@ -13,7 +13,7 @@ module RailsCron
   # @example Basic configuration
   #   RailsCron.configure do |config|
   #     config.tick_interval = 5
-  #     config.lock_adapter = RailsCron::Lock::RedisAdapter.new(Redis.new(url: ENV["REDIS_URL"]))
+  #     config.backend = RailsCron::Backend::RedisAdapter.new(Redis.new(url: ENV["REDIS_URL"]))
   #   end
   class Configuration
     # Default values for all configuration options
@@ -23,7 +23,7 @@ module RailsCron
       window_lookahead: 0,
       lease_ttl: 125, # Must be >= window_lookback + tick_interval (120 + 5 = 125)
       namespace: 'railscron',
-      lock_adapter: nil,
+      backend: nil,
       logger: nil,
       time_zone: nil,
       enable_log_dispatch_registry: false,
@@ -85,7 +85,7 @@ module RailsCron
     #
     # @return [Hash] configuration as a hash
     def to_h
-      lock_adapter = @values[:lock_adapter]
+      backend = @values[:backend]
       logger = @values[:logger]
 
       {
@@ -94,7 +94,7 @@ module RailsCron
         window_lookahead: @values[:window_lookahead],
         lease_ttl: @values[:lease_ttl],
         namespace: @values[:namespace],
-        lock_adapter: lock_adapter&.class&.name,
+        backend: backend&.class&.name,
         logger: logger&.class&.name,
         time_zone: @values[:time_zone],
         enable_log_dispatch_registry: @values[:enable_log_dispatch_registry],
