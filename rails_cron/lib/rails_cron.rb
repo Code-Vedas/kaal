@@ -172,7 +172,7 @@ module RailsCron
     ##
     # Load scheduler definitions from the configured scheduler YAML file.
     #
-    # @return [Array<Hash>] normalized jobs loaded from scheduler file
+    # @return [Array<Hash>] normalized jobs applied from scheduler file
     # @raise [SchedulerConfigError] if scheduler file is invalid
     def load_scheduler_file!
       loader = SchedulerFileLoader.new(

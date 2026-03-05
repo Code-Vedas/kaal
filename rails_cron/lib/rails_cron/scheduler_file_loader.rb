@@ -6,10 +6,15 @@ require 'yaml'
 require 'active_support/core_ext/hash/deep_merge'
 require 'active_support/core_ext/object/deep_dup'
 require 'active_support/core_ext/string/inflections'
+require_relative 'scheduler_hash_transform'
+require_relative 'scheduler_placeholder_support'
 
 module RailsCron
   # Loads scheduler definitions from config/scheduler.yml and registers them.
   class SchedulerFileLoader
+    include SchedulerHashTransform
+    include SchedulerPlaceholderSupport
+
     PLACEHOLDER_PATTERN = /\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/
     ALLOWED_PLACEHOLDERS = {
       'fire_time.iso8601' => ->(ctx) { ctx.fetch(:fire_time).iso8601 },
@@ -17,8 +22,6 @@ module RailsCron
       'idempotency_key' => ->(ctx) { ctx.fetch(:idempotency_key) },
       'key' => ->(ctx) { ctx.fetch(:key) }
     }.freeze
-    TO_STRING = :to_s.to_proc
-    TO_SYMBOL = :to_sym.to_proc
 
     def initialize(configuration:, definition_registry:, registry:, logger:, rails_context: Rails)
       @configuration = configuration
@@ -38,9 +41,12 @@ module RailsCron
       jobs = extract_jobs(payload)
       validate_unique_keys(jobs)
       normalized_jobs = jobs.map { |job_payload| normalize_job(job_payload) }
-      normalized_jobs.each { |job| apply_job(**job) }
+      applied_jobs = []
+      normalized_jobs.each do |job|
+        applied_jobs << job if apply_job?(**job)
+      end
 
-      normalized_jobs
+      applied_jobs
     end
 
     private
@@ -62,13 +68,19 @@ module RailsCron
     end
 
     def parse_yaml(path)
-      rendered = ERB.new(File.read(path), trim_mode: '-').result
+      rendered = render_yaml_erb(path)
       parsed = YAML.safe_load(rendered, aliases: true) || {}
       raise SchedulerConfigError, "Expected scheduler YAML root to be a mapping in #{path}" unless parsed.is_a?(Hash)
 
       stringify_keys(parsed)
     rescue Psych::SyntaxError => e
       raise SchedulerConfigError, "Failed to parse scheduler YAML at #{path}: #{e.message}"
+    end
+
+    def render_yaml_erb(path)
+      ERB.new(File.read(path), trim_mode: '-').result
+    rescue StandardError => e
+      raise SchedulerConfigError, "Failed to evaluate scheduler ERB at #{path}: #{e.message}"
     end
 
     def extract_jobs(payload)
@@ -128,6 +140,7 @@ module RailsCron
 
     def extract_required_string(payload, field:, error_prefix:)
       value = payload.fetch(field, '').to_s.strip
+
       raise SchedulerConfigError, error_prefix if value.empty?
 
       value
@@ -168,9 +181,9 @@ module RailsCron
       raise SchedulerConfigError, "kwargs keys must be strings or symbols for key '#{key}'"
     end
 
-    def apply_job(key:, cron:, job_class_name:, queue:, args:, kwargs:, enabled:, metadata:)
+    def apply_job?(key:, cron:, job_class_name:, queue:, args:, kwargs:, enabled:, metadata:)
       existing_definition = @definition_registry.find_definition(key)
-      return if skip_due_to_conflict?(key:, existing_definition:)
+      return false if skip_due_to_conflict?(key:, existing_definition:)
 
       callback = build_callback(
         key: key,
@@ -199,6 +212,7 @@ module RailsCron
 
       @registry.remove(key) if @registry.registered?(key)
       @registry.add(key: key, cron: cron, enqueue: callback)
+      true
     end
 
     def skip_due_to_conflict?(key:, existing_definition:)
@@ -241,74 +255,6 @@ module RailsCron
       raise SchedulerConfigError, "job_class '#{job_class_name}' must inherit from ActiveJob::Base for key '#{key}'" unless job_class <= ActiveJob::Base
 
       job_class
-    end
-
-    def validate_placeholders(input, key:)
-      case input
-      when String
-        input.scan(PLACEHOLDER_PATTERN).flatten.each do |token|
-          next if @placeholder_resolvers.key?(token)
-
-          raise SchedulerConfigError, "Unknown placeholder '{{#{token}}}' for key '#{key}'"
-        end
-      when Array
-        input.each { |item| validate_placeholders(item, key:) }
-      when Hash
-        input.each_value { |child| validate_placeholders(child, key:) }
-      end
-    end
-
-    def resolve_placeholders(template, context)
-      case template
-      when String
-        replace_placeholders(template, context)
-      when Array
-        template.map { |item| resolve_placeholders(item, context) }
-      when Hash
-        template.transform_values { |child| resolve_placeholders(child, context) }
-      else
-        template
-      end
-    end
-
-    def replace_placeholders(text, context)
-      if (match = text.match(/\A\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}\z/))
-        return @placeholder_resolvers.fetch(match[1]).call(context)
-      end
-
-      text.gsub(PLACEHOLDER_PATTERN) do
-        token = Regexp.last_match(1)
-        @placeholder_resolvers.fetch(token).call(context).to_s
-      end
-    end
-
-    def stringify_keys(object)
-      deep_transform(object, key_transform: TO_STRING)
-    end
-
-    def symbolize_keys_deep(object)
-      deep_transform(object, key_transform: TO_SYMBOL)
-    end
-
-    def deep_transform(object, key_transform:)
-      case object
-      when Hash
-        deep_transform_hash(object, key_transform:)
-      when Array
-        deep_transform_array(object, key_transform:)
-      else
-        object
-      end
-    end
-
-    def deep_transform_hash(object, key_transform:)
-      object.each_with_object({}) do |(key, child), memo|
-        memo[key_transform.call(key)] = deep_transform(child, key_transform:)
-      end
-    end
-
-    def deep_transform_array(object, key_transform:)
-      object.map { |child| deep_transform(child, key_transform:) }
     end
   end
 end

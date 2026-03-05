@@ -71,6 +71,26 @@ RSpec.describe RailsCron::SchedulerFileLoader do
     expect(registry.registered?('job:two')).to be(true)
   end
 
+  it 'returns only applied jobs when conflicts are skipped' do
+    configuration.scheduler_conflict_policy = :code_wins
+    definition_registry.upsert_definition(key: 'job:conflict', cron: '* * * * *', enabled: true, source: 'code', metadata: {})
+    registry.add(key: 'job:conflict', cron: '* * * * *', enqueue: ->(fire_time:, idempotency_key:) { [fire_time, idempotency_key] })
+    write_scheduler(<<~YAML)
+      test:
+        jobs:
+          - key: "job:conflict"
+            cron: "0 9 * * *"
+            job_class: "SchedulerLoaderTestJob"
+          - key: "job:applied"
+            cron: "*/10 * * * *"
+            job_class: "SchedulerLoaderTestJob"
+    YAML
+
+    result = build_loader.load
+
+    expect(result.map { |job| job[:key] }).to eq(['job:applied'])
+  end
+
   it 'raises for duplicate keys inside YAML' do
     write_scheduler(<<~YAML)
       test:
@@ -116,6 +136,18 @@ RSpec.describe RailsCron::SchedulerFileLoader do
     write_scheduler("test:\n  jobs:\n    - key: bad\n      cron: '* * * * *'\n      job_class: [\n")
 
     expect { build_loader.load }.to raise_error(RailsCron::SchedulerConfigError, /Failed to parse scheduler YAML/)
+  end
+
+  it 'raises for ERB evaluation errors with file context' do
+    write_scheduler(<<~YAML)
+      test:
+        jobs:
+          - key: "job:erb_failure"
+            cron: "<%= undefined_method_call %>"
+            job_class: "SchedulerLoaderTestJob"
+    YAML
+
+    expect { build_loader.load }.to raise_error(RailsCron::SchedulerConfigError, /Failed to evaluate scheduler ERB/)
   end
 
   it 'raises for blank key with payload context' do
@@ -271,6 +303,14 @@ RSpec.describe RailsCron::SchedulerFileLoader do
     expect do
       build_loader.send(:extract_job_options, { 'kwargs' => invalid_kwargs }, key: 'job:bad_kwargs_keys')
     end.to raise_error(RailsCron::SchedulerConfigError, /kwargs keys must be strings or symbols/)
+  end
+
+  it 'coerces nested kwargs keys to symbols safely' do
+    nested = { 'outer' => { Object.new => 'value' } }
+    result = build_loader.send(:symbolize_keys_deep, nested)
+
+    expect(result.keys).to include(:outer)
+    expect(result[:outer].keys.first).to be_a(Symbol)
   end
 
   it 'raises for non-string queue' do
