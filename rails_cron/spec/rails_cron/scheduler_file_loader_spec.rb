@@ -4,18 +4,6 @@ require 'rails_helper'
 require 'tmpdir'
 require 'fileutils'
 
-class SchedulerLoaderTestJob < ActiveJob::Base; end
-
-class SchedulerLoaderNotAJob
-  def call; end
-end
-
-class SchedulerLoaderRailsContext
-  def env; end
-
-  def root; end
-end
-
 RSpec.describe RailsCron::SchedulerFileLoader do
   let(:configuration) { RailsCron::Configuration.new }
   let(:definition_registry) { RailsCron::Definition::MemoryEngine.new }
@@ -26,6 +14,18 @@ RSpec.describe RailsCron::SchedulerFileLoader do
 
   after do
     FileUtils.rm_rf(tmpdir)
+  end
+
+  before do
+    stub_const('SchedulerLoaderTestJob', Class.new(ActiveJob::Base))
+    stub_const('SchedulerLoaderNotAJob', Class.new do
+      def call; end
+    end)
+    stub_const('SchedulerLoaderRailsContext', Class.new do
+      def env; end
+
+      def root; end
+    end)
   end
 
   def write_scheduler(contents)
@@ -120,6 +120,26 @@ RSpec.describe RailsCron::SchedulerFileLoader do
     expect { build_loader.load }.to raise_error(RailsCron::SchedulerConfigError, /Unknown placeholder/)
   end
 
+  it 'raises when placeholders are used in hash keys' do
+    write_scheduler(<<~YAML)
+      test:
+        jobs:
+          - key: "job:key_placeholder"
+            cron: "*/5 * * * *"
+            job_class: "SchedulerLoaderTestJob"
+            kwargs:
+              "{{idempotency_key}}": "value"
+    YAML
+
+    expect { build_loader.load }.to raise_error(RailsCron::SchedulerConfigError, /Placeholders are not supported in hash keys/)
+  end
+
+  it 'ignores non-string hash keys when validating placeholder keys' do
+    expect do
+      build_loader.send(:validate_placeholder_key, :symbol_key, key: 'job:symbol_key')
+    end.not_to raise_error
+  end
+
   it 'raises when job_class does not inherit from ActiveJob::Base' do
     write_scheduler(<<~YAML)
       test:
@@ -158,6 +178,18 @@ RSpec.describe RailsCron::SchedulerFileLoader do
         jobs:
           - key: "job:erb_failure"
             cron: "<%= undefined_method_call %>"
+            job_class: "SchedulerLoaderTestJob"
+    YAML
+
+    expect { build_loader.load }.to raise_error(RailsCron::SchedulerConfigError, /Failed to evaluate scheduler ERB/)
+  end
+
+  it 'raises for ERB syntax errors with file context' do
+    write_scheduler(<<~YAML)
+      test:
+        jobs:
+          - key: "job:erb_syntax_error"
+            cron: "<% if true %>"
             job_class: "SchedulerLoaderTestJob"
     YAML
 

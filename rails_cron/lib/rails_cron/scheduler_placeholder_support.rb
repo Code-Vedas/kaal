@@ -16,7 +16,10 @@ module RailsCron
       when Array
         input.each { |item| validate_placeholders(item, key:) }
       when Hash
-        input.each_value { |child| validate_placeholders(child, key:) }
+        input.each_pair do |hash_key, child|
+          validate_placeholder_key(hash_key, key:)
+          validate_placeholders(child, key:)
+        end
       end
     end
 
@@ -42,6 +45,15 @@ module RailsCron
         token = Regexp.last_match(1)
         @placeholder_resolvers.fetch(token).call(context).to_s
       end
+    end
+
+    def validate_placeholder_key(hash_key, key:)
+      return unless hash_key.is_a?(String)
+
+      token = hash_key.scan(self.class::PLACEHOLDER_PATTERN).flatten.first
+      return unless token
+
+      raise SchedulerConfigError, "Placeholders are not supported in hash keys (got '{{#{token}}}' under '#{key}')"
     end
   end
 end

@@ -79,7 +79,7 @@ module RailsCron
 
     def render_yaml_erb(path)
       ERB.new(File.read(path), trim_mode: '-').result
-    rescue StandardError => e
+    rescue StandardError, SyntaxError => e
       raise SchedulerConfigError, "Failed to evaluate scheduler ERB at #{path}: #{e.message}"
     end
 

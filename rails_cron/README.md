@@ -112,7 +112,7 @@ production:
 ```
 
 `scheduler.yml` supports ERB and environment sections (`defaults`, `development`, `test`, `production`, etc.).
-Allowed runtime placeholders in `args` and `kwargs`: `{{fire_time.iso8601}}`, `{{fire_time.unix}}`, `{{idempotency_key}}`, `{{key}}`.
+Allowed runtime placeholders in `args` and `kwargs` values (not keys): `{{fire_time.iso8601}}`, `{{fire_time.unix}}`, `{{idempotency_key}}`, `{{key}}`.
 
 👉 [See full installation guide →](https://rails-cron.codevedas.com/install)
 
