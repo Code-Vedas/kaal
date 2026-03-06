@@ -591,7 +591,7 @@ RSpec.describe RailsCron::SchedulerFileLoader do
     expect(SchedulerLoaderTestJob).to have_received(:perform_later)
   end
 
-  it 'rolls back definition and callback when registry add fails during apply' do
+  it 'rolls back definition and callback when registry upsert fails during apply' do
     configuration.scheduler_conflict_policy = :file_wins
     original_callback = ->(fire_time:, idempotency_key:) { [fire_time, idempotency_key] }
     definition_registry.upsert_definition(key: 'job:rollback', cron: '* * * * *', enabled: true, source: 'code', metadata: {})
@@ -603,14 +603,14 @@ RSpec.describe RailsCron::SchedulerFileLoader do
             cron: "0 9 * * *"
             job_class: "SchedulerLoaderTestJob"
     YAML
-    allow(registry).to receive(:add).and_call_original
-    allow(registry).to receive(:add).with(
+    allow(registry).to receive(:upsert).and_call_original
+    allow(registry).to receive(:upsert).with(
       key: 'job:rollback',
       cron: '0 9 * * *',
       enqueue: instance_of(Proc)
-    ).and_raise(StandardError, 'registry add failure')
+    ).and_raise(StandardError, 'registry upsert failure')
 
-    expect { build_loader.load }.to raise_error(StandardError, 'registry add failure')
+    expect { build_loader.load }.to raise_error(StandardError, 'registry upsert failure')
 
     restored_definition = definition_registry.find_definition('job:rollback')
     expect(restored_definition).to include(cron: '* * * * *', source: 'code')
@@ -737,7 +737,7 @@ RSpec.describe RailsCron::SchedulerFileLoader do
     expect(restored_entry&.enqueue).to eq(original_callback)
   end
 
-  it 'does not restore existing registry entry when that key is already registered' do
+  it 'restores existing registry entry even when that key is already registered' do
     existing_callback = ->(fire_time:, idempotency_key:) { [fire_time, idempotency_key, :existing] }
     registry.add(
       key: 'job:existing_registered',
@@ -758,8 +758,8 @@ RSpec.describe RailsCron::SchedulerFileLoader do
     )
 
     restored_entry = registry.find('job:existing_registered')
-    expect(restored_entry&.cron).to eq('*/15 * * * *')
-    expect(restored_entry&.enqueue).to eq(existing_callback)
+    expect(restored_entry&.cron).to eq('0 8 * * *')
+    expect(restored_entry&.enqueue).not_to eq(existing_callback)
   end
 
   it 'logs rollback errors when logger is present' do

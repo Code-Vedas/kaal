@@ -71,28 +71,42 @@ module RailsCron
     end
 
     ##
-    # Load scheduler file at boot. Default behavior avoids warnings when
-    # the file is absent unless missing-file policy is strict (:error).
+    # Load scheduler file at boot while respecting missing-file policy.
     def self.load_scheduler_file_on_boot!
-      configuration = RailsCron.configuration
-      should_load = configuration.scheduler_missing_file_policy == :error
+      configuration = fetch_configuration_for_boot
+      return unless configuration
 
-      unless should_load
-        scheduler_path = configuration.scheduler_config_path.to_s.strip
-        return if scheduler_path.empty?
-
-        absolute_path = resolve_scheduler_path(scheduler_path)
-        should_load = File.exist?(absolute_path)
+      if configuration.scheduler_missing_file_policy == :error
+        load_scheduler_file_now!
+        return
       end
 
-      RailsCron.load_scheduler_file! if should_load
-    rescue NameError
-      nil
+      scheduler_path = configuration.scheduler_config_path.to_s.strip
+      return if scheduler_path.empty?
+
+      absolute_path = resolve_scheduler_path(scheduler_path)
+      unless File.exist?(absolute_path)
+        RailsCron.logger&.warn("Scheduler file not found at #{absolute_path}")
+        return
+      end
+
+      load_scheduler_file_now!
     end
 
     def self.resolve_scheduler_path(path)
       candidate = Pathname.new(path)
       candidate.absolute? ? candidate.to_s : Rails.root.join(candidate).to_s
+    end
+
+    def self.load_scheduler_file_now!
+      RailsCron.load_scheduler_file!
+    end
+
+    def self.fetch_configuration_for_boot
+      RailsCron.configuration
+    rescue NameError => e
+      RailsCron.logger&.debug("Skipping scheduler file boot load due to configuration error: #{e.message}")
+      nil
     end
 
     ##

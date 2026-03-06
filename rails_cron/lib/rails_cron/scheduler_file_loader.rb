@@ -131,7 +131,7 @@ module RailsCron
 
       cron = extract_required_string(payload, field: 'cron', error_prefix: "Job cron cannot be blank for key '#{key}'")
       job_class_name = extract_required_string(
-        payload, field: 'job_class', error_prefix: "Job job_class cannot be blank for key '#{key}'"
+        payload, field: 'job_class', error_prefix: "Job class cannot be blank for key '#{key}'"
       )
       validate_cron(key:, cron:)
       options = extract_job_options(payload, key:)
@@ -219,8 +219,7 @@ module RailsCron
       )
 
       begin
-        @registry.remove(key) if @registry.registered?(key)
-        @registry.add(key: key, cron: cron, enqueue: callback)
+        @registry.upsert(key: key, cron: cron, enqueue: callback)
       rescue StandardError
         rollback_applied_job(key:, existing_definition:, existing_registry_entry:)
         raise
@@ -247,11 +246,8 @@ module RailsCron
 
       return unless existing_registry_entry
 
-      existing_key = existing_registry_entry.key
-      return if @registry.registered?(existing_key)
-
-      @registry.add(
-        key: existing_key,
+      @registry.upsert(
+        key: existing_registry_entry.key,
         cron: existing_registry_entry.cron,
         enqueue: existing_registry_entry.enqueue
       )
