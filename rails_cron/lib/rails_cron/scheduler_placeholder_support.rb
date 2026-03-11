@@ -37,11 +37,13 @@ module RailsCron
     end
 
     def replace_placeholders(text, context)
-      if (match = text.match(/\A\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}\z/))
+      pattern = self.class::PLACEHOLDER_PATTERN
+      anchored_pattern = Regexp.new("\\A#{pattern.source}\\z", pattern.options)
+      if (match = text.match(anchored_pattern))
         return @placeholder_resolvers.fetch(match[1]).call(context)
       end
 
-      text.gsub(self.class::PLACEHOLDER_PATTERN) do
+      text.gsub(pattern) do
         token = Regexp.last_match(1)
         @placeholder_resolvers.fetch(token).call(context).to_s
       end
