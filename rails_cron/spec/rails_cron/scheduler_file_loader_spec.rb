@@ -400,6 +400,35 @@ RSpec.describe RailsCron::SchedulerFileLoader do
     expect(definition_registry.find_definition('job:disabled')[:enabled]).to be(false)
   end
 
+  it 'normalizes metadata keys to strings before merging execution metadata' do
+    metadata = {
+      owner: 'ops',
+      execution: { legacy: true }
+    }
+
+    build_loader.send(
+      :apply_job,
+      key: 'job:metadata_normalized',
+      cron: '*/5 * * * *',
+      job_class_name: 'SchedulerLoaderTestJob',
+      queue: nil,
+      args: [],
+      kwargs: {},
+      enabled: true,
+      metadata: metadata
+    )
+
+    persisted_metadata = definition_registry.find_definition('job:metadata_normalized')[:metadata]
+    expect(persisted_metadata.keys).to all(be_a(String))
+    expect(persisted_metadata['owner']).to eq('ops')
+    expect(persisted_metadata['execution'].keys).to all(be_a(String))
+    expect(persisted_metadata['execution']).to include(
+      'legacy' => true,
+      'target' => 'active_job',
+      'job_class' => 'SchedulerLoaderTestJob'
+    )
+  end
+
   it 'raises when enabled is not a boolean' do
     write_scheduler(<<~YAML)
       test:

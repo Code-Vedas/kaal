@@ -200,13 +200,14 @@ module RailsCron
         args_template: args,
         kwargs_template: kwargs
       )
-      persisted_metadata = metadata.deep_merge(
-        execution: {
-          target: 'active_job',
-          job_class: job_class_name,
-          queue: queue,
-          args: args,
-          kwargs: kwargs
+      normalized_metadata = stringify_keys(metadata.deep_dup)
+      persisted_metadata = normalized_metadata.deep_merge(
+        'execution' => {
+          'target' => 'active_job',
+          'job_class' => job_class_name,
+          'queue' => queue,
+          'args' => args,
+          'kwargs' => kwargs
         }
       )
 
