@@ -25,6 +25,9 @@ require 'rails_cron/backend/sqlite_adapter'
 require 'rails_cron/idempotency_key_generator'
 require 'rails_cron/cron_utils'
 require 'rails_cron/cron_humanizer'
+require 'rails_cron/scheduler_config_error'
+require 'rails_cron/scheduler_file_loader'
+require 'rails_cron/register_conflict_support'
 require 'rails_cron/rake_tasks'
 require 'rails_cron/coordinator'
 require 'rails_cron/railtie'
@@ -47,6 +50,8 @@ require 'rails_cron/railtie'
 #   )
 module RailsCron
   class << self
+    include RegisterConflictSupport
+
     ##
     # Get the current configuration instance.
     #
@@ -144,27 +149,45 @@ module RailsCron
     #     enqueue: ->(fire_time:, idempotency_key:) { WeeklySummaryJob.perform_later }
     #   )
     def register(key:, cron:, enqueue:)
-      raise RegistryError, "Key '#{key}' is already registered" if registry.registered?(key)
-
       existing_definition = definition_registry.find_definition(key)
+      existing_entry = registry.find(key)
+      if existing_entry
+        conflict_result = resolve_register_conflict(
+          key: key,
+          cron: cron,
+          enqueue: enqueue,
+          existing_definition: existing_definition,
+          existing_entry: existing_entry
+        )
+
+        return conflict_result if conflict_result
+
+        raise RegistryError, "Key '#{key}' is already registered"
+      end
       persisted_attributes = {
         enabled: true,
         source: 'code',
         metadata: {}
-      }.merge(existing_definition&.slice(:enabled, :source, :metadata) || {})
-
+      }.merge(existing_definition&.slice(:enabled, :metadata) || {})
       definition_registry.upsert_definition(key: key, cron: cron, **persisted_attributes)
-      begin
+      with_registered_definition_rollback(key, existing_definition) do
         registry.add(key: key, cron: cron, enqueue: enqueue)
-      rescue StandardError
-        begin
-          rollback_registered_definition(key, existing_definition)
-        rescue StandardError => rollback_error
-          configuration.logger&.error("Failed to rollback persisted definition for #{key}: #{rollback_error.message}")
-        end
-
-        raise
       end
+    end
+
+    ##
+    # Load scheduler definitions from the configured scheduler YAML file.
+    #
+    # @return [Array<Hash>] normalized jobs applied from scheduler file
+    # @raise [SchedulerConfigError] if scheduler file is invalid
+    def load_scheduler_file!
+      loader = SchedulerFileLoader.new(
+        configuration: configuration,
+        definition_registry: definition_registry,
+        registry: registry,
+        logger: configuration.logger
+      )
+      loader.load
     end
 
     ##
@@ -172,9 +195,6 @@ module RailsCron
     #
     # @param key [String] the unique identifier of the job to remove
     # @return [Registry::Entry, nil] the removed entry, or nil if not found
-    #
-    # @example
-    #   RailsCron.unregister(key: "reports:daily")
     def unregister(key:)
       definition_registry.remove_definition(key)
       registry.remove(key)

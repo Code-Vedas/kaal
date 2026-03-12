@@ -102,6 +102,19 @@ RSpec.describe RailsCron do
     end
   end
 
+  describe '.load_scheduler_file!' do
+    it 'delegates to SchedulerFileLoader and returns loaded jobs' do
+      loader = instance_double(RailsCron::SchedulerFileLoader)
+      allow(RailsCron::SchedulerFileLoader).to receive(:new).and_return(loader)
+      allow(loader).to receive(:load).and_return([{ key: 'job:one' }])
+
+      result = described_class.load_scheduler_file!
+
+      expect(result).to eq([{ key: 'job:one' }])
+      expect(loader).to have_received(:load)
+    end
+  end
+
   describe 'configuration readers' do
     {
       tick_interval: 12,
@@ -198,6 +211,133 @@ RSpec.describe RailsCron do
       end.to raise_error(RailsCron::RegistryError, /already registered/)
     end
 
+    it 'raises RegistryError when key exists in registry without persisted definition' do
+      described_class.registry.add(key: 'job:registry_only', cron: '* * * * *', enqueue: ->(fire_time:, idempotency_key:) {})
+
+      expect do
+        described_class.register(key: 'job:registry_only', cron: '0 9 * * *', enqueue: ->(fire_time:, idempotency_key:) {})
+      end.to raise_error(RailsCron::RegistryError, /already registered/)
+    end
+
+    it 'applies :code_wins when existing key is sourced from scheduler file' do
+      file_callback = ->(fire_time:, idempotency_key:) { [fire_time, idempotency_key, :file] }
+      code_callback = ->(fire_time:, idempotency_key:) { [fire_time, idempotency_key, :code] }
+      described_class.configuration.scheduler_conflict_policy = :code_wins
+      described_class.definition_registry.upsert_definition(
+        key: 'job:file_defined',
+        cron: '*/5 * * * *',
+        enabled: true,
+        source: 'file',
+        metadata: { 'owner' => 'ops' }
+      )
+      described_class.registry.add(key: 'job:file_defined', cron: '*/5 * * * *', enqueue: file_callback)
+
+      entry = described_class.register(key: 'job:file_defined', cron: '0 9 * * *', enqueue: code_callback)
+
+      expect(entry.enqueue).to eq(code_callback)
+      expect(described_class.definition_registry.find_definition('job:file_defined')).to include(source: 'code', cron: '0 9 * * *')
+      expect(described_class.registry.find('job:file_defined')&.enqueue).to eq(code_callback)
+    end
+
+    it 'rolls back persisted definition when :code_wins registry upsert fails' do
+      file_callback = ->(fire_time:, idempotency_key:) { [fire_time, idempotency_key, :file] }
+      code_callback = ->(fire_time:, idempotency_key:) { [fire_time, idempotency_key, :code] }
+      described_class.configuration.scheduler_conflict_policy = :code_wins
+      described_class.definition_registry.upsert_definition(
+        key: 'job:file_defined',
+        cron: '*/5 * * * *',
+        enabled: false,
+        source: 'file',
+        metadata: { 'owner' => 'ops' }
+      )
+      described_class.registry.add(key: 'job:file_defined', cron: '*/5 * * * *', enqueue: file_callback)
+      allow(described_class.registry).to receive(:upsert).and_raise(StandardError, 'registry upsert failure')
+
+      expect do
+        described_class.register(key: 'job:file_defined', cron: '0 9 * * *', enqueue: code_callback)
+      end.to raise_error(StandardError, 'registry upsert failure')
+
+      expect(described_class.definition_registry.find_definition('job:file_defined')).to include(
+        source: 'file',
+        cron: '*/5 * * * *',
+        enabled: false,
+        metadata: { 'owner' => 'ops' }
+      )
+    end
+
+    it 'applies :file_wins by skipping code registration when key is sourced from scheduler file' do
+      file_callback = ->(fire_time:, idempotency_key:) { [fire_time, idempotency_key, :file] }
+      code_callback = ->(fire_time:, idempotency_key:) { [fire_time, idempotency_key, :code] }
+      described_class.configuration.scheduler_conflict_policy = :file_wins
+      allow(logger).to receive(:warn)
+      described_class.configuration.logger = logger
+      described_class.definition_registry.upsert_definition(
+        key: 'job:file_defined',
+        cron: '*/5 * * * *',
+        enabled: true,
+        source: 'file',
+        metadata: {}
+      )
+      existing_entry = described_class.registry.add(key: 'job:file_defined', cron: '*/5 * * * *', enqueue: file_callback)
+
+      entry = described_class.register(key: 'job:file_defined', cron: '0 9 * * *', enqueue: code_callback)
+
+      expect(entry).to eq(existing_entry)
+      expect(described_class.definition_registry.find_definition('job:file_defined')).to include(source: 'file', cron: '*/5 * * * *')
+      expect(described_class.registry.find('job:file_defined')&.enqueue).to eq(file_callback)
+      expect(logger).to have_received(:warn).with(/scheduler_conflict_policy is :file_wins/)
+    end
+
+    it 'applies :file_wins without logging when logger is nil' do
+      file_callback = ->(fire_time:, idempotency_key:) { [fire_time, idempotency_key, :file] }
+      described_class.configuration.scheduler_conflict_policy = :file_wins
+      described_class.configuration.logger = nil
+      described_class.definition_registry.upsert_definition(
+        key: 'job:file_defined',
+        cron: '*/5 * * * *',
+        enabled: true,
+        source: 'file',
+        metadata: {}
+      )
+      existing_entry = described_class.registry.add(key: 'job:file_defined', cron: '*/5 * * * *', enqueue: file_callback)
+
+      entry = described_class.register(key: 'job:file_defined', cron: '0 9 * * *', enqueue: ->(fire_time:, idempotency_key:) {})
+
+      expect(entry).to eq(existing_entry)
+    end
+
+    it 'applies :error by raising when key is sourced from scheduler file' do
+      described_class.configuration.scheduler_conflict_policy = :error
+      described_class.definition_registry.upsert_definition(
+        key: 'job:file_defined',
+        cron: '*/5 * * * *',
+        enabled: true,
+        source: 'file',
+        metadata: {}
+      )
+      described_class.registry.add(key: 'job:file_defined', cron: '*/5 * * * *', enqueue: ->(fire_time:, idempotency_key:) { [fire_time, idempotency_key] })
+
+      expect do
+        described_class.register(key: 'job:file_defined', cron: '0 9 * * *', enqueue: ->(fire_time:, idempotency_key:) {})
+      end.to raise_error(RailsCron::RegistryError, /scheduler file/)
+    end
+
+    it 'raises SchedulerConfigError for unsupported conflict policy when key is sourced from scheduler file' do
+      described_class.configuration.scheduler_conflict_policy = :invalid
+      described_class.definition_registry.upsert_definition(
+        key: 'job:file_defined',
+        cron: '*/5 * * * *',
+        enabled: true,
+        source: 'file',
+        metadata: {}
+      )
+      described_class.registry.add(key: 'job:file_defined', cron: '*/5 * * * *', enqueue: ->(fire_time:, idempotency_key:) { [fire_time, idempotency_key] })
+
+      expect do
+        described_class.register(key: 'job:file_defined', cron: '0 9 * * *', enqueue: ->(fire_time:, idempotency_key:) {})
+      end.to raise_error(RailsCron::SchedulerConfigError, /Unsupported scheduler_conflict_policy/)
+    end
+
     it 'rolls back definition when registry add fails' do
       definition_registry = instance_double(RailsCron::Definition::Registry)
       allow(described_class).to receive(:definition_registry).and_return(definition_registry)
@@ -258,7 +398,7 @@ RSpec.describe RailsCron do
       allow(definition_registry).to receive(:upsert_definition)
       allow(definition_registry).to receive(:remove_definition)
       allow(described_class.registry).to receive(:add).and_raise(StandardError, 'registry failure')
-      allow(described_class.registry).to receive(:registered?).with('job:race').and_return(false, true)
+      allow(described_class.registry).to receive(:registered?).with('job:race').and_return(true)
 
       expect do
         described_class.register(
@@ -329,7 +469,7 @@ RSpec.describe RailsCron do
       expect(definition_registry).not_to have_received(:remove_definition)
     end
 
-    it 'preserves existing persisted attributes when re-registering a definition' do
+    it 'preserves enabled and metadata while forcing source to code on re-registration' do
       definition_registry = instance_double(RailsCron::Definition::Registry)
       existing_definition = {
         key: 'job:managed',
@@ -353,7 +493,38 @@ RSpec.describe RailsCron do
         key: 'job:managed',
         cron: '0 9 * * *',
         enabled: false,
-        source: 'api',
+        source: 'code',
+        metadata: { owner: 'ops' }
+      )
+    end
+
+    it 'overrides stale file source when no registry entry exists' do
+      definition_registry = instance_double(RailsCron::Definition::Registry)
+      existing_definition = {
+        key: 'job:stale_file',
+        cron: '0 8 * * *',
+        enabled: true,
+        source: 'file',
+        metadata: { owner: 'ops' }
+      }
+
+      allow(described_class).to receive(:definition_registry).and_return(definition_registry)
+      allow(definition_registry).to receive(:find_definition).with('job:stale_file').and_return(existing_definition)
+      allow(definition_registry).to receive(:upsert_definition)
+      allow(described_class.registry).to receive(:find).with('job:stale_file').and_return(nil)
+      allow(described_class.registry).to receive(:add)
+
+      described_class.register(
+        key: 'job:stale_file',
+        cron: '0 9 * * *',
+        enqueue: ->(fire_time:, idempotency_key:) {}
+      )
+
+      expect(definition_registry).to have_received(:upsert_definition).with(
+        key: 'job:stale_file',
+        cron: '0 9 * * *',
+        enabled: true,
+        source: 'code',
         metadata: { owner: 'ops' }
       )
     end
