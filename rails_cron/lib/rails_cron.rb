@@ -168,7 +168,7 @@ module RailsCron
         enabled: true,
         source: 'code',
         metadata: {}
-      }.merge(existing_definition&.slice(:enabled, :source, :metadata) || {})
+      }.merge(existing_definition&.slice(:enabled, :metadata) || {})
       definition_registry.upsert_definition(key: key, cron: cron, **persisted_attributes)
       with_registered_definition_rollback(key, existing_definition) do
         registry.add(key: key, cron: cron, enqueue: enqueue)
