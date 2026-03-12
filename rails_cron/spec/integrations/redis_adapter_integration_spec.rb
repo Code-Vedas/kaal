@@ -16,7 +16,7 @@ RSpec.describe 'Adapter integration', integration: 'redis' do # rubocop:disable 
   let(:adapter_label) { 'redis' }
   let(:adapter_instance) do
     RailsCron::Backend::RedisAdapter.new(
-      Redis.new(url: ENV.fetch('REDIS_URL', 'redis://127.0.0.1:6379/0')),
+      Redis.new(url: ENV.fetch('REDIS_URL')),
       namespace: "rails-cron-int-#{SecureRandom.hex(4)}"
     )
   end

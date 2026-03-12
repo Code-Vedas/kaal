@@ -6,12 +6,13 @@
 # LICENSE file in the root directory of this source tree.
 
 require 'fileutils'
-require 'securerandom'
 require 'stringio'
 require 'tmpdir'
 require 'yaml'
 
 module IntegrationSchedulerHelper
+  include IntegrationLockHelper
+
   class EventRecorder
     def initialize
       @events = []

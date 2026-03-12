@@ -53,8 +53,8 @@ RSpec.configure do |config|
 
   config.after do
     travel_back
-  rescue StandardError
-    nil
+  rescue RuntimeError => e
+    raise unless e.message.to_s.include?('travel back')
   end
 
   config.after do
