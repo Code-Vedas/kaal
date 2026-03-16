@@ -298,6 +298,14 @@ RSpec.describe Kaal::Coordinator do
       expect(result).to be_a(Fugit::Cron)
     end
 
+    it 'applies the configured scheduler time zone to cron parsing' do
+      configuration.time_zone = 'America/Toronto'
+
+      result = coordinator.send(:parse_cron, '0 9 * * *')
+
+      expect(result.timezone.name).to eq('America/Toronto')
+    end
+
     it 'logs warning when parse returns nil' do
       coordinator.send(:parse_cron, 'invalid')
       expect(logger).to have_received(:warn).with(/Failed to parse cron expression/)
@@ -312,6 +320,43 @@ RSpec.describe Kaal::Coordinator do
       configuration.logger = nil
       result = coordinator.send(:parse_cron, 'invalid')
       expect(result).to be_nil
+    end
+  end
+
+  describe '#scheduler_time_zone' do
+    around do |example|
+      Time.use_zone(nil) { example.run }
+    end
+
+    it 'uses configuration.time_zone when present' do
+      configuration.time_zone = 'America/Toronto'
+
+      zone = coordinator.send(:scheduler_time_zone)
+
+      expect(zone.tzinfo.name).to eq('America/Toronto')
+    end
+
+    it 'falls back to Time.zone when configuration.time_zone is unset' do
+      Time.use_zone('Europe/Berlin') do
+        zone = coordinator.send(:scheduler_time_zone)
+
+        expect(zone.tzinfo.name).to eq('Europe/Berlin')
+      end
+    end
+
+    it 'falls back to UTC when configuration.time_zone and Time.zone are unset' do
+      zone = coordinator.send(:scheduler_time_zone)
+
+      expect(zone.tzinfo.name).to eq('Etc/UTC')
+    end
+
+    it 'raises ConfigurationError for an invalid configured time zone' do
+      configuration.time_zone = 'Mars/Olympus'
+
+      expect { coordinator.send(:scheduler_time_zone) }.to raise_error(
+        Kaal::ConfigurationError,
+        /Invalid time_zone configuration/
+      )
     end
   end
 
@@ -375,6 +420,54 @@ RSpec.describe Kaal::Coordinator do
       result = coordinator.send(:find_occurrences, cron, Time.now, Time.now + 60)
 
       expect(result).to eq([])
+    end
+
+    it 'uses UTC scheduling when no scheduler time zone is configured' do
+      cron = coordinator.send(:parse_cron, '0 9 * * *')
+      start_time = Time.utc(2026, 1, 15, 8, 0, 0)
+      end_time = Time.utc(2026, 1, 15, 10, 0, 0)
+
+      occurrences = coordinator.send(:find_occurrences, cron, start_time, end_time)
+
+      expect(occurrences).to eq([Time.utc(2026, 1, 15, 9, 0, 0)])
+      expect(occurrences).to all(be_utc)
+    end
+
+    it 'uses the configured scheduler time zone for cron evaluation' do
+      configuration.time_zone = 'America/Toronto'
+      cron = coordinator.send(:parse_cron, '0 9 * * *')
+      start_time = Time.utc(2026, 1, 15, 13, 0, 0)
+      end_time = Time.utc(2026, 1, 15, 15, 0, 0)
+
+      occurrences = coordinator.send(:find_occurrences, cron, start_time, end_time)
+
+      expect(occurrences).to eq([Time.utc(2026, 1, 15, 14, 0, 0)])
+      expect(occurrences).to all(be_utc)
+    end
+
+    it 'skips nonexistent local times during spring-forward DST transitions' do
+      configuration.time_zone = 'America/Toronto'
+      cron = coordinator.send(:parse_cron, '30 2 * * *')
+      start_time = Time.utc(2026, 3, 8, 0, 0, 0)
+      end_time = Time.utc(2026, 3, 8, 23, 59, 59)
+
+      occurrences = coordinator.send(:find_occurrences, cron, start_time, end_time)
+
+      expect(occurrences).to eq([])
+    end
+
+    it 'includes both repeated local times during fall-back DST transitions' do
+      configuration.time_zone = 'America/Toronto'
+      cron = coordinator.send(:parse_cron, '30 1 * * *')
+      start_time = Time.utc(2026, 11, 1, 0, 0, 0)
+      end_time = Time.utc(2026, 11, 1, 23, 59, 59)
+
+      occurrences = coordinator.send(:find_occurrences, cron, start_time, end_time)
+
+      expect(occurrences).to eq([
+        Time.utc(2026, 11, 1, 5, 30, 0),
+        Time.utc(2026, 11, 1, 6, 30, 0)
+      ])
     end
   end
 
@@ -688,12 +781,32 @@ RSpec.describe Kaal::Coordinator do
       key = coordinator.send(:generate_idempotency_key, 'job', Time.at(1_234_567_890))
       expect(key).to eq('kaal-job-1234567890')
     end
+
+    it 'generates distinct keys for repeated fall-back fire times' do
+      first_fire_time = Time.utc(2026, 11, 1, 5, 30, 0)
+      second_fire_time = Time.utc(2026, 11, 1, 6, 30, 0)
+
+      first_key = coordinator.send(:generate_idempotency_key, 'job', first_fire_time)
+      second_key = coordinator.send(:generate_idempotency_key, 'job', second_fire_time)
+
+      expect(first_key).not_to eq(second_key)
+    end
   end
 
   describe '#generate_lock_key' do
     it 'generates lock key with namespace, cron_key, and fire_time' do
       key = coordinator.send(:generate_lock_key, 'job', Time.at(1_234_567_890))
       expect(key).to eq('kaal:dispatch:job:1234567890')
+    end
+
+    it 'generates distinct lock keys for repeated fall-back fire times' do
+      first_fire_time = Time.utc(2026, 11, 1, 5, 30, 0)
+      second_fire_time = Time.utc(2026, 11, 1, 6, 30, 0)
+
+      first_key = coordinator.send(:generate_lock_key, 'job', first_fire_time)
+      second_key = coordinator.send(:generate_lock_key, 'job', second_fire_time)
+
+      expect(first_key).not_to eq(second_key)
     end
   end
 
@@ -1453,6 +1566,18 @@ RSpec.describe Kaal::Coordinator do
       expect(logger).to have_received(:error).with(/Error during missed-run recovery/)
     end
 
+    it 're-raises ConfigurationError for invalid scheduler time zone configuration' do
+      configuration.enable_dispatch_recovery = true
+      configuration.recovery_startup_jitter = 0
+      configuration.time_zone = 'Mars/Olympus'
+      registry.add(key: 'job1', cron: '* * * * *', enqueue: kw_enqueue)
+
+      expect { coordinator.send(:recover_missed_runs) }.to raise_error(
+        Kaal::ConfigurationError,
+        /Invalid time_zone configuration/
+      )
+    end
+
     it 'works without logger' do
       configuration.enable_dispatch_recovery = true
       configuration.recovery_startup_jitter = 0
@@ -1694,6 +1819,43 @@ RSpec.describe Kaal::Coordinator do
       result = coordinator.send(:recover_entry, entry, recovery_start, recovery_end)
 
       expect(result).to eq(3)
+    end
+
+    it 'uses absolute UTC fire times for recovery in a configured non-UTC zone' do
+      configuration.time_zone = 'America/Toronto'
+      entry = instance_double(Kaal::Registry::Entry, key: 'tz_job', cron: '0 9 * * *', enqueue: kw_enqueue)
+      recovery_start = Time.utc(2026, 1, 15, 13, 0, 0)
+      recovery_end = Time.utc(2026, 1, 15, 15, 0, 0)
+      captured_fire_times = []
+
+      allow(coordinator).to receive(:dispatch_if_due) do |_entry, fire_time, _now|
+        captured_fire_times << fire_time
+      end
+
+      result = coordinator.send(:recover_entry, entry, recovery_start, recovery_end)
+
+      expect(result).to eq(1)
+      expect(captured_fire_times).to eq([Time.utc(2026, 1, 15, 14, 0, 0)])
+      expect(captured_fire_times).to all(be_utc)
+    end
+
+    it 'filters repeated fall-back occurrences by absolute fire time during recovery' do
+      configuration.time_zone = 'America/Toronto'
+      configuration.enable_log_dispatch_registry = true
+      entry = instance_double(Kaal::Registry::Entry, key: 'tz_job', cron: '30 1 * * *', enqueue: kw_enqueue)
+      recovery_start = Time.utc(2026, 11, 1, 0, 0, 0)
+      recovery_end = Time.utc(2026, 11, 1, 23, 59, 59)
+      first_fire_time = Time.utc(2026, 11, 1, 5, 30, 0)
+      second_fire_time = Time.utc(2026, 11, 1, 6, 30, 0)
+
+      allow(coordinator).to receive(:already_dispatched?).with(entry.key, first_fire_time).and_return(true)
+      allow(coordinator).to receive(:already_dispatched?).with(entry.key, second_fire_time).and_return(false)
+      allow(coordinator).to receive(:dispatch_if_due)
+
+      result = coordinator.send(:recover_entry, entry, recovery_start, recovery_end)
+
+      expect(result).to eq(1)
+      expect(coordinator).to have_received(:dispatch_if_due).with(entry, second_fire_time, anything).once
     end
 
     it 'handles errors gracefully and returns 0' do

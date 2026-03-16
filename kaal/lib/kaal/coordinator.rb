@@ -5,6 +5,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+require 'active_support/time'
 require 'fugit'
 
 module Kaal
@@ -172,6 +173,8 @@ module Kaal
       each_enabled_entry do |entry|
         calculate_and_dispatch_due_times(entry)
       end
+    rescue ConfigurationError
+      raise
     rescue StandardError => e
       # Log error but continue the loop
       @configuration.logger&.error("Kaal coordinator tick failed: #{e.message}")
@@ -197,7 +200,7 @@ module Kaal
     end
 
     def parse_cron(cron_expression)
-      result = Fugit.parse_cron(cron_expression)
+      result = Fugit.parse_cron("#{cron_expression} #{scheduler_time_zone_identifier}")
       raise ArgumentError, "Invalid cron expression: #{cron_expression}" unless result
 
       result
@@ -209,16 +212,18 @@ module Kaal
     def find_occurrences(cron, start_time, end_time)
       # Use fugit to find all occurrences between start and end times
       occurrences = []
-      current_time = start_time
+      current_time = start_time.getutc
+      normalized_end_time = end_time.getutc
 
-      while current_time <= end_time
+      while current_time <= normalized_end_time
         next_occurrence = cron.next_time(current_time)
         break unless next_occurrence
 
-        break if next_occurrence > end_time
+        fire_time = next_occurrence.to_utc_time
+        break if fire_time > normalized_end_time
 
-        occurrences << next_occurrence
-        current_time = next_occurrence + 1.second # Move past this occurrence to find the next
+        occurrences << fire_time
+        current_time = fire_time + 1.second # Move past this occurrence to find the next
       end
 
       occurrences
@@ -281,6 +286,8 @@ module Kaal
 
       # Clean up old dispatch records after recovery completes
       cleanup_old_dispatch_records(recovery_window)
+    rescue ConfigurationError
+      raise
     rescue StandardError => e
       logger&.error("Error during missed-run recovery: #{e.message}")
     end
@@ -311,6 +318,8 @@ module Kaal
       end
 
       occurrences_size
+    rescue ConfigurationError
+      raise
     rescue StandardError => e
       logger&.error("Error recovering entry #{entry_key}: #{e.message}")
       0
@@ -432,6 +441,35 @@ module Kaal
 
     def each_registry_entry(&)
       @registry.each(&)
+    end
+
+    def scheduler_time_zone
+      configured_scheduler_time_zone || rails_scheduler_time_zone || ActiveSupport::TimeZone['UTC']
+    end
+
+    def configured_scheduler_time_zone
+      configured_value = @configuration.time_zone.to_s.strip
+      return nil if configured_value.empty?
+
+      ActiveSupport::TimeZone[configured_value] || raise(
+        ConfigurationError,
+        "Invalid time_zone configuration: #{configured_value.inspect}"
+      )
+    end
+
+    def rails_scheduler_time_zone
+      return nil unless Time.respond_to?(:zone)
+
+      zone = Time.zone
+      return nil unless zone
+
+      ActiveSupport::TimeZone[zone.tzinfo.name] || zone
+    rescue StandardError
+      nil
+    end
+
+    def scheduler_time_zone_identifier
+      scheduler_time_zone.tzinfo.name
     end
   end
 end
