@@ -43,7 +43,10 @@ module Kaal
       zone = @time_zone_provider.call
       return nil unless zone
 
-      ActiveSupport::TimeZone[zone.name] || zone
+      resolved_zone = ActiveSupport::TimeZone[zone] || zone
+      return resolved_zone if resolved_zone.respond_to?(:tzinfo)
+
+      nil
     rescue StandardError
       nil
     end

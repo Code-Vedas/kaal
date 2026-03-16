@@ -39,6 +39,26 @@ RSpec.describe Kaal::SchedulerTimeZoneResolver do
       expect(resolver.time_zone.tzinfo.name).to eq('Etc/UTC')
     end
 
+    it 'falls back to UTC when the injected time zone provider returns an object without tzinfo support' do
+      fake_zone = Struct.new(:name).new('Not/AZone')
+      resolver = described_class.new(configuration: configuration, time_zone_provider: -> { fake_zone })
+
+      expect(resolver.time_zone.tzinfo.name).to eq('Etc/UTC')
+    end
+
+    it 'falls back to UTC when coercion returns a non-time-zone object without tzinfo support' do
+      fake_zone = Object.new
+      resolver = described_class.new(configuration: configuration, time_zone_provider: -> { fake_zone })
+
+      expect(resolver.time_zone.tzinfo.name).to eq('Etc/UTC')
+    end
+
+    it 'falls back to UTC when the provider returns an unknown time zone name' do
+      resolver = described_class.new(configuration: configuration, time_zone_provider: -> { 'Not/AZone' })
+
+      expect(resolver.time_zone.tzinfo.name).to eq('Etc/UTC')
+    end
+
     it 'raises ConfigurationError for an invalid configured time zone' do
       configuration.time_zone = 'Mars/Olympus'
 

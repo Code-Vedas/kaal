@@ -402,6 +402,22 @@ RSpec.describe Kaal::Coordinator do
       expect(occurrences).to eq([])
     end
 
+    it 'normalizes plain Time values returned by next_time to UTC' do
+      cron = double
+      fire_time = Time.new(2026, 1, 15, 9, 0, 0, '-05:00')
+      allow(cron).to receive(:next_time).and_return(fire_time, nil)
+
+      occurrences = coordinator.send(
+        :find_occurrences,
+        cron,
+        Time.utc(2026, 1, 15, 13, 0, 0),
+        Time.utc(2026, 1, 15, 15, 0, 0)
+      )
+
+      expect(occurrences).to eq([Time.utc(2026, 1, 15, 14, 0, 0)])
+      expect(occurrences).to all(be_utc)
+    end
+
     it 'rescues StandardError and logs it' do
       cron = double
       allow(cron).to receive(:next_time).and_raise(StandardError, 'Calc error')

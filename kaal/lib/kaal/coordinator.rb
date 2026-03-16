@@ -220,7 +220,11 @@ module Kaal
         next_occurrence = cron.next_time(current_time)
         break unless next_occurrence
 
-        fire_time = next_occurrence.to_utc_time
+        fire_time = if next_occurrence.respond_to?(:to_utc_time)
+                      next_occurrence.to_utc_time
+                    else
+                      next_occurrence.to_time.utc
+                    end
         break if fire_time > normalized_end_time
 
         occurrences << fire_time
