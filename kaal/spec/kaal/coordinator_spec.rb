@@ -465,9 +465,9 @@ RSpec.describe Kaal::Coordinator do
       occurrences = coordinator.send(:find_occurrences, cron, start_time, end_time)
 
       expect(occurrences).to eq([
-        Time.utc(2026, 11, 1, 5, 30, 0),
-        Time.utc(2026, 11, 1, 6, 30, 0)
-      ])
+                                  Time.utc(2026, 11, 1, 5, 30, 0),
+                                  Time.utc(2026, 11, 1, 6, 30, 0)
+                                ])
     end
   end
 
