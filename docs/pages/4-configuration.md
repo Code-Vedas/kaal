@@ -63,8 +63,8 @@ end
 | `window_lookback`              | Integer | `120`                       | How far back the scheduler will replay missed ticks.                                                  |
 | `window_lookahead`             | Integer | `0`                         | How far ahead to pre-trigger upcoming ticks (optional).                                               |
 | `lease_ttl`                    | Integer | `125`                       | Duration for distributed coordination lease in seconds. Must be `>= window_lookback + tick_interval`. |
-| `namespace`                    | String  | `"kaal"`               | Key prefix used for coordination keys and dispatch records.                                           |
-| `time_zone`                    | String  | `nil`                      | Time zone used to interpret cron expressions. Falls back to the Rails app zone, then UTC.            |
+| `namespace`                    | String  | `"kaal"`                    | Key prefix used for coordination keys and dispatch records.                                           |
+| `time_zone`                    | String  | `nil`                       | Time zone used to interpret cron expressions. Falls back to the Rails app zone, then UTC.             |
 | `logger`                       | Logger  | `Rails.logger` (if present) | Logger used for scheduler messages.                                                                   |
 | `enable_log_dispatch_registry` | Boolean | `false`                     | Enable dispatch logging for audit trail and recovery.                                                 |
 | `enable_dispatch_recovery`     | Boolean | `true`                      | Automatically recover missed runs after downtime.                                                     |
