@@ -308,6 +308,24 @@ RSpec.describe Kaal::Coordinator do
       expect(result).to be_a(Fugit::Cron)
     end
 
+    it 'parses macro cron expressions with the resolved scheduler time zone' do
+      configuration.time_zone = 'America/Toronto'
+
+      result = coordinator.send(:parse_cron, '@daily')
+
+      expect(result).to be_a(Fugit::Cron)
+      expect(result.original).to eq('@daily America/Toronto')
+      expect(result.timezone.name).to eq('America/Toronto')
+    end
+
+    it 'parses macro cron expressions with the default UTC scheduler time zone' do
+      result = coordinator.send(:parse_cron, '@hourly')
+
+      expect(result).to be_a(Fugit::Cron)
+      expect(result.original).to eq('@hourly Etc/UTC')
+      expect(result.timezone.name).to eq('Etc/UTC')
+    end
+
     it 'applies the configured scheduler time zone to cron parsing' do
       configuration.time_zone = 'America/Toronto'
 
@@ -324,6 +342,15 @@ RSpec.describe Kaal::Coordinator do
     it 'returns nil when parse fails' do
       result = coordinator.send(:parse_cron, 'invalid')
       expect(result).to be_nil
+    end
+
+    it 'treats cron strings with an embedded time zone suffix as invalid input' do
+      configuration.time_zone = 'America/Toronto'
+
+      result = coordinator.send(:parse_cron, '0 9 * * * America/New_York')
+
+      expect(result).to be_nil
+      expect(logger).to have_received(:warn).with(/Failed to parse cron expression/)
     end
 
     it 'does not log when logger is nil and parse fails' do
