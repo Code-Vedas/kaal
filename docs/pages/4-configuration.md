@@ -142,6 +142,13 @@ Kaal.register(
 
 `fire_time` is always the absolute scheduled instant passed to the callback. If you configure `time_zone`, it affects how cron expressions are interpreted, not how fire times are stored for locking, recovery, or idempotency.
 
+### Time Zone Precedence
+
+- `config.time_zone` is the scheduler-level source of truth for cron interpretation.
+- If `config.time_zone` is unset, Kaal falls back to the Rails app zone, then UTC.
+- Do not include a timezone suffix inside the cron string when using Kaal scheduling. Kaal applies the resolved scheduler zone during parsing, so a cron like `0 9 * * * America/New_York` is treated as invalid input in this path rather than overriding `config.time_zone`.
+- Migration rule: if you have existing schedules with embedded timezone suffixes, move that zone into `config.time_zone` and keep the cron string timezone-free.
+
 ---
 
 ## 🕒 Starting the Scheduler
