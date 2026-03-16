@@ -445,7 +445,7 @@ module Kaal
     end
 
     def scheduler_time_zone_resolver
-      SchedulerTimeZoneResolver.new(configuration: @configuration)
+      @scheduler_time_zone_resolver ||= SchedulerTimeZoneResolver.new(configuration: @configuration)
     end
   end
 end

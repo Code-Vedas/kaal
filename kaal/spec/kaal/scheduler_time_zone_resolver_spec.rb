@@ -72,6 +72,7 @@ RSpec.describe Kaal::SchedulerTimeZoneResolver do
 
   describe 'default provider' do
     it 'returns nil when Time does not expose .zone' do
+      allow(Time).to receive(:respond_to?).and_call_original
       allow(Time).to receive(:respond_to?).with(:zone).and_return(false)
 
       expect(described_class::DEFAULT_TIME_ZONE_PROVIDER.call).to be_nil
