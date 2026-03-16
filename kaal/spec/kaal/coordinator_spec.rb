@@ -272,6 +272,16 @@ RSpec.describe Kaal::Coordinator do
 
       expect { coordinator.send(:execute_tick) }.not_to raise_error
     end
+
+    it 're-raises ConfigurationError' do
+      configuration.time_zone = 'Mars/Olympus'
+      registry.add(key: 'job', cron: '* * * * *', enqueue: kw_enqueue)
+
+      expect { coordinator.send(:execute_tick) }.to raise_error(
+        Kaal::ConfigurationError,
+        /Invalid time_zone configuration/
+      )
+    end
   end
 
   describe '#calculate_and_dispatch_due_times' do
@@ -320,43 +330,6 @@ RSpec.describe Kaal::Coordinator do
       configuration.logger = nil
       result = coordinator.send(:parse_cron, 'invalid')
       expect(result).to be_nil
-    end
-  end
-
-  describe '#scheduler_time_zone' do
-    around do |example|
-      Time.use_zone(nil) { example.run }
-    end
-
-    it 'uses configuration.time_zone when present' do
-      configuration.time_zone = 'America/Toronto'
-
-      zone = coordinator.send(:scheduler_time_zone)
-
-      expect(zone.tzinfo.name).to eq('America/Toronto')
-    end
-
-    it 'falls back to Time.zone when configuration.time_zone is unset' do
-      Time.use_zone('Europe/Berlin') do
-        zone = coordinator.send(:scheduler_time_zone)
-
-        expect(zone.tzinfo.name).to eq('Europe/Berlin')
-      end
-    end
-
-    it 'falls back to UTC when configuration.time_zone and Time.zone are unset' do
-      zone = coordinator.send(:scheduler_time_zone)
-
-      expect(zone.tzinfo.name).to eq('Etc/UTC')
-    end
-
-    it 'raises ConfigurationError for an invalid configured time zone' do
-      configuration.time_zone = 'Mars/Olympus'
-
-      expect { coordinator.send(:scheduler_time_zone) }.to raise_error(
-        Kaal::ConfigurationError,
-        /Invalid time_zone configuration/
-      )
     end
   end
 

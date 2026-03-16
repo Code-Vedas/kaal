@@ -7,6 +7,7 @@
 
 require 'active_support/time'
 require 'fugit'
+require_relative 'scheduler_time_zone_resolver'
 
 module Kaal
   ##
@@ -200,7 +201,7 @@ module Kaal
     end
 
     def parse_cron(cron_expression)
-      result = Fugit.parse_cron("#{cron_expression} #{scheduler_time_zone_identifier}")
+      result = Fugit.parse_cron("#{cron_expression} #{scheduler_time_zone_resolver.time_zone_identifier}")
       raise ArgumentError, "Invalid cron expression: #{cron_expression}" unless result
 
       result
@@ -443,33 +444,8 @@ module Kaal
       @registry.each(&)
     end
 
-    def scheduler_time_zone
-      configured_scheduler_time_zone || rails_scheduler_time_zone || ActiveSupport::TimeZone['UTC']
-    end
-
-    def configured_scheduler_time_zone
-      configured_value = @configuration.time_zone.to_s.strip
-      return nil if configured_value.empty?
-
-      ActiveSupport::TimeZone[configured_value] || raise(
-        ConfigurationError,
-        "Invalid time_zone configuration: #{configured_value.inspect}"
-      )
-    end
-
-    def rails_scheduler_time_zone
-      return nil unless Time.respond_to?(:zone)
-
-      zone = Time.zone
-      return nil unless zone
-
-      ActiveSupport::TimeZone[zone.tzinfo.name] || zone
-    rescue StandardError
-      nil
-    end
-
-    def scheduler_time_zone_identifier
-      scheduler_time_zone.tzinfo.name
+    def scheduler_time_zone_resolver
+      SchedulerTimeZoneResolver.new(configuration: @configuration)
     end
   end
 end
