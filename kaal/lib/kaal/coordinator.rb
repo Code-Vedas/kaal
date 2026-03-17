@@ -331,9 +331,8 @@ module Kaal
       end
 
       occurrences_size
-    rescue ConfigurationError => e
-      message = e.message
-      logger&.error("Error recovering entry #{entry_key} due to configuration error: #{message}")
+    rescue ConfigurationError
+      # Let ConfigurationError propagate so it can be logged/handled at a higher level.
       raise
     rescue StandardError => e
       message = e.message
