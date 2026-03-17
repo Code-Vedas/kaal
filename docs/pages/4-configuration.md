@@ -36,6 +36,10 @@ Kaal.configure do |c|
   # Optional prefix for Redis/Postgres keys
   c.namespace        = "kaal"
 
+  # Optional scheduler time zone for cron evaluation
+  # Falls back to the Rails app zone, then UTC
+  # c.time_zone      = "America/Toronto"
+
   # Optional logger override
   # c.logger = Logger.new($stdout, level: :info)
 
@@ -59,7 +63,8 @@ end
 | `window_lookback`              | Integer | `120`                       | How far back the scheduler will replay missed ticks.                                                  |
 | `window_lookahead`             | Integer | `0`                         | How far ahead to pre-trigger upcoming ticks (optional).                                               |
 | `lease_ttl`                    | Integer | `125`                       | Duration for distributed coordination lease in seconds. Must be `>= window_lookback + tick_interval`. |
-| `namespace`                    | String  | `"kaal"`               | Key prefix used for coordination keys and dispatch records.                                           |
+| `namespace`                    | String  | `"kaal"`                    | Key prefix used for coordination keys and dispatch records.                                           |
+| `time_zone`                    | String  | `nil`                       | Time zone used to interpret cron expressions. Falls back to the Rails app zone, then UTC.             |
 | `logger`                       | Logger  | `Rails.logger` (if present) | Logger used for scheduler messages.                                                                   |
 | `enable_log_dispatch_registry` | Boolean | `false`                     | Enable dispatch logging for audit trail and recovery.                                                 |
 | `enable_dispatch_recovery`     | Boolean | `true`                      | Automatically recover missed runs after downtime.                                                     |
@@ -135,6 +140,15 @@ Kaal.register(
 | `fire_time`       | UTC time when the job was scheduled to run.                               |
 | `idempotency_key` | Deterministic key to prevent duplicate dispatches.                        |
 
+`fire_time` is always the absolute scheduled instant passed to the callback. If you configure `time_zone`, it affects how cron expressions are interpreted, not how fire times are stored for locking, recovery, or idempotency.
+
+### Time Zone Precedence
+
+- `config.time_zone` is the scheduler-level source of truth for cron interpretation.
+- If `config.time_zone` is unset, Kaal falls back to the Rails app zone, then UTC.
+- Do not include a timezone suffix inside the cron string when using Kaal scheduling. Kaal applies the resolved scheduler zone during parsing, so a cron like `0 9 * * * America/New_York` is treated as invalid input in this path rather than overriding `config.time_zone`.
+- Migration rule: if you have existing schedules with embedded timezone suffixes, move that zone into `config.time_zone` and keep the cron string timezone-free.
+
 ---
 
 ## 🕒 Starting the Scheduler
@@ -197,6 +211,10 @@ end
 
 ```ruby
 Kaal.configure do |c|
+  # Interpret cron schedules in a specific time zone.
+  # Falls back to the Rails app zone, then UTC when unset.
+  c.time_zone = "America/Toronto"
+
   # Enable automatic recovery (default: true)
   c.enable_dispatch_recovery = true
 
@@ -210,6 +228,11 @@ Kaal.configure do |c|
   c.enable_log_dispatch_registry = true
 end
 ```
+
+### DST Behavior
+
+- Spring-forward gaps are skipped. If a local scheduled time does not exist on that date, no run is created for it.
+- Fall-back overlaps run once per real occurrence. Repeated local clock times produce distinct absolute fire times, lock keys, and idempotency keys.
 
 ### Recovery Options
 

@@ -18,6 +18,9 @@ Kaal.configure do |config|
   config.window_lookback = 120
   # Keep lease_ttl >= window_lookback + tick_interval to prevent duplicate dispatch.
   config.lease_ttl = 125
+  # Optional: interpret cron schedules in a specific time zone.
+  # Falls back to the Rails app zone, then UTC when unset.
+  # config.time_zone = 'America/Toronto'
   config.recovery_window = 3600
   config.enable_dispatch_recovery = true
   config.enable_log_dispatch_registry = false

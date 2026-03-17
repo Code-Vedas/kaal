@@ -5,7 +5,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+require 'active_support/time'
 require 'fugit'
+require_relative 'scheduler_time_zone_resolver'
 
 module Kaal
   ##
@@ -172,9 +174,16 @@ module Kaal
       each_enabled_entry do |entry|
         calculate_and_dispatch_due_times(entry)
       end
+    rescue ConfigurationError => e
+      logger = @configuration.logger
+      message = e.message
+      logger&.error("Kaal coordinator tick failed due to configuration error: #{message}")
+      raise
     rescue StandardError => e
       # Log error but continue the loop
-      @configuration.logger&.error("Kaal coordinator tick failed: #{e.message}")
+      logger = @configuration.logger
+      message = e.message
+      logger&.error("Kaal coordinator tick failed: #{message}")
     end
 
     def calculate_and_dispatch_due_times(entry)
@@ -197,7 +206,7 @@ module Kaal
     end
 
     def parse_cron(cron_expression)
-      result = Fugit.parse_cron(cron_expression)
+      result = Fugit.parse_cron("#{cron_expression} #{scheduler_time_zone_resolver.time_zone_identifier}")
       raise ArgumentError, "Invalid cron expression: #{cron_expression}" unless result
 
       result
@@ -209,16 +218,22 @@ module Kaal
     def find_occurrences(cron, start_time, end_time)
       # Use fugit to find all occurrences between start and end times
       occurrences = []
-      current_time = start_time
+      current_time = start_time.getutc
+      normalized_end_time = end_time.getutc
 
-      while current_time <= end_time
+      while current_time <= normalized_end_time
         next_occurrence = cron.next_time(current_time)
         break unless next_occurrence
 
-        break if next_occurrence > end_time
+        fire_time = if next_occurrence.respond_to?(:to_utc_time)
+                      next_occurrence.to_utc_time
+                    else
+                      next_occurrence.to_time.utc
+                    end
+        break if fire_time > normalized_end_time
 
-        occurrences << next_occurrence
-        current_time = next_occurrence + 1.second # Move past this occurrence to find the next
+        occurrences << fire_time
+        current_time = fire_time + 1.second # Move past this occurrence to find the next
       end
 
       occurrences
@@ -281,8 +296,13 @@ module Kaal
 
       # Clean up old dispatch records after recovery completes
       cleanup_old_dispatch_records(recovery_window)
+    rescue ConfigurationError => e
+      message = e.message
+      logger&.error("Kaal missed-run recovery failed due to configuration error: #{message}")
+      raise
     rescue StandardError => e
-      logger&.error("Error during missed-run recovery: #{e.message}")
+      message = e.message
+      logger&.error("Error during missed-run recovery: #{message}")
     end
 
     ##
@@ -311,8 +331,12 @@ module Kaal
       end
 
       occurrences_size
+    rescue ConfigurationError
+      # Let ConfigurationError propagate so it can be logged/handled at a higher level.
+      raise
     rescue StandardError => e
-      logger&.error("Error recovering entry #{entry_key}: #{e.message}")
+      message = e.message
+      logger&.error("Error recovering entry #{entry_key}: #{message}")
       0
     end
 
@@ -432,6 +456,10 @@ module Kaal
 
     def each_registry_entry(&)
       @registry.each(&)
+    end
+
+    def scheduler_time_zone_resolver
+      @scheduler_time_zone_resolver ||= SchedulerTimeZoneResolver.new(configuration: @configuration)
     end
   end
 end
