@@ -54,6 +54,36 @@ You must follow the [Code of Conduct](https://github.com/Code-Vedas/kaal/blob/ma
 
 If you encounter any bugs or issues while using the project, please report them by creating a new issue on GitHub. Provide as much detail as possible, including steps to reproduce the issue, expected behavior, and any relevant logs or screenshots.
 
+## Internal structure
+
+The codebase is being organized around domain-focused modules rather than a flat internal tree. If you contribute to internals, prefer extending the existing domain boundaries instead of adding new top-level implementation files.
+
+### Current domain layout
+
+- `Kaal::Core`
+  - scheduler orchestration, occurrence finding, dispatch decisions, and recovery flow
+- `Kaal::Config`
+  - configuration objects, validation, and scheduler config helpers like time zone resolution
+- `Kaal::Runtime`
+  - runtime context, boot loading, signal handling, and lifecycle wiring
+- `Kaal::SchedulerFile`
+  - scheduler file loading, normalization, placeholder support, and apply/rollback helpers
+- `Kaal::Utils`
+  - pure cron/idempotency utilities
+- `Kaal::Backend`
+  - adapters, dispatch logging, and backend-facing support collaborators
+- `Kaal::Definitions`
+  - definition lookup and registration coordination
+
+### Contribution guidance for structure
+
+- Keep real integration edges at the library root.
+  - Examples: `kaal.rb`, `railtie.rb`, `rake_tasks.rb`, and namespace entry files such as `core.rb` or `runtime.rb`
+- Keep implementation code inside the domain folders rather than duplicating internal classes at the root
+- Prefer classes for concrete workflows/services and modules for stable domain boundaries
+- Keep framework-specific behavior at the edges rather than inside the Ruby-first core
+- When adding tests, mirror the same domain boundaries in `spec/`
+
 ## Member of the respository
 
 You can also become a member of the repository to have direct access to contribute. Please write to us at [hi@codevedas.com](mailto:hi@codevedas.com) if you are interested.

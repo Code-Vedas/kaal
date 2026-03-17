@@ -28,12 +28,6 @@ detectors:
     enabled: false
   DuplicateMethodCall:
     enabled: true
-    exclude:
-      - Kaal::Railtie#self.register_signal_handlers
-      - Kaal::Coordinator#each_enabled_entry
-      - Kaal::Coordinator#execute_tick
-      - Kaal::Coordinator#recover_missed_runs
-      - Kaal::Coordinator#recover_entry
   MissingSafeMethod:
     enabled: true
     exclude:
@@ -41,14 +35,12 @@ detectors:
   ManualDispatch:
     enabled: true
     exclude:
-      - Kaal::Railtie#self.chain_previous_handler
       - Kaal::Registry#validate_entry
       - Kaal::Coordinator#already_dispatched?
-      - Kaal::Coordinator#find_occurrences
       - Kaal::Coordinator#cleanup_old_dispatch_records
       - Kaal#dispatch_log_registry
       - Kaal#dispatched?
-      - Kaal::Backend::DispatchLogging#log_dispatch_attempt
+      - Kaal::Backend::DispatchRegistryAccessor#fetch_registry
       - Kaal::Backend::RedisAdapter#initialize
       - Kaal::SchedulerTimeZoneResolver#rails_time_zone
   UtilityFunction:
@@ -69,10 +61,11 @@ detectors:
     exclude:
       - Kaal::Configuration#handle_known_key
       - Kaal::Configuration#normalize_value
-      - Kaal::Coordinator#find_occurrences
       - Kaal::Coordinator#already_dispatched?
       - Kaal::Coordinator#cleanup_old_dispatch_records
-      - Kaal::Backend::DispatchLogging#log_dispatch_attempt
+      - Kaal::OccurrenceFinder#call
+      - Kaal::Backend::DispatchRegistryAccessor#fetch_registry
+      - Kaal::SchedulerFileLoader::JobApplier#validate_keyword_keys
   NilCheck:
     enabled: true
     exclude:

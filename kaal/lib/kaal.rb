@@ -6,7 +6,7 @@
 # LICENSE file in the root directory of this source tree.
 
 require 'kaal/version'
-require 'kaal/configuration'
+require 'kaal/config'
 require 'kaal/registry'
 require 'kaal/dispatch/registry'
 require 'kaal/dispatch/memory_engine'
@@ -22,15 +22,17 @@ require 'kaal/backend/redis_adapter'
 require 'kaal/backend/postgres_adapter'
 require 'kaal/backend/mysql_adapter'
 require 'kaal/backend/sqlite_adapter'
-require 'kaal/idempotency_key_generator'
-require 'kaal/cron_utils'
-require 'kaal/cron_humanizer'
-require 'kaal/scheduler_config_error'
-require 'kaal/scheduler_file_loader'
+require 'kaal/backend/dispatch_registry_accessor'
+require 'kaal/utils'
 require 'kaal/register_conflict_support'
+require 'kaal/definitions/registry_accessor'
+require 'kaal/definitions/registration_service'
+require 'kaal/runtime'
+require 'kaal/scheduler_file'
 require 'kaal/rake_tasks'
-require 'kaal/coordinator'
+require 'kaal/core'
 require 'kaal/railtie'
+require 'kaal/backend/dispatch_attempt_logger'
 
 ##
 # Kaal module is the main namespace for the gem.
@@ -84,6 +86,8 @@ module Kaal
       @configuration = Configuration.new
       @coordinator = nil # Invalidate coordinator so it rebuilds with new config
       @definition_registry = nil
+      @definitions_registry_accessor = nil
+      @dispatch_registry_accessor = nil
     end
 
     ##
@@ -149,30 +153,7 @@ module Kaal
     #     enqueue: ->(fire_time:, idempotency_key:) { WeeklySummaryJob.perform_later }
     #   )
     def register(key:, cron:, enqueue:)
-      existing_definition = definition_registry.find_definition(key)
-      existing_entry = registry.find(key)
-      if existing_entry
-        conflict_result = resolve_register_conflict(
-          key: key,
-          cron: cron,
-          enqueue: enqueue,
-          existing_definition: existing_definition,
-          existing_entry: existing_entry
-        )
-
-        return conflict_result if conflict_result
-
-        raise RegistryError, "Key '#{key}' is already registered"
-      end
-      persisted_attributes = {
-        enabled: true,
-        source: 'code',
-        metadata: {}
-      }.merge(existing_definition&.slice(:enabled, :metadata) || {})
-      definition_registry.upsert_definition(key: key, cron: cron, **persisted_attributes)
-      with_registered_definition_rollback(key, existing_definition) do
-        registry.add(key: key, cron: cron, enqueue: enqueue)
-      end
+      registration_service.call(key:, cron:, enqueue:)
     end
 
     ##
@@ -180,12 +161,13 @@ module Kaal
     #
     # @return [Array<Hash>] normalized jobs applied from scheduler file
     # @raise [SchedulerConfigError] if scheduler file is invalid
-    def load_scheduler_file!
+    def load_scheduler_file!(runtime_context: RuntimeContext.default)
       loader = SchedulerFileLoader.new(
         configuration: configuration,
         definition_registry: definition_registry,
         registry: registry,
-        logger: configuration.logger
+        logger: configuration.logger,
+        runtime_context: runtime_context
       )
       loader.load
     end
@@ -199,21 +181,6 @@ module Kaal
       definition_registry.remove_definition(key)
       registry.remove(key)
     end
-
-    def rollback_registered_definition(key, existing_definition)
-      if existing_definition
-        definition_registry.upsert_definition(
-          key: existing_definition[:key],
-          cron: existing_definition[:cron],
-          enabled: existing_definition[:enabled],
-          source: existing_definition[:source],
-          metadata: existing_definition[:metadata]
-        )
-      elsif !registry.registered?(key)
-        definition_registry.remove_definition(key)
-      end
-    end
-    private :rollback_registered_definition
 
     ##
     # Get all registered cron jobs.
@@ -371,16 +338,7 @@ module Kaal
     #   Kaal.dispatched?('reports:daily', Time.current)
     #   # => true if already dispatched, false otherwise
     def dispatched?(key, fire_time)
-      adapter = configuration.backend
-      return false if adapter.nil? || !adapter.respond_to?(:dispatch_registry)
-
-      registry = adapter.dispatch_registry
-      return false if registry.nil?
-
-      registry.dispatched?(key, fire_time)
-    rescue StandardError => e
-      configuration.logger&.warn("Error checking dispatch status for #{key}: #{e.message}")
-      false
+      dispatch_registry_accessor.dispatched?(key, fire_time)
     end
 
     ##
@@ -426,16 +384,7 @@ module Kaal
     #   total = registry.size
     #   registry.clear
     def dispatch_log_registry
-      adapter = configuration.backend
-      return nil if adapter.nil? || !adapter.respond_to?(:dispatch_registry)
-
-      registry = adapter.dispatch_registry
-      return nil if registry.nil?
-
-      registry
-    rescue StandardError => e
-      configuration.logger&.warn("Error accessing dispatch registry: #{e.message}")
-      nil
+      dispatch_registry_accessor.registry
     end
 
     ##
@@ -496,13 +445,7 @@ module Kaal
     #
     # @return [Kaal::Definition::Registry]
     def definition_registry
-      configured_backend = configuration.backend
-      registry = configured_backend&.definition_registry
-      return registry if registry
-
-      @definition_registry ||= Definition::MemoryEngine.new
-    rescue NoMethodError
-      @definition_registry ||= Definition::MemoryEngine.new
+      definitions_registry_accessor.call
     end
 
     def logger
@@ -566,6 +509,35 @@ module Kaal
     # @raise [ArgumentError] when expression is invalid
     def to_human(expression, locale: nil)
       CronHumanizer.to_human(expression, locale: locale)
+    end
+
+    private
+
+    def rollback_registered_definition(key, existing_definition)
+      Definitions::RegistrationService.new(
+        configuration: configuration,
+        definition_registry: definition_registry,
+        registry: registry
+      ).send(:rollback_registered_definition, key, existing_definition)
+    end
+
+    def registration_service
+      Definitions::RegistrationService.new(
+        configuration: configuration,
+        definition_registry: definition_registry,
+        registry: registry
+      )
+    end
+
+    def definitions_registry_accessor
+      @definitions_registry_accessor ||= Definitions::RegistryAccessor.new(
+        configuration: configuration,
+        fallback_registry_provider: -> { @definition_registry ||= Definition::MemoryEngine.new }
+      )
+    end
+
+    def dispatch_registry_accessor
+      @dispatch_registry_accessor ||= Backend::DispatchRegistryAccessor.new(configuration: configuration)
     end
   end
 end
