@@ -174,11 +174,16 @@ module Kaal
       each_enabled_entry do |entry|
         calculate_and_dispatch_due_times(entry)
       end
-    rescue ConfigurationError
+    rescue ConfigurationError => e
+      logger = @configuration.logger
+      message = e.message
+      logger&.error("Kaal coordinator tick failed due to configuration error: #{message}")
       raise
     rescue StandardError => e
       # Log error but continue the loop
-      @configuration.logger&.error("Kaal coordinator tick failed: #{e.message}")
+      logger = @configuration.logger
+      message = e.message
+      logger&.error("Kaal coordinator tick failed: #{message}")
     end
 
     def calculate_and_dispatch_due_times(entry)
@@ -291,10 +296,13 @@ module Kaal
 
       # Clean up old dispatch records after recovery completes
       cleanup_old_dispatch_records(recovery_window)
-    rescue ConfigurationError
+    rescue ConfigurationError => e
+      message = e.message
+      logger&.error("Kaal missed-run recovery failed due to configuration error: #{message}")
       raise
     rescue StandardError => e
-      logger&.error("Error during missed-run recovery: #{e.message}")
+      message = e.message
+      logger&.error("Error during missed-run recovery: #{message}")
     end
 
     ##
@@ -323,10 +331,13 @@ module Kaal
       end
 
       occurrences_size
-    rescue ConfigurationError
+    rescue ConfigurationError => e
+      message = e.message
+      logger&.error("Error recovering entry #{entry_key} due to configuration error: #{message}")
       raise
     rescue StandardError => e
-      logger&.error("Error recovering entry #{entry_key}: #{e.message}")
+      message = e.message
+      logger&.error("Error recovering entry #{entry_key}: #{message}")
       0
     end
 

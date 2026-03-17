@@ -31,6 +31,9 @@ detectors:
     exclude:
       - Kaal::Railtie#self.register_signal_handlers
       - Kaal::Coordinator#each_enabled_entry
+      - Kaal::Coordinator#execute_tick
+      - Kaal::Coordinator#recover_missed_runs
+      - Kaal::Coordinator#recover_entry
   MissingSafeMethod:
     enabled: true
     exclude:

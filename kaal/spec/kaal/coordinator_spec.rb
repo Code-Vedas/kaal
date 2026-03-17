@@ -281,6 +281,18 @@ RSpec.describe Kaal::Coordinator do
         Kaal::ConfigurationError,
         /Invalid time_zone configuration/
       )
+      expect(logger).to have_received(:error).with(/Kaal coordinator tick failed due to configuration error/)
+    end
+
+    it 're-raises ConfigurationError without logger' do
+      configuration.logger = nil
+      configuration.time_zone = 'Mars/Olympus'
+      registry.add(key: 'job', cron: '* * * * *', enqueue: kw_enqueue)
+
+      expect { coordinator.send(:execute_tick) }.to raise_error(
+        Kaal::ConfigurationError,
+        /Invalid time_zone configuration/
+      )
     end
   end
 
@@ -1592,6 +1604,20 @@ RSpec.describe Kaal::Coordinator do
         Kaal::ConfigurationError,
         /Invalid time_zone configuration/
       )
+      expect(logger).to have_received(:error).with(/Kaal missed-run recovery failed due to configuration error/)
+    end
+
+    it 're-raises ConfigurationError for invalid scheduler time zone configuration without logger' do
+      configuration.enable_dispatch_recovery = true
+      configuration.recovery_startup_jitter = 0
+      configuration.logger = nil
+      configuration.time_zone = 'Mars/Olympus'
+      registry.add(key: 'job1', cron: '* * * * *', enqueue: kw_enqueue)
+
+      expect { coordinator.send(:recover_missed_runs) }.to raise_error(
+        Kaal::ConfigurationError,
+        /Invalid time_zone configuration/
+      )
     end
 
     it 'works without logger' do
@@ -1883,6 +1909,16 @@ RSpec.describe Kaal::Coordinator do
       expect(logger).to have_received(:error).with(/Error recovering entry test_job/)
     end
 
+    it 'logs and re-raises ConfigurationError with entry key context' do
+      allow(coordinator).to receive(:parse_cron).with(entry.cron).and_raise(Kaal::ConfigurationError, 'bad zone')
+
+      expect { coordinator.send(:recover_entry, entry, recovery_start, recovery_end) }.to raise_error(
+        Kaal::ConfigurationError,
+        /bad zone/
+      )
+      expect(logger).to have_received(:error).with(/Error recovering entry test_job due to configuration error: bad zone/)
+    end
+
     it 'works without logger' do
       configuration.logger = nil
       cron = double
@@ -1902,6 +1938,16 @@ RSpec.describe Kaal::Coordinator do
       result = coordinator.send(:recover_entry, entry, recovery_start, recovery_end)
 
       expect(result).to eq(0)
+    end
+
+    it 're-raises ConfigurationError without logger' do
+      configuration.logger = nil
+      allow(coordinator).to receive(:parse_cron).with(entry.cron).and_raise(Kaal::ConfigurationError, 'bad zone')
+
+      expect { coordinator.send(:recover_entry, entry, recovery_start, recovery_end) }.to raise_error(
+        Kaal::ConfigurationError,
+        /bad zone/
+      )
     end
   end
   # rubocop:enable RSpec/SubjectStub
