@@ -72,7 +72,7 @@ RSpec.describe Kaal::Railtie do
 
       described_class.load_scheduler_file_on_boot!
 
-      expect(Kaal).to have_received(:load_scheduler_file!)
+      expect(Kaal).to have_received(:load_scheduler_file!).with(runtime_context: an_instance_of(Kaal::RuntimeContext))
     end
 
     it 'does not load scheduler file and logs warning when file is missing and policy is warn' do
@@ -102,7 +102,7 @@ RSpec.describe Kaal::Railtie do
 
       described_class.load_scheduler_file_on_boot!
 
-      expect(Kaal).to have_received(:load_scheduler_file!)
+      expect(Kaal).to have_received(:load_scheduler_file!).with(runtime_context: an_instance_of(Kaal::RuntimeContext))
     end
 
     it 'does not load scheduler file when path is blank and policy is warn' do
@@ -121,7 +121,7 @@ RSpec.describe Kaal::Railtie do
 
       described_class.load_scheduler_file_on_boot!
 
-      expect(Kaal).to have_received(:load_scheduler_file!)
+      expect(Kaal).to have_received(:load_scheduler_file!).with(runtime_context: an_instance_of(Kaal::RuntimeContext))
     end
 
     it 'does not raise when configuration lookup raises NameError and logs debug' do
@@ -136,6 +136,21 @@ RSpec.describe Kaal::Railtie do
       allow(Kaal).to receive(:configuration).and_raise(NameError, 'uninitialized constant MissingConfig')
 
       expect { described_class.load_scheduler_file_on_boot! }.not_to raise_error
+    end
+
+    it 'resolves scheduler paths against the Rails root' do
+      expect(described_class.resolve_scheduler_path('config/scheduler.yml')).to eq('/app/config/scheduler.yml')
+    end
+
+    it 'passes the Rails runtime context into direct scheduler loading' do
+      described_class.load_scheduler_file_now!
+
+      expect(Kaal).to have_received(:load_scheduler_file!).with(
+        runtime_context: have_attributes(
+          environment_name: Rails.env.to_s,
+          root_path: Pathname.new('/app')
+        )
+      )
     end
   end
 

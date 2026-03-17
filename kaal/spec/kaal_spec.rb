@@ -105,13 +105,61 @@ RSpec.describe Kaal do
   describe '.load_scheduler_file!' do
     it 'delegates to SchedulerFileLoader and returns loaded jobs' do
       loader = instance_double(Kaal::SchedulerFileLoader)
-      allow(Kaal::SchedulerFileLoader).to receive(:new).and_return(loader)
+      runtime_context = instance_double(Kaal::RuntimeContext)
+      allow(Kaal::SchedulerFileLoader).to receive(:new).with(
+        configuration: described_class.configuration,
+        definition_registry: described_class.definition_registry,
+        registry: described_class.registry,
+        logger: described_class.configuration.logger,
+        runtime_context: runtime_context
+      ).and_return(loader)
       allow(loader).to receive(:load).and_return([{ key: 'job:one' }])
 
-      result = described_class.load_scheduler_file!
+      result = described_class.load_scheduler_file!(runtime_context: runtime_context)
 
       expect(result).to eq([{ key: 'job:one' }])
       expect(loader).to have_received(:load)
+      expect(Kaal::SchedulerFileLoader).to have_received(:new).with(
+        configuration: described_class.configuration,
+        definition_registry: described_class.definition_registry,
+        registry: described_class.registry,
+        logger: described_class.configuration.logger,
+        runtime_context: runtime_context
+      )
+    end
+  end
+
+  describe 'namespace aliases' do
+    it 'exposes core aliases' do
+      expect(Kaal::Core::Coordinator).to be(Kaal::Coordinator)
+      expect(Kaal::Core::OccurrenceFinder).to be(Kaal::OccurrenceFinder)
+      expect(Kaal::Core::EnabledEntryEnumerator).to be(Kaal::EnabledEntryEnumerator)
+    end
+
+    it 'exposes config aliases' do
+      expect(Kaal::Config::Configuration).to be(Kaal::Configuration)
+      expect(Kaal::Config::ConfigurationError).to be(Kaal::ConfigurationError)
+      expect(Kaal::Config::SchedulerConfigError).to be(Kaal::SchedulerConfigError)
+      expect(Kaal::Config::SchedulerTimeZoneResolver).to be(Kaal::SchedulerTimeZoneResolver)
+    end
+
+    it 'exposes runtime aliases' do
+      expect(Kaal::Runtime::RuntimeContext).to be(Kaal::RuntimeContext)
+      expect(Kaal::Runtime::SchedulerBootLoader).to be(Kaal::SchedulerBootLoader)
+      expect(Kaal::Runtime::SignalHandlerChain).to be(Kaal::SignalHandlerChain)
+      expect(Kaal::Runtime::SignalHandlerInstaller).to be(Kaal::SignalHandlerInstaller)
+    end
+
+    it 'exposes scheduler file aliases' do
+      expect(Kaal::SchedulerFile::Loader).to be(Kaal::SchedulerFileLoader)
+      expect(Kaal::SchedulerFile::HashTransform).to be(Kaal::SchedulerHashTransform)
+      expect(Kaal::SchedulerFile::PlaceholderSupport).to be(Kaal::SchedulerPlaceholderSupport)
+    end
+
+    it 'exposes utils aliases' do
+      expect(Kaal::Utils::CronUtils).to be(Kaal::CronUtils)
+      expect(Kaal::Utils::CronHumanizer).to be(Kaal::CronHumanizer)
+      expect(Kaal::Utils::IdempotencyKeyGenerator).to be(Kaal::IdempotencyKeyGenerator)
     end
   end
 
@@ -533,6 +581,29 @@ RSpec.describe Kaal do
   describe '.rollback_registered_definition' do
     it 'is a private singleton method' do
       expect(described_class.private_methods).to include(:rollback_registered_definition)
+    end
+
+    it 'delegates rollback to the registration service' do
+      definition_registry = instance_double(Kaal::Definition::Registry)
+      existing_definition = {
+        key: 'job:existing',
+        cron: '0 8 * * *',
+        enabled: false,
+        source: 'api',
+        metadata: { owner: 'ops' }
+      }
+      allow(described_class).to receive(:definition_registry).and_return(definition_registry)
+      allow(definition_registry).to receive(:upsert_definition)
+
+      described_class.send(:rollback_registered_definition, 'job:existing', existing_definition)
+
+      expect(definition_registry).to have_received(:upsert_definition).with(
+        key: 'job:existing',
+        cron: '0 8 * * *',
+        enabled: false,
+        source: 'api',
+        metadata: { owner: 'ops' }
+      )
     end
   end
 

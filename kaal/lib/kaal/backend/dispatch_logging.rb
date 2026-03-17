@@ -5,7 +5,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-require 'socket'
+require_relative 'dispatch_attempt_logger'
 
 module Kaal
   module Backend
@@ -25,6 +25,10 @@ module Kaal
     #     end
     #   end
     module DispatchLogging
+      def dispatch_registry
+        nil
+      end
+
       ##
       # Log a dispatch attempt via the dispatch registry.
       #
@@ -33,23 +37,7 @@ module Kaal
       # @param key [String] the lock key (format: "namespace:dispatch:cron_key:fire_time")
       # @return [void]
       def log_dispatch_attempt(key)
-        logger = nil
-        logging_enabled = Kaal.configuration.then do |configuration|
-          logger = configuration.logger
-          configuration.enable_log_dispatch_registry
-        end
-        return unless logging_enabled
-        return unless respond_to?(:dispatch_registry)
-
-        registry = dispatch_registry
-        return unless registry
-
-        cron_key, fire_time = parse_lock_key(key)
-        node_id = Socket.gethostname
-
-        registry.log_dispatch(cron_key, fire_time, node_id, 'dispatched')
-      rescue StandardError => e
-        logger&.error("Failed to log dispatch for #{key}: #{e.message}")
+        dispatch_attempt_logger.call(key)
       end
 
       ##
@@ -73,6 +61,15 @@ module Kaal
         fire_time = Time.at(fire_time_unix)
 
         [cron_key, fire_time]
+      end
+
+      private
+
+      def dispatch_attempt_logger
+        @dispatch_attempt_logger ||= DispatchAttemptLogger.new(
+          configuration: Kaal.configuration,
+          dispatch_registry_provider: -> { dispatch_registry }
+        )
       end
     end
   end

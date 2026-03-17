@@ -6,6 +6,10 @@
 # LICENSE file in the root directory of this source tree.
 
 require 'pathname'
+require 'kaal/runtime/runtime_context'
+require 'kaal/runtime/scheduler_boot_loader'
+require 'kaal/runtime/signal_handler_chain'
+require 'kaal/runtime/signal_handler_installer'
 
 module Kaal
   ##
@@ -31,15 +35,8 @@ module Kaal
     def self.register_signal_handlers
       logger = Kaal.logger
 
-      %w[TERM INT].each do |signal|
-        # Capture the previous handler by temporarily setting to IGNORE and restoring
-        old_handler = Signal.trap(signal, 'IGNORE')
-        Signal.trap(signal, old_handler) if old_handler && old_handler != 'IGNORE'
-
-        # Now install our handler that chains to the previous one
-        Signal.trap(signal) do
-          handle_shutdown_signal(signal, old_handler, logger)
-        end
+      signal_handler_installer.install do |signal, previous_handler|
+        handle_shutdown_signal(signal, previous_handler, logger)
       end
     rescue StandardError => e
       logger&.warn("Failed to register signal handlers: #{e.full_message}")
@@ -56,57 +53,21 @@ module Kaal
         logger&.error("Error stopping scheduler on #{signal} signal: #{e.full_message}")
       end
 
-      chain_previous_handler(signal, old_handler, logger)
-    end
-
-    ##
-    # Chain to a previous signal handler if it exists.
-    def self.chain_previous_handler(signal, old_handler, logger)
-      if old_handler.respond_to?(:call)
-        old_handler.call
-      elsif old_handler.is_a?(String) && old_handler != 'DEFAULT' && old_handler != 'IGNORE'
-        # If previous handler was a command string, we can't easily re-invoke it
-        logger&.debug("Previous #{signal} handler was a command: #{old_handler}")
-      end
+      SignalHandlerChain.new(signal: signal, previous_handler: old_handler, logger: logger).call
     end
 
     ##
     # Load scheduler file at boot while respecting missing-file policy.
     def self.load_scheduler_file_on_boot!
-      configuration = fetch_configuration_for_boot
-      return unless configuration
-
-      if configuration.scheduler_missing_file_policy == :error
-        load_scheduler_file_now!
-        return
-      end
-
-      scheduler_path = configuration.scheduler_config_path.to_s.strip
-      return if scheduler_path.empty?
-
-      absolute_path = resolve_scheduler_path(scheduler_path)
-      unless File.exist?(absolute_path)
-        Kaal.logger&.warn("Scheduler file not found at #{absolute_path}")
-        return
-      end
-
-      load_scheduler_file_now!
+      scheduler_boot_loader.load_on_boot!
     end
 
     def self.resolve_scheduler_path(path)
-      candidate = Pathname.new(path)
-      candidate.absolute? ? candidate.to_s : Rails.root.join(candidate).to_s
+      runtime_context.resolve_path(path)
     end
 
     def self.load_scheduler_file_now!
-      Kaal.load_scheduler_file!
-    end
-
-    def self.fetch_configuration_for_boot
-      Kaal.configuration
-    rescue NameError => e
-      Kaal.logger&.debug("Skipping scheduler file boot load due to configuration error: #{e.message}")
-      nil
+      Kaal.load_scheduler_file!(runtime_context: runtime_context)
     end
 
     ##
@@ -178,6 +139,25 @@ module Kaal
     # Ensure graceful shutdown on Rails shutdown.
     at_exit do
       Kaal::Railtie.handle_shutdown
+    end
+
+    def self.runtime_context
+      RuntimeContext.from_rails(Rails)
+    end
+
+    def self.scheduler_boot_loader
+      current_runtime_context = runtime_context
+
+      SchedulerBootLoader.new(
+        configuration_provider: -> { Kaal.configuration },
+        logger: Kaal.logger,
+        runtime_context: current_runtime_context,
+        load_scheduler_file: -> { Kaal.load_scheduler_file!(runtime_context: current_runtime_context) }
+      )
+    end
+
+    def self.signal_handler_installer
+      SignalHandlerInstaller.new
     end
   end
 end
