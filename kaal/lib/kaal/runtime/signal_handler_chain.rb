@@ -16,12 +16,12 @@ module Kaal
       @logger = logger
     end
 
-    def call(*)
+    def call(...)
       return unless @previous_handler
 
       case @previous_handler
       when Proc, Method
-        invoke_callable(*)
+        invoke_callable(...)
       when String
         return if RESERVED_COMMAND_HANDLERS.include?(@previous_handler)
 
