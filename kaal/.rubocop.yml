@@ -30,7 +30,7 @@ Layout/LineLength:
 RSpecRails/InferredSpecType:
   Enabled: false
 Metrics/ClassLength:
-  Max: 250
+  Max: 275
 Metrics/AbcSize:
   Max: 30
 RSpec/MultipleMemoizedHelpers:

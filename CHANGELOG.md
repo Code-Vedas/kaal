@@ -13,6 +13,7 @@
 [Full Changelog](https://github.com/code-vedas/kaal/compare/v0.1.0...v0.2.0)
 
 ### Breaking Changes
+
 - refactor: hard reset project identity to kaal @niteshpurohit (#62)
   - RailsCron => Kaal
   - rails_cron => kaal
@@ -54,7 +55,6 @@
 ### ⚙️ CI
 
 - ci: update actions/checkout to v6 @niteshpurohit (#30)
-
 
 ## [0.1.0](https://github.com/code-vedas/kaal/tree/v0.1.0) (2025-11-04)
 
