@@ -1,0 +1,27 @@
+# frozen_string_literal: true
+
+source 'https://rubygems.org'
+
+# Specify your gem's dependencies in kaal.gemspec.
+gemspec
+
+group :development, :test do
+  gem 'redis', '~> 5.0'
+  gem 'reek'
+  gem 'rspec'
+  gem 'rubocop-factory_bot'
+  gem 'rubocop-performance'
+  gem 'rubocop-rake'
+  gem 'rubocop-rspec'
+end
+
+group :test do
+  gem 'fakeredis'
+  gem 'simplecov', require: false
+  gem 'simplecov-console', require: false
+end
+
+group :development do
+  gem 'ruby-lsp', require: false
+  gem 'ruby-lsp-rspec', require: false
+end

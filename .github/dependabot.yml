@@ -1,7 +1,19 @@
 version: 2
 updates:
   - package-ecosystem: bundler
-    directory: /kaal
+    directory: /core/kaal
+    schedule:
+      interval: daily
+  - package-ecosystem: bundler
+    directory: /core/kaal-activerecord
+    schedule:
+      interval: daily
+  - package-ecosystem: bundler
+    directory: /core/kaal-sequel
+    schedule:
+      interval: daily
+  - package-ecosystem: bundler
+    directory: /gems/kaal-rails
     schedule:
       interval: daily
   - package-ecosystem: bundler

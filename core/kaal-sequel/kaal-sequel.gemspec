@@ -1,0 +1,35 @@
+# frozen_string_literal: true
+
+version = File.read(File.expand_path('lib/kaal/sequel/version.rb', __dir__))
+              .match(/VERSION\s*=\s*['"]([^'"]+)['"]/)[1]
+
+Gem::Specification.new do |spec|
+  spec.name = 'kaal-sequel'
+  spec.version = version
+  spec.authors = ['Nitesh Purohit', 'Codevedas Inc.']
+  spec.email = ['nitesh.purohit.it@gmail.com', 'team@codevedas.com']
+  spec.summary       = 'Sequel integration for Kaal, a distributed cron scheduler for Ruby.'
+  spec.description   = <<-DESC
+    Kaal-Sequel provides seamless integration of Kaal with Sequel, allowing you to use Sequel models for scheduling and managing cron jobs in a distributed environment.
+  DESC
+  spec.homepage      = 'https://github.com/Code-Vedas/kaal'
+  spec.license       = 'MIT'
+  spec.metadata['bug_tracker_uri'] = 'https://github.com/Code-Vedas/kaal/issues'
+  spec.metadata['changelog_uri'] = 'https://github.com/Code-Vedas/kaal/blob/main/CHANGELOG.md'
+  spec.metadata['documentation_uri'] = 'https://kaal.codevedas.com'
+  spec.metadata['homepage_uri'] = 'https://github.com/Code-Vedas/kaal'
+  spec.metadata['source_code_uri'] = 'https://github.com/Code-Vedas/kaal.git'
+  spec.metadata['funding_uri'] = 'https://github.com/sponsors/Code-Vedas'
+  spec.metadata['support_uri'] = 'https://kaal.codevedas.com/support'
+  spec.metadata['rubygems_uri'] = 'https://rubygems.org/gems/kaal-sequel'
+  spec.metadata['rubygems_mfa_required'] = 'true'
+  spec.files = Dir.chdir(File.expand_path(__dir__)) do
+    Dir['{config,exe,lib}/**/*', 'LICENSE', 'Rakefile', 'README.md']
+  end
+  spec.bindir = 'exe'
+  spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
+  spec.require_paths = ['lib']
+  spec.add_dependency 'kaal', "~> #{version}"
+  spec.add_dependency 'sequel', '~> 5.0'
+  spec.required_ruby_version = '>= 3.2'
+end

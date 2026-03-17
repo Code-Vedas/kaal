@@ -1,5 +1,6 @@
 permissions:
   contents: read
+  pull-requests: write
 name: Danger
 on:
   pull_request:
@@ -10,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 env:
   RUBY_VERSION: 3.4.3
-  APP_DIR: ${{ github.workspace }}/kaal
+  APP_DIR: ${{ github.workspace }}
 jobs:
   danger:
     permissions:
@@ -28,8 +29,10 @@ jobs:
         with:
           ruby-version: ${{ env.RUBY_VERSION }}
           bundler-cache: true
-          working-directory: ${{ env.APP_DIR }}
-      - name: Run Danger
-        run: bundle exec danger
+      - uses: MeilCli/danger-action@v6
+        name: Run Danger
+        with:
+          danger_file: ${{ github.workspace }}/.github/Dangerfile
+          danger_id: danger
         env:
           DANGER_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}

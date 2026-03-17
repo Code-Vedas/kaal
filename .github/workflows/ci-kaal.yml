@@ -1,0 +1,38 @@
+name: core/kaal
+permissions:
+  contents: read
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('ref-{0}', github.ref) }}
+  cancel-in-progress: true
+
+jobs:
+  kaal:
+    name: core/kaal · ${{ matrix.name }}
+    uses: ./.github/workflows/shared-ci.yml
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby_version:
+          - 3.2
+          - 3.4
+          - 4.0
+        include:
+          - ruby_version: 3.2
+            name: Ruby 3.2
+          - ruby_version: 3.4
+            name: Ruby 3.4
+          - ruby_version: 4.0
+            name: Ruby 4.0
+    with:
+      app_dir: core/kaal
+      ruby_version: ${{ matrix.ruby_version }}
+      gemfile: core/kaal/Gemfile
+      upload_coverage: ${{ matrix.ruby_version == '3.4' }}
+    secrets:
+      QLTY_COVERAGE_TOKEN: ${{ secrets.QLTY_COVERAGE_TOKEN }}

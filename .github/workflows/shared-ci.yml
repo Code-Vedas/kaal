@@ -1,0 +1,168 @@
+name: Ruby CI (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      upload_coverage:
+        required: false
+        type: boolean
+        default: false
+      ruby_version:
+        required: true
+        type: string
+      app_dir:
+        required: true
+        type: string
+      gemfile:
+        required: true
+        type: string
+    secrets:
+      QLTY_COVERAGE_TOKEN:
+        required: false
+permissions:
+  contents: read
+env:
+  APP_DIR: ${{ github.workspace }}/${{ inputs.app_dir }}
+  RUBY_VERSION: ${{ inputs.ruby_version }}
+  BUNDLE_GEMFILE: ${{ github.workspace }}/${{ inputs.gemfile }}
+jobs:
+  lint:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.APP_DIR }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+          working-directory: ${{ env.APP_DIR }}
+      - name: RuboCop
+        run: bin/rubocop -f github
+
+  reek:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    needs: lint
+    defaults:
+      run:
+        working-directory: ${{ env.APP_DIR }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+          working-directory: ${{ env.APP_DIR }}
+      - name: Reek
+        run: bin/reek
+  test:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    needs: reek
+    steps:
+      - name: Install apt packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            build-essential git libpq-dev libyaml-dev pkg-config
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+          working-directory: ${{ env.APP_DIR }}
+      - name: Run unit tests
+        working-directory: ${{ env.APP_DIR }}
+        run: bundle exec rspec --profile 10
+      - name: Publish coverage to Qlty
+        if: ${{ inputs.upload_coverage }}
+        uses: qltysh/qlty-action/coverage@v2
+        with:
+          token: ${{ secrets.QLTY_COVERAGE_TOKEN }}
+          files: ${{ env.APP_DIR }}/coverage/.resultset.json
+  test_e2e:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    needs: test
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootROOT!1
+          MYSQL_DATABASE: kaal_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -p$MYSQL_ROOT_PASSWORD"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: [5432:5432]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis
+        ports: [6379:6379]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Install apt packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            build-essential git libpq-dev libyaml-dev pkg-config libmysqlclient-dev
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+          working-directory: ${{ env.APP_DIR }}
+      - name: Run e2e in-memory
+        working-directory: ${{ env.APP_DIR }}
+        env:
+          RAILS_ENV: test
+        run: bin/rspec-e2e memory
+      - name: Run e2e sqlite
+        working-directory: ${{ env.APP_DIR }}
+        env:
+          RAILS_ENV: test
+        run: bin/rspec-e2e sqlite
+      - name: Run e2e postgres
+        working-directory: ${{ env.APP_DIR }}
+        env:
+          RAILS_ENV: test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/kaal_test
+        run: bin/rspec-e2e pg
+      - name: Run e2e mysql
+        working-directory: ${{ env.APP_DIR }}
+        env:
+          RAILS_ENV: test
+          DATABASE_URL: mysql2://root:rootROOT!1@127.0.0.1:3306/kaal_test
+        run: bin/rspec-e2e mysql
+      - name: Run e2e redis
+        working-directory: ${{ env.APP_DIR }}
+        env:
+          RAILS_ENV: test
+          REDIS_URL: redis://localhost:6379
+        run: bin/rspec-e2e redis
