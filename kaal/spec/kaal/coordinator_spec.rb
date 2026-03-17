@@ -372,133 +372,6 @@ RSpec.describe Kaal::Coordinator do
     end
   end
 
-  describe '#find_occurrences' do
-    it 'finds occurrences within the time window' do
-      cron = Fugit.parse_cron('* * * * *')
-      now = Time.now
-      start_time = now - 65.seconds
-      end_time = now
-
-      occurrences = coordinator.send(:find_occurrences, cron, start_time, end_time)
-
-      expect(occurrences).to be_a(Array)
-      expect(occurrences.length).to be >= 1
-    end
-
-    it 'returns empty array when no occurrences' do
-      cron = Fugit.parse_cron('0 0 1 1 *') # Very rare cron
-      now = Time.now
-      start_time = now
-      end_time = now + 1.second
-
-      occurrences = coordinator.send(:find_occurrences, cron, start_time, end_time)
-
-      expect(occurrences).to eq([])
-    end
-
-    it 'breaks when next_time returns nil' do
-      cron = double
-      allow(cron).to receive(:next_time).and_return(nil)
-
-      occurrences = coordinator.send(:find_occurrences, cron, Time.now, Time.now + 60)
-
-      expect(occurrences).to eq([])
-    end
-
-    it 'breaks when next_time exceeds end_time' do
-      cron = double
-      allow(cron).to receive(:next_time).and_return(Time.now + 1000)
-
-      occurrences = coordinator.send(:find_occurrences, cron, Time.now, Time.now + 60)
-
-      expect(occurrences).to eq([])
-    end
-
-    it 'normalizes plain Time values returned by next_time to UTC' do
-      cron = double
-      fire_time = Time.new(2026, 1, 15, 9, 0, 0, '-05:00')
-      allow(cron).to receive(:next_time).and_return(fire_time, nil)
-
-      occurrences = coordinator.send(
-        :find_occurrences,
-        cron,
-        Time.utc(2026, 1, 15, 13, 0, 0),
-        Time.utc(2026, 1, 15, 15, 0, 0)
-      )
-
-      expect(occurrences).to eq([Time.utc(2026, 1, 15, 14, 0, 0)])
-      expect(occurrences).to all(be_utc)
-    end
-
-    it 'rescues StandardError and logs it' do
-      cron = double
-      allow(cron).to receive(:next_time).and_raise(StandardError, 'Calc error')
-
-      result = coordinator.send(:find_occurrences, cron, Time.now, Time.now + 60)
-
-      expect(result).to eq([])
-      expect(logger).to have_received(:error).with(/Failed to calculate occurrences/)
-    end
-
-    it 'rescues StandardError without logging when logger is nil' do
-      configuration.logger = nil
-      cron = double
-      allow(cron).to receive(:next_time).and_raise(StandardError, 'Calc error')
-
-      result = coordinator.send(:find_occurrences, cron, Time.now, Time.now + 60)
-
-      expect(result).to eq([])
-    end
-
-    it 'uses UTC scheduling when no scheduler time zone is configured' do
-      cron = coordinator.send(:parse_cron, '0 9 * * *')
-      start_time = Time.utc(2026, 1, 15, 8, 0, 0)
-      end_time = Time.utc(2026, 1, 15, 10, 0, 0)
-
-      occurrences = coordinator.send(:find_occurrences, cron, start_time, end_time)
-
-      expect(occurrences).to eq([Time.utc(2026, 1, 15, 9, 0, 0)])
-      expect(occurrences).to all(be_utc)
-    end
-
-    it 'uses the configured scheduler time zone for cron evaluation' do
-      configuration.time_zone = 'America/Toronto'
-      cron = coordinator.send(:parse_cron, '0 9 * * *')
-      start_time = Time.utc(2026, 1, 15, 13, 0, 0)
-      end_time = Time.utc(2026, 1, 15, 15, 0, 0)
-
-      occurrences = coordinator.send(:find_occurrences, cron, start_time, end_time)
-
-      expect(occurrences).to eq([Time.utc(2026, 1, 15, 14, 0, 0)])
-      expect(occurrences).to all(be_utc)
-    end
-
-    it 'skips nonexistent local times during spring-forward DST transitions' do
-      configuration.time_zone = 'America/Toronto'
-      cron = coordinator.send(:parse_cron, '30 2 * * *')
-      start_time = Time.utc(2026, 3, 8, 0, 0, 0)
-      end_time = Time.utc(2026, 3, 8, 23, 59, 59)
-
-      occurrences = coordinator.send(:find_occurrences, cron, start_time, end_time)
-
-      expect(occurrences).to eq([])
-    end
-
-    it 'includes both repeated local times during fall-back DST transitions' do
-      configuration.time_zone = 'America/Toronto'
-      cron = coordinator.send(:parse_cron, '30 1 * * *')
-      start_time = Time.utc(2026, 11, 1, 0, 0, 0)
-      end_time = Time.utc(2026, 11, 1, 23, 59, 59)
-
-      occurrences = coordinator.send(:find_occurrences, cron, start_time, end_time)
-
-      expect(occurrences).to eq([
-                                  Time.utc(2026, 11, 1, 5, 30, 0),
-                                  Time.utc(2026, 11, 1, 6, 30, 0)
-                                ])
-    end
-  end
-
   describe '#dispatch_if_due' do
     it 'does not dispatch when fire_time is in the future' do
       call_count = [0]
@@ -624,133 +497,6 @@ RSpec.describe Kaal::Coordinator do
       result = coordinator.send(:acquire_lock, 'key')
 
       expect(result).to be false
-    end
-  end
-
-  describe '#each_enabled_entry' do
-    it 'falls back to in-memory registry when definition registry is nil' do
-      registry.add(key: 'job:registry', cron: '* * * * *', enqueue: kw_enqueue)
-      allow(Kaal).to receive(:definition_registry).and_return(nil)
-
-      yielded = []
-      coordinator.send(:each_enabled_entry) { |entry| yielded << entry.key }
-
-      expect(yielded).to eq(['job:registry'])
-      expect(logger).not_to have_received(:warn).with(/Failed to iterate enabled definitions/)
-    end
-
-    it 'iterates over enabled definitions and yields resolved entries' do
-      registry.add(key: 'job:one', cron: '* * * * *', enqueue: kw_enqueue)
-      definitions = [{ key: 'job:one', cron: '*/5 * * * *', enabled: true }]
-      definition_registry = instance_double(
-        Kaal::Definition::Registry,
-        enabled_definitions: definitions
-      )
-      allow(Kaal).to receive(:definition_registry).and_return(definition_registry)
-
-      yielded = []
-      coordinator.send(:each_enabled_entry) { |entry| yielded << entry }
-
-      expect(yielded.size).to eq(1)
-      expect(yielded.first.key).to eq('job:one')
-      expect(yielded.first.cron).to eq('*/5 * * * *')
-    end
-
-    it 'warns and skips definitions with missing callback registrations' do
-      definition_registry = instance_double(
-        Kaal::Definition::Registry,
-        enabled_definitions: [{ key: 'job:missing', cron: '* * * * *', enabled: true }],
-        all_definitions: [{ key: 'job:missing', cron: '* * * * *', enabled: true }]
-      )
-      allow(Kaal).to receive(:definition_registry).and_return(definition_registry)
-
-      yielded = []
-      coordinator.send(:each_enabled_entry) { |entry| yielded << entry }
-
-      expect(yielded).to eq([])
-      expect(logger).to have_received(:warn).with(/No enqueue callback registered for definition 'job:missing'/)
-    end
-
-    it 'skips missing callback definitions without warning when logger is nil' do
-      configuration.logger = nil
-      definition_registry = instance_double(
-        Kaal::Definition::Registry,
-        enabled_definitions: [{ key: 'job:missing-no-logger', cron: '* * * * *', enabled: true }],
-        all_definitions: [{ key: 'job:missing-no-logger', cron: '* * * * *', enabled: true }]
-      )
-      allow(Kaal).to receive(:definition_registry).and_return(definition_registry)
-
-      yielded = []
-      expect { coordinator.send(:each_enabled_entry) { |entry| yielded << entry } }.not_to raise_error
-      expect(yielded).to eq([])
-    end
-
-    it 'warns and skips definitions when callback exists but enqueue is nil' do
-      callback_entry = instance_double(Kaal::Registry::Entry, enqueue: nil)
-      allow(registry).to receive(:find).with('job:nil-enqueue').and_return(callback_entry)
-      definition_registry = instance_double(
-        Kaal::Definition::Registry,
-        enabled_definitions: [{ key: 'job:nil-enqueue', cron: '* * * * *', enabled: true }],
-        all_definitions: [{ key: 'job:nil-enqueue', cron: '* * * * *', enabled: true }]
-      )
-      allow(Kaal).to receive(:definition_registry).and_return(definition_registry)
-
-      yielded = []
-      coordinator.send(:each_enabled_entry) { |entry| yielded << entry }
-
-      expect(yielded).to eq([])
-      expect(logger).to have_received(:warn).with(/No enqueue callback registered for definition 'job:nil-enqueue'/)
-    end
-
-    it 'yields nothing when persisted definitions exist but all are disabled' do
-      registry.add(key: 'job:disabled', cron: '* * * * *', enqueue: kw_enqueue)
-      definition_registry = instance_double(
-        Kaal::Definition::Registry,
-        enabled_definitions: [],
-        all_definitions: [{ key: 'job:disabled', cron: '* * * * *', enabled: false }]
-      )
-      allow(Kaal).to receive(:definition_registry).and_return(definition_registry)
-
-      yielded = []
-      coordinator.send(:each_enabled_entry) { |entry| yielded << entry.key }
-
-      expect(yielded).to eq([])
-    end
-
-    it 'falls back to in-memory registry iteration when no persisted definitions exist' do
-      registry.add(key: 'job:fallback', cron: '* * * * *', enqueue: kw_enqueue)
-      definition_registry = instance_double(Kaal::Definition::Registry, enabled_definitions: [], all_definitions: [])
-      allow(Kaal).to receive(:definition_registry).and_return(definition_registry)
-
-      yielded = []
-      coordinator.send(:each_enabled_entry) { |entry| yielded << entry.key }
-
-      expect(yielded).to eq(['job:fallback'])
-    end
-
-    it 'falls back to in-memory registry iteration when definition iteration fails' do
-      registry.add(key: 'job:fallback', cron: '* * * * *', enqueue: kw_enqueue)
-      definition_registry = instance_double(Kaal::Definition::Registry)
-      allow(definition_registry).to receive(:enabled_definitions).and_raise(StandardError, 'boom')
-      allow(Kaal).to receive(:definition_registry).and_return(definition_registry)
-
-      yielded = []
-      coordinator.send(:each_enabled_entry) { |entry| yielded << entry.key }
-
-      expect(yielded).to eq(['job:fallback'])
-      expect(logger).to have_received(:warn).with(/Failed to iterate enabled definitions: boom/)
-    end
-
-    it 'falls back to in-memory registry iteration when definition iteration fails and logger is nil' do
-      configuration.logger = nil
-      registry.add(key: 'job:fallback', cron: '* * * * *', enqueue: kw_enqueue)
-      definition_registry = instance_double(Kaal::Definition::Registry)
-      allow(definition_registry).to receive(:enabled_definitions).and_raise(StandardError, 'boom')
-      allow(Kaal).to receive(:definition_registry).and_return(definition_registry)
-
-      yielded = []
-      expect { coordinator.send(:each_enabled_entry) { |entry| yielded << entry.key } }.not_to raise_error
-      expect(yielded).to eq(['job:fallback'])
     end
   end
 
@@ -917,17 +663,6 @@ RSpec.describe Kaal::Coordinator do
       expect(call_count[0]).to eq(1)
     end
 
-    it 'find_occurrences with multiple occurrences returns all' do
-      cron = Fugit.parse_cron('*/5 * * * *') # Every 5 minutes
-      start_time = Time.now.floor
-      end_time = start_time + 20.minutes
-
-      occurrences = coordinator.send(:find_occurrences, cron, start_time, end_time)
-
-      # Should find multiple 5-minute intervals
-      expect(occurrences.length).to be >= 4
-    end
-
     it 'acquire_lock with real adapter return value' do
       adapter = double
       configuration.backend = adapter
@@ -1050,34 +785,6 @@ RSpec.describe Kaal::Coordinator do
       expect(coordinator.running?).to be true
 
       coordinator.stop!
-    end
-
-    it 'find_occurrences handles nil from next_time correctly' do
-      cron = double
-      call_count = [0]
-      allow(cron).to receive(:next_time) do
-        call_count[0] += 1
-        nil
-      end
-
-      result = coordinator.send(:find_occurrences, cron, Time.now, Time.now + 60)
-
-      expect(result).to eq([])
-      expect(call_count[0]).to eq(1)
-    end
-
-    it 'find_occurrences stops iterating when exceeds end_time' do
-      cron = double
-      call_count = [0]
-      allow(cron).to receive(:next_time) do
-        call_count[0] += 1
-        Time.now + 1000
-      end
-
-      result = coordinator.send(:find_occurrences, cron, Time.now, Time.now + 60)
-
-      expect(result).to eq([])
-      expect(call_count[0]).to eq(1)
     end
 
     it 'dispatch_if_due with cron_key error uses unknown in error message' do
@@ -1264,22 +971,6 @@ RSpec.describe Kaal::Coordinator do
       coordinator.stop!
     end
 
-    it 'find_occurrences increments time correctly' do
-      cron = Fugit.parse_cron('* * * * *')
-      now = Time.now
-      start_time = now.floor
-      end_time = start_time + 2.minutes
-
-      occurrences = coordinator.send(:find_occurrences, cron, start_time, end_time)
-
-      # Verify occurrences are properly incremented by 1 second and multiple exist
-      expect(occurrences.count).to be >= 2
-      if occurrences.length >= 2
-        time_diff = (occurrences[1] - occurrences[0]).to_i
-        expect(time_diff).to be >= 60
-      end
-    end
-
     it 'dispatch_if_due fire_time equals now edge case' do
       call_count = [0]
       entry = instance_double(Kaal::Registry::Entry, key: 'job', enqueue: kw_enqueue { call_count[0] += 1 })
@@ -1300,18 +991,6 @@ RSpec.describe Kaal::Coordinator do
       registry.add(key: 'job2', cron: '0 * * * *', enqueue: kw_enqueue)
 
       expect { coordinator.send(:execute_tick) }.not_to raise_error
-    end
-
-    it 'find_occurrences with exact end_time boundary' do
-      cron = Fugit.parse_cron('* * * * *')
-      now = Time.now
-      start_time = now - 1.minute
-      end_time = start_time + 59.seconds
-
-      occurrences = coordinator.send(:find_occurrences, cron, start_time, end_time)
-
-      # Verify occurrences don't exceed end_time
-      expect(occurrences).to all(be <= end_time)
     end
 
     it 'acquire_lock error logging with message' do
@@ -1385,19 +1064,6 @@ RSpec.describe Kaal::Coordinator do
 
       # Verify multiple entries were processed
       expect(logger).to have_received(:debug).at_least(:once)
-    end
-
-    it 'find_occurrences continues to next iteration' do
-      cron = Fugit.parse_cron('* * * * *')
-      start = (Time.now - 5.minutes).floor
-      finish = start + 5.minutes
-
-      occurrences = coordinator.send(:find_occurrences, cron, start, finish)
-
-      # Should have multiple occurrences
-      expect(occurrences.length).to be > 1
-      # Each should be unique and increment
-      expect(occurrences.uniq.length).to eq(occurrences.length)
     end
 
     it 'dispatch_if_due acquires correct lock key' do

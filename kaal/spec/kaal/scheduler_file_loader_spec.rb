@@ -27,11 +27,6 @@ RSpec.describe Kaal::SchedulerFileLoader do
     stub_const('SchedulerLoaderNotAJob', Class.new do
       def call; end
     end)
-    stub_const('SchedulerLoaderRailsContext', Class.new do
-      def env; end
-
-      def root; end
-    end)
   end
 
   def write_scheduler(contents)
@@ -40,13 +35,13 @@ RSpec.describe Kaal::SchedulerFileLoader do
 
   def build_loader(env: 'test')
     configuration.scheduler_config_path = scheduler_path
-    rails_context = instance_double(SchedulerLoaderRailsContext, env: env, root: Pathname.new(tmpdir))
+    runtime_context = instance_double(Kaal::RuntimeContext, environment_name: env, resolve_path: scheduler_path)
     described_class.new(
       configuration: configuration,
       definition_registry: definition_registry,
       registry: registry,
       logger: logger,
-      rails_context: rails_context
+      runtime_context: runtime_context
     )
   end
 
@@ -249,7 +244,7 @@ RSpec.describe Kaal::SchedulerFileLoader do
       definition_registry: definition_registry,
       registry: registry,
       logger: logger,
-      rails_context: instance_double(SchedulerLoaderRailsContext, env: 'test', root: Pathname.new(tmpdir))
+      runtime_context: instance_double(Kaal::RuntimeContext, environment_name: 'test', resolve_path: scheduler_path)
     )
 
     expect { loader.load }.to raise_error(Kaal::SchedulerConfigError, /scheduler_config_path cannot be blank/)
@@ -262,7 +257,7 @@ RSpec.describe Kaal::SchedulerFileLoader do
       definition_registry: definition_registry,
       registry: registry,
       logger: nil,
-      rails_context: instance_double(SchedulerLoaderRailsContext, env: 'test', root: Pathname.new(tmpdir))
+      runtime_context: instance_double(Kaal::RuntimeContext, environment_name: 'test', resolve_path: scheduler_path)
     )
 
     expect { nil_logger_loader.load }.not_to raise_error
@@ -591,6 +586,12 @@ RSpec.describe Kaal::SchedulerFileLoader do
     end.to raise_error(Kaal::SchedulerConfigError, /Invalid keyword argument key/)
   end
 
+  it 'resolves job_class through the delegated applier seam' do
+    job_class = build_loader.send(:resolve_job_class, job_class_name: 'SchedulerLoaderTestJob', key: 'job:resolve')
+
+    expect(job_class).to eq(SchedulerLoaderTestJob)
+  end
+
   it 'applies conflict policy code_wins by skipping file entry' do
     configuration.scheduler_conflict_policy = :code_wins
     definition_registry.upsert_definition(key: 'job:conflict', cron: '* * * * *', enabled: true, source: 'code', metadata: {})
@@ -626,7 +627,7 @@ RSpec.describe Kaal::SchedulerFileLoader do
       definition_registry: definition_registry,
       registry: registry,
       logger: nil,
-      rails_context: instance_double(SchedulerLoaderRailsContext, env: 'test', root: Pathname.new(tmpdir))
+      runtime_context: instance_double(Kaal::RuntimeContext, environment_name: 'test', resolve_path: scheduler_path)
     )
 
     expect { nil_logger_loader.load }.not_to raise_error
@@ -639,7 +640,7 @@ RSpec.describe Kaal::SchedulerFileLoader do
       definition_registry: definition_registry,
       registry: registry,
       logger: nil,
-      rails_context: instance_double(SchedulerLoaderRailsContext, env: 'test', root: Pathname.new(tmpdir))
+      runtime_context: instance_double(Kaal::RuntimeContext, environment_name: 'test', resolve_path: scheduler_path)
     )
 
     result = loader.send(:skip_due_to_conflict?, key: 'job:one', existing_definition: { source: 'code' })
@@ -898,7 +899,7 @@ RSpec.describe Kaal::SchedulerFileLoader do
       definition_registry: definition_registry,
       registry: registry,
       logger: nil,
-      rails_context: instance_double(SchedulerLoaderRailsContext, env: 'test', root: Pathname.new(tmpdir))
+      runtime_context: instance_double(Kaal::RuntimeContext, environment_name: 'test', resolve_path: scheduler_path)
     )
     existing_definition = { key: 'job:error_nil_logger', cron: '* * * * *', enabled: true, source: 'file', metadata: {} }
     allow(definition_registry).to receive(:upsert_definition).and_raise(StandardError, 'rollback blew up')

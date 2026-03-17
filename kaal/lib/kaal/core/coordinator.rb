@@ -7,7 +7,9 @@
 
 require 'active_support/time'
 require 'fugit'
-require_relative 'scheduler_time_zone_resolver'
+require_relative 'enabled_entry_enumerator'
+require_relative 'occurrence_finder'
+require 'kaal/config/scheduler_time_zone_resolver'
 
 module Kaal
   ##
@@ -175,15 +177,10 @@ module Kaal
         calculate_and_dispatch_due_times(entry)
       end
     rescue ConfigurationError => e
-      logger = @configuration.logger
-      message = e.message
-      logger&.error("Kaal coordinator tick failed due to configuration error: #{message}")
+      log_configuration_error('Kaal coordinator tick failed', e)
       raise
     rescue StandardError => e
-      # Log error but continue the loop
-      logger = @configuration.logger
-      message = e.message
-      logger&.error("Kaal coordinator tick failed: #{message}")
+      log_runtime_error('Kaal coordinator tick failed', e)
     end
 
     def calculate_and_dispatch_due_times(entry)
@@ -216,30 +213,7 @@ module Kaal
     end
 
     def find_occurrences(cron, start_time, end_time)
-      # Use fugit to find all occurrences between start and end times
-      occurrences = []
-      current_time = start_time.getutc
-      normalized_end_time = end_time.getutc
-
-      while current_time <= normalized_end_time
-        next_occurrence = cron.next_time(current_time)
-        break unless next_occurrence
-
-        fire_time = if next_occurrence.respond_to?(:to_utc_time)
-                      next_occurrence.to_utc_time
-                    else
-                      next_occurrence.to_time.utc
-                    end
-        break if fire_time > normalized_end_time
-
-        occurrences << fire_time
-        current_time = fire_time + 1.second # Move past this occurrence to find the next
-      end
-
-      occurrences
-    rescue StandardError => e
-      @configuration.logger&.error("Failed to calculate occurrences: #{e.message}")
-      []
+      occurrence_finder.call(cron:, start_time:, end_time:)
     end
 
     def dispatch_if_due(entry, fire_time, now)
@@ -297,12 +271,10 @@ module Kaal
       # Clean up old dispatch records after recovery completes
       cleanup_old_dispatch_records(recovery_window)
     rescue ConfigurationError => e
-      message = e.message
-      logger&.error("Kaal missed-run recovery failed due to configuration error: #{message}")
+      log_configuration_error('Kaal missed-run recovery failed', e, logger:)
       raise
     rescue StandardError => e
-      message = e.message
-      logger&.error("Error during missed-run recovery: #{message}")
+      log_runtime_error('Error during missed-run recovery', e, logger:)
     end
 
     ##
@@ -331,12 +303,11 @@ module Kaal
       end
 
       occurrences_size
-    rescue ConfigurationError
-      # Let ConfigurationError propagate so it can be logged/handled at a higher level.
+    rescue ConfigurationError => e
+      log_configuration_error("Error recovering entry #{entry_key}", e, logger:)
       raise
     rescue StandardError => e
-      message = e.message
-      logger&.error("Error recovering entry #{entry_key}: #{message}")
+      log_runtime_error("Error recovering entry #{entry_key}", e, logger:)
       0
     end
 
@@ -392,37 +363,7 @@ module Kaal
     end
 
     def each_enabled_entry(&)
-      use_registry_entries = false
-      logger = @configuration.logger
-      warn_iteration_failure = ->(target, error) { logger&.warn("Failed to iterate #{target}: #{error.message}") }
-
-      begin
-        definition_registry = Kaal.definition_registry
-        return each_registry_entry(&) unless definition_registry
-
-        definitions = definition_registry.enabled_definitions || []
-        use_registry_entries = definitions.empty? && definition_registry.all_definitions.to_a.empty?
-
-        definitions
-          .filter_map { |definition| build_entry_from_definition(definition) }
-          .each(&)
-      rescue StandardError => e
-        warn_iteration_failure.call('enabled definitions', e)
-        use_registry_entries = true
-      end
-
-      each_registry_entry(&) if use_registry_entries
-    end
-
-    def build_entry_from_definition(definition)
-      key = definition[:key]
-      callback_entry = @registry.find(key)
-      unless callback_entry&.enqueue
-        @configuration.logger&.warn("No enqueue callback registered for definition '#{key}', skipping")
-        return nil
-      end
-
-      Registry::Entry.new(key: key, cron: definition[:cron], enqueue: callback_entry.enqueue).freeze
+      enabled_entry_enumerator.each(&)
     end
 
     def dispatch_work(entry, fire_time)
@@ -454,12 +395,24 @@ module Kaal
       @configuration.logger&.error("Sleep interrupted: #{e.message}")
     end
 
-    def each_registry_entry(&)
-      @registry.each(&)
-    end
-
     def scheduler_time_zone_resolver
       @scheduler_time_zone_resolver ||= SchedulerTimeZoneResolver.new(configuration: @configuration)
+    end
+
+    def occurrence_finder
+      @occurrence_finder ||= OccurrenceFinder.new(configuration: @configuration)
+    end
+
+    def enabled_entry_enumerator
+      @enabled_entry_enumerator ||= EnabledEntryEnumerator.new(configuration: @configuration, registry: @registry)
+    end
+
+    def log_configuration_error(prefix, error, logger: @configuration.logger)
+      logger&.error("#{prefix} due to configuration error: #{error.message}")
+    end
+
+    def log_runtime_error(prefix, error, logger: @configuration.logger)
+      logger&.error("#{prefix}: #{error.message}")
     end
   end
 end

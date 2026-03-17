@@ -14,7 +14,7 @@ Every time Kaal fires a scheduled job, it provides a deterministic **idempotency
 
 Each cron job receives:
 
-- **`fire_time`**: The time the job was scheduled to run (in your application's configured timezone)
+- **`fire_time`**: The absolute scheduled instant for that run
 - **`idempotency_key`**: A deterministic key based on namespace, job key, and fire time
 
 The idempotency key is generated as: `{namespace}-{job_key}-{fire_time.to_i}`
@@ -30,9 +30,10 @@ This deterministic format ensures that:
 - Different fire times generate different keys
 - Keys are suitable for use as deduplication identifiers
 
-**Note on Timezones:** The `fire_time` object is created in your application's configured timezone (set via `Time.zone` in Rails).
-The idempotency key uses `fire_time.to_i` which converts to a Unix timestamp—a timezone-agnostic representation—ensuring consistent key generation regardless of timezone configuration.
-However, if you manually create `fire_time` objects for manual idempotency checking, ensure they're created with `Time.current` (which respects your app's timezone) rather than `Time.now` (which uses system timezone).
+**Note on Timezones:** `fire_time` is the absolute scheduled instant Kaal uses for dispatch coordination, recovery, and idempotency checks.
+If you configure `time_zone`, that changes how cron expressions are interpreted, not how `fire_time` is stored or keyed.
+The idempotency key uses `fire_time.to_i`, which is a Unix timestamp and therefore timezone-agnostic.
+If you manually create `fire_time` values for dispatch checks or custom idempotency flows, use the same absolute instant you want to verify.
 
 ---
 
@@ -198,7 +199,7 @@ For utilities or advanced use cases, use the `with_idempotency` helper:
 
 ```ruby
   # Generate an idempotency_key outside of normal job dispatch
-  Kaal.with_idempotency('reports:daily', Time.current) do |idempotency_key|
+  Kaal.with_idempotency('reports:daily', Time.now.utc) do |idempotency_key|
     # Use the key for deduplication in your custom logic
     MyCustomQueue.add(idempotency_key, job_data)
   end
@@ -212,7 +213,7 @@ Use `Kaal.dispatched?` to check if a job has been dispatched:
 
 ```ruby
   # Check if a job was already dispatched for a specific fire time
-  fire_time = Time.current
+  fire_time = Time.now.utc
   already_dispatched = Kaal.dispatched?('reports:daily', fire_time)
 
   # Use in your enqueue callback
@@ -232,7 +233,7 @@ Use `Kaal.dispatched?` to check if a job has been dispatched:
 
 **Note:** If you enabled `enable_log_dispatch_registry`, the dispatches are recorded in the `kaal_dispatches` table and can be queried directly via the CronDispatch model for audit trail purposes. However, the recommended way to check deduplication status is always through `Kaal.dispatched?` helper.
 
-**Important:** When manually checking dispatch status outside the enqueue callback, always use `Time.current` (not `Time.now`) to ensure the fire_time is created in your application's configured timezone, matching how Kaal generates fire_time internally.
+**Important:** When manually checking dispatch status outside the enqueue callback, use the same absolute scheduled instant that Kaal would have used for that run. Do not rely on local wall-clock formatting alone; dispatch checks compare absolute fire times.
 
 ---
 
@@ -244,7 +245,7 @@ Use `Kaal.dispatched?` to check if a job has been dispatched:
 - Store the idempotency_key in your job arguments for debugging
 - Log deduplication decisions for observability
 - Test your deduplication implementation before production
-- Always use `Time.current` when manually creating fire_time objects (not `Time.now`), to ensure timezone consistency
+- Use the same absolute fire time when manually checking dispatch status or generating idempotency keys
 
 ❌ **DON'T:**
 
@@ -252,7 +253,7 @@ Use `Kaal.dispatched?` to check if a job has been dispatched:
 - Ignore the idempotency_key in your enqueue callback
 - Use non-deterministic keys (they won't deduplicate properly)
 - Forget to set appropriate TTL windows for your deduplication store
-- Use `Time.now` in deduplication checks—use `Time.current` instead to respect your app's timezone
+- Compare only local clock labels when checking for duplicate dispatches
 
 ---
 
@@ -277,7 +278,7 @@ Use `Kaal.dispatched?` to check if a job has been dispatched:
 
    ```ruby
    # Test manually
-   fire_time = Time.current
+   fire_time = Time.now.utc
    Kaal.dispatched?('reports:daily', fire_time)  # Should be false first time
    ```
 
@@ -366,23 +367,20 @@ Use `Kaal.dispatched?` to check if a job has been dispatched:
 
 #### Timezone Mismatch Issues
 
-If you're manually checking dispatch status using `Kaal.dispatched?`, ensure timezone consistency:
+If you're manually checking dispatch status using `Kaal.dispatched?`, make sure you compare the same absolute scheduled instant:
 
 ```ruby
-# ❌ WRONG - uses system timezone (Time.now)
-time_in_system_tz = Time.now
-Kaal.dispatched?('job:key', time_in_system_tz)
+# ❌ WRONG - same wall-clock label, but not necessarily the same scheduled instant
+Time.use_zone('America/Toronto') do
+  local_time = Time.zone.parse('2026-03-16 09:00:00')
+  Kaal.dispatched?('job:key', local_time)
+end
 
-# ✅ CORRECT - uses app's configured timezone (Time.current)
-time_in_app_tz = Time.current
-Kaal.dispatched?('job:key', time_in_app_tz)
+# ✅ CORRECT - use the exact fire_time passed by Kaal, or reconstruct the same absolute instant
+fire_time = Time.utc(2026, 3, 16, 13, 0, 0)
+Kaal.dispatched?('job:key', fire_time)
 ```
 
-**Why:** Kaal generates fire_times using `Time.current` (your app's configured timezone). When you manually check dispatch status, use the same `Time.current` to ensure the fire_time matches what Kaal expects.
+**Why:** Kaal stores and compares dispatches by absolute fire time. Scheduler `time_zone` affects cron interpretation, but duplicate checks and idempotency keys are based on the resulting absolute instant.
 
-**Check your app's timezone:**
-
-```ruby
-Time.zone                # => #<ActiveSupport::TimeZone:0x00... @name="UTC">
-Time.current.zone        # => "UTC" (or whatever you configured)
-```
+**Tip:** If you already have the `fire_time` from the enqueue callback, persist or reuse that exact value for later checks instead of rebuilding it from a local wall-clock string.
