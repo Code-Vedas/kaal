@@ -273,6 +273,7 @@ RSpec.describe Kaal::Configuration do
     it 'stringifies, symbolizes, and deep merges nested hashes' do
       expect(described_class.stringify_keys(a: { b: 1 })).to eq('a' => { 'b' => 1 })
       expect(described_class.symbolize_keys('a' => { 'b' => 1 })).to eq(a: { b: 1 })
+      expect(described_class.symbolize_keys(1 => { 2 => 3 })).to eq('1': { '2': 3 })
       expect(described_class.deep_merge({ 'a' => { 'b' => 1 } }, { 'a' => { 'c' => 2 } })).to eq('a' => { 'b' => 1, 'c' => 2 })
     end
 

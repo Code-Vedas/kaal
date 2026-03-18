@@ -98,8 +98,10 @@ Redis:
 require 'kaal'
 require 'redis'
 
+redis = Redis.new(url: ENV.fetch('REDIS_URL'))
+
 Kaal.configure do |config|
-  config.backend = Kaal::Backend::RedisAdapter.new(ENV.fetch('REDIS_URL'))
+  config.backend = Kaal::Backend::RedisAdapter.new(redis)
   config.scheduler_config_path = 'config/scheduler.yml'
 end
 ```

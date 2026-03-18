@@ -390,6 +390,29 @@ RSpec.describe Kaal::Registry do
       expect(adapter.definition_registry).to be_a(Kaal::Definition::RedisEngine)
     end
 
+    it 'accepts boolean redis responses and handles false release values' do
+      redis_class = Class.new do
+        attr_reader :set_calls
+
+        def initialize
+          @set_calls = 0
+        end
+
+        def set(*)
+          @set_calls += 1
+          @set_calls == 1 ? true : nil
+        end
+
+        define_method(:eval) { |*| false }
+      end
+
+      boolean_adapter = described_class.new(redis_class.new)
+
+      expect(boolean_adapter.acquire('lock', 5)).to be(true)
+      expect(boolean_adapter.acquire('lock', 5)).to be(false)
+      expect(boolean_adapter.release('lock')).to be(false)
+    end
+
     it 'validates the redis client interface' do
       expect { described_class.new(Object.new) }.to raise_error(ArgumentError)
     end
@@ -489,6 +512,7 @@ RSpec.describe Kaal::Registry do
       expect(context.resolve_path('config/kaal.rb')).to eq('/tmp/app/config/kaal.rb')
       expect(context.resolve_path('/etc/kaal.rb')).to eq('/etc/kaal.rb')
       expect(described_class.environment_name_from({})).to eq('development')
+      expect(described_class.environment_name_from({ 'RAILS_ENV' => 'test' })).to eq('test')
     end
   end
 

@@ -45,6 +45,7 @@ detectors:
       - Kaal::Backend::RedisAdapter#initialize
       - Kaal::SchedulerTimeZoneResolver#rails_time_zone
       - Kaal::SchedulerFileLoader::JobApplier#dispatch_job
+      - Kaal::SchedulerFileLoader::JobApplier#active_job_dispatch?
   UtilityFunction:
     enabled: true
     exclude:
@@ -60,6 +61,7 @@ detectors:
       - Kaal::Backend::SQLiteAdapter#wrapped_contention_error?
       - Kaal::SchedulerHashTransform#stringify_keys
       - Kaal::SchedulerHashTransform#symbolize_keys_deep
+      - Kaal::SchedulerFileLoader::JobApplier#active_job_dispatch?
   FeatureEnvy:
     enabled: true
     exclude:

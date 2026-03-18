@@ -26,8 +26,9 @@ module Kaal
         existing_registry_entry = @registry.find(key)
         return nil if conflict?(key:, existing_definition:)
 
-        callback = build_callback(job)
-        persisted_metadata = persisted_metadata(job)
+        job_class = resolve_job_class(job_class_name: job.fetch(:job_class_name), key:)
+        callback = build_callback(job, job_class)
+        persisted_metadata = persisted_metadata(job, job_class)
 
         @definition_registry.upsert_definition(
           key: key,
@@ -94,14 +95,14 @@ module Kaal
 
       private
 
-      def persisted_metadata(job)
+      def persisted_metadata(job, job_class)
         metadata, job_class_name, queue, args, kwargs =
           job.values_at(:metadata, :job_class_name, :queue, :args, :kwargs)
         normalized_metadata = @helper_bundle.stringify_keys(deep_dup(metadata))
         Kaal::Support::HashTools.deep_merge(
           normalized_metadata,
           'execution' => {
-            'target' => 'ruby',
+            'target' => active_job_dispatch?(job_class, queue) ? 'active_job' : 'ruby',
             'job_class' => job_class_name,
             'queue' => queue,
             'args' => args,
@@ -110,13 +111,11 @@ module Kaal
         )
       end
 
-      def build_callback(job)
+      def build_callback(job, job_class)
         key = job.fetch(:key)
-        job_class_name = job.fetch(:job_class_name)
         queue = job.fetch(:queue)
         args_template = job.fetch(:args)
         kwargs_template = job.fetch(:kwargs)
-        job_class = resolve_job_class(job_class_name:, key:)
 
         lambda do |fire_time:, idempotency_key:|
           context = {
@@ -154,14 +153,16 @@ module Kaal
 
       def resolve_job_class(job_class_name:, key:)
         error_message = "Unknown job_class '#{job_class_name}' for key '#{key}'"
+        normalized_job_class_name = job_class_name.to_s.strip
         job_class = begin
-          Kaal::Support::HashTools.constantize(job_class_name)
+          Kaal::Support::HashTools.constantize(normalized_job_class_name) unless normalized_job_class_name.empty?
         rescue NameError
           nil
         end
-        raise_unknown_job_class(error_message) unless job_class
 
-        job_class
+        return job_class if job_class
+
+        raise_unknown_job_class(error_message)
       end
 
       def dispatch_job(job_class, queue, args, kwargs)
@@ -179,6 +180,10 @@ module Kaal
 
       def raise_unknown_job_class(error_message)
         raise SchedulerConfigError, error_message
+      end
+
+      def active_job_dispatch?(job_class, queue)
+        (queue && job_class.respond_to?(:set)) || job_class.respond_to?(:perform_later)
       end
     end
   end

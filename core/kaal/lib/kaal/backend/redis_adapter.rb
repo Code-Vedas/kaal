@@ -83,11 +83,11 @@ module Kaal
         # SET key value NX PX ttl returns OK if set, nil if not set
         result = @redis.set(key, lock_value, nx: true, px: ttl_ms)
 
-        acquired = result == 'OK'
+        acquired = ['OK', true].include?(result)
 
         if acquired
           @mutex.synchronize do
-            @lock_values[key] = { value: lock_value, expires_at: Time.now + ttl }
+            @lock_values[key] = { value: lock_value, expires_at: Time.now.utc + ttl }
             prune_expired_lock_values
           end
         end
@@ -126,7 +126,7 @@ module Kaal
         LUA
 
         result = @redis.eval(script, keys: [key], argv: [lock_value])
-        result.to_i.positive?
+        [1, '1', true].include?(result)
       rescue StandardError => e
         raise LockAdapterError, "Redis release failed for #{key}: #{e.message}"
       end
@@ -138,7 +138,7 @@ module Kaal
       end
 
       def prune_expired_lock_values
-        now = Time.now
+        now = Time.now.utc
         @lock_values.delete_if { |_key, entry| entry[:expires_at] <= now }
       end
     end

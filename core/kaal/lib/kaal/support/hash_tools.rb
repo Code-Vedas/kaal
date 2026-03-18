@@ -25,7 +25,7 @@ module Kaal
       end
 
       def symbolize_keys(value)
-        transform_keys(value, &:to_sym)
+        transform_keys(value) { |key| key.to_s.to_sym }
       end
 
       def deep_merge(left, right)

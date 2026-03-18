@@ -11,7 +11,7 @@ module Kaal
   # Resolves environment and path information for plain-Ruby runtime loading.
   class RuntimeContext
     DEFAULT_ENVIRONMENT_NAME = 'development'
-    ENVIRONMENT_KEYS = %w[KAAL_ENV APP_ENV RACK_ENV].freeze
+    ENVIRONMENT_KEYS = %w[KAAL_ENV RAILS_ENV APP_ENV RACK_ENV].freeze
 
     attr_reader :environment_name, :root_path
 

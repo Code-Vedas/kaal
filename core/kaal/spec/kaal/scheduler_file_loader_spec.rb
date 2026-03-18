@@ -351,6 +351,7 @@ RSpec.describe Kaal::SchedulerFileLoader do
     end.to raise_error(Kaal::SchedulerConfigError, /defaults/)
   end
 
+  # rubocop:disable RSpec/ExampleLength
   it 'covers job applier rollback and callback error branches' do
     loader = described_class.new(
       configuration: Kaal.configuration,
@@ -397,11 +398,13 @@ RSpec.describe Kaal::SchedulerFileLoader do
     expect do
       applier.send(
         :build_callback,
-        key: 'bad',
-        job_class_name: 'ExampleSchedulerJob',
-        queue: nil,
-        args: [],
-        kwargs: []
+        {
+          key: 'bad',
+          queue: nil,
+          args: [],
+          kwargs: []
+        },
+        ExampleSchedulerJob
       ).call(fire_time: Time.utc(2026, 1, 1), idempotency_key: 'abc')
     end.to raise_error(Kaal::SchedulerConfigError, /must be a mapping/)
   end
@@ -437,11 +440,39 @@ RSpec.describe Kaal::SchedulerFileLoader do
       )
     ).to be_nil
 
-    allow(Kaal::Support::HashTools).to receive(:constantize).with('MissingJob').and_return(nil)
+    allow(Kaal::Support::HashTools).to receive(:constantize).and_call_original
+    allow(Kaal::Support::HashTools).to receive(:constantize).with('MissingJob').and_raise(NameError)
     expect do
       nil_logger_applier.send(:resolve_job_class, job_class_name: 'MissingJob', key: 'restore')
     end.to raise_error(Kaal::SchedulerConfigError, /Unknown job_class/)
+
+    expect do
+      nil_logger_applier.send(:resolve_job_class, job_class_name: '   ', key: 'restore')
+    end.to raise_error(Kaal::SchedulerConfigError, /Unknown job_class/)
+
+    active_job_class = Class.new do
+      def self.perform_later(*) = nil
+    end
+    stub_const('SchedulerLoaderActiveJobTarget', active_job_class)
+    expect(
+      nil_logger_applier.send(
+        :persisted_metadata,
+        { metadata: {}, job_class_name: 'SchedulerLoaderActiveJobTarget', queue: nil, args: [], kwargs: {} },
+        active_job_class
+      )
+    ).to include('execution' => include('target' => 'active_job'))
+
+    unknown_target_class = Class.new
+    stub_const('SchedulerLoaderUnknownTarget', unknown_target_class)
+    expect(
+      nil_logger_applier.send(
+        :persisted_metadata,
+        { metadata: {}, job_class_name: 'SchedulerLoaderUnknownTarget', queue: nil, args: [], kwargs: {} },
+        unknown_target_class
+      )
+    ).to include('execution' => include('target' => 'ruby'))
   end
+  # rubocop:enable RSpec/ExampleLength
 
   it 'covers direct job normalizer branches' do
     loader = described_class.new(
