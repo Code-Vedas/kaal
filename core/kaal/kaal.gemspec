@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+# Copyright Codevedas Inc. 2025-present
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 version = File.read(File.expand_path('lib/kaal/version.rb', __dir__))
               .match(/VERSION\s*=\s*['"]([^'"]+)['"]/)[1]
 

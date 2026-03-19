@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+# Copyright Codevedas Inc. 2025-present
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 require 'cgi'
 require 'uri'
 
@@ -84,12 +88,15 @@ module KaalActiveRecordSupport
   end
 
   def create_definitions_table(connection)
+    metadata_options = { null: false }
+    metadata_options[:default] = '{}' unless mysql_connection?(connection)
+
     connection.create_table :kaal_definitions do |t|
       t.string :key, null: false
       t.string :cron, null: false
       t.boolean :enabled, null: false, default: true
       t.string :source, null: false
-      t.text :metadata, null: false, default: '{}'
+      t.text :metadata, **metadata_options
       t.datetime :disabled_at
       t.datetime :created_at, null: false
       t.datetime :updated_at, null: false
@@ -110,5 +117,9 @@ module KaalActiveRecordSupport
       path: path,
       query: uri.query
     ).to_s
+  end
+
+  def mysql_connection?(connection)
+    connection.adapter_name.to_s.downcase.include?('mysql')
   end
 end

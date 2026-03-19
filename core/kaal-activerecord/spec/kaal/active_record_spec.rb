@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+# Copyright Codevedas Inc. 2025-present
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 RSpec.describe Kaal::ActiveRecord do
   it 'has a version number and loads the railtie' do
     expect(Kaal::ActiveRecord::VERSION).to eq('0.2.1')
@@ -33,7 +37,7 @@ RSpec.describe Kaal::ActiveRecord do
       dispatch_registry = described_class::DispatchRegistry.new(connection:)
       adapter = described_class::DatabaseAdapter.new(connection)
 
-      expect(registry.upsert_definition(key: 'job:a', cron: '* * * * *', metadata: { 'a' => 1 })[:metadata]).to eq('a' => 1)
+      expect(registry.upsert_definition(key: 'job:a', cron: '* * * * *', metadata: { 'a' => 1 })[:metadata]).to eq(a: 1)
       expect(registry.upsert_definition(key: 'job:nil', cron: '* * * * *', metadata: nil)[:metadata]).to eq({})
       expect(registry.disable_definition('job:a')[:enabled]).to be(false)
       first_disabled_at = registry.find_definition('job:a')[:disabled_at]
@@ -63,6 +67,23 @@ RSpec.describe Kaal::ActiveRecord do
       expect(adapter.release('lock:missing')).to be(false)
       expect(adapter.dispatch_registry).to be_a(described_class::DispatchRegistry)
       expect(adapter.definition_registry).to be_a(described_class::DefinitionRegistry)
+    end
+  end
+
+  it 'falls back to empty metadata when stored json is invalid' do
+    KaalActiveRecordSupport.with_sqlite_database do |connection|
+      registry = described_class::DefinitionRegistry.new(connection:)
+      record = described_class::DefinitionRecord.create!(
+        key: 'job:invalid',
+        cron: '* * * * *',
+        enabled: true,
+        source: 'code',
+        metadata: '{',
+        created_at: Time.now.utc,
+        updated_at: Time.now.utc
+      )
+
+      expect(registry.send(:normalize, record)[:metadata]).to eq({})
     end
   end
 
@@ -145,5 +166,19 @@ RSpec.describe Kaal::ActiveRecord do
 
     expect(registry.send(:disabled_at_for, new_record, false, now)).to eq(now)
     expect(registry.send(:disabled_at_for, existing_record, false, now + 60)).to eq(now)
+  end
+
+  it 'omits mysql text defaults in test schema helpers' do
+    connection = instance_double(ActiveRecord::ConnectionAdapters::AbstractAdapter, adapter_name: 'Mysql2')
+    table_definition = double('table_definition')
+    allow(connection).to receive(:create_table).with(:kaal_definitions).and_yield(table_definition)
+    allow(connection).to receive(:add_index)
+    allow(table_definition).to receive(:string)
+    allow(table_definition).to receive(:boolean)
+    allow(table_definition).to receive(:datetime)
+
+    expect(table_definition).to receive(:text).with(:metadata, null: false)
+
+    KaalActiveRecordSupport.create_definitions_table(connection)
   end
 end

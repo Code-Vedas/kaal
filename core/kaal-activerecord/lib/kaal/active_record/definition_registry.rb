@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+# Copyright Codevedas Inc. 2025-present
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 require 'json'
 require 'kaal/definition/registry'
 
@@ -65,11 +69,17 @@ module Kaal
           cron: record.cron,
           enabled: record.enabled ? true : false,
           source: record.source,
-          metadata: JSON.parse(record.metadata || '{}'),
+          metadata: parse_metadata(record.metadata),
           created_at: record.created_at,
           updated_at: record.updated_at,
           disabled_at: record.disabled_at
         }
+      end
+
+      def parse_metadata(raw_metadata)
+        JSON.parse(raw_metadata || '{}', symbolize_names: true)
+      rescue JSON::ParserError
+        {}
       end
     end
   end

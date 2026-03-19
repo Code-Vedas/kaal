@@ -4,7 +4,6 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-
 require 'kaal/runtime/runtime_context'
 require 'kaal/scheduler_file/hash_transform'
 require 'kaal/scheduler_file/placeholder_support'
