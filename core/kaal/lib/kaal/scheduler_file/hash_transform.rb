@@ -4,6 +4,8 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
+require 'kaal/support/hash_tools'
+
 module Kaal
   # Shared deep hash key transformation helpers for scheduler payloads.
   module SchedulerHashTransform

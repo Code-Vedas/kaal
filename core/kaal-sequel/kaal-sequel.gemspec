@@ -33,7 +33,7 @@ Gem::Specification.new do |spec|
   spec.bindir = 'exe'
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ['lib']
-  spec.add_dependency 'kaal', "~> #{version}"
+  spec.add_dependency 'kaal', "= #{version}"
   spec.add_dependency 'sequel', '~> 5.0'
   spec.required_ruby_version = '>= 3.2'
 end

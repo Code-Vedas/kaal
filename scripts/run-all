@@ -1,0 +1,43 @@
+#!/bin/sh
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+REPO_ROOT=$(CDPATH= cd -- "${SCRIPT_DIR}/.." && pwd)
+TMP_DIR="${REPO_ROOT}/tmp/run-all"
+
+mkdir -p "${TMP_DIR}"
+
+run_cmd() {
+  name="$1"
+  shift
+  log_file="${TMP_DIR}/${name}.log"
+
+  echo "==> ${name}"
+
+  if "$@" >"${log_file}" 2>&1; then
+    rm -f "${log_file}"
+    return 0
+  fi
+
+  echo "-- ${name} failed --"
+  cat "${log_file}"
+  return 1
+}
+
+run_suite() {
+  suite_name="$1"
+  suite_dir="$2"
+
+  echo "Running all tests and linters for ${suite_name}"
+  cd "${REPO_ROOT}/${suite_dir}"
+
+  run_cmd "${suite_name}-rubocop" bin/rubocop -A
+  run_cmd "${suite_name}-reek" bin/reek
+  run_cmd "${suite_name}-rspec-unit" bin/rspec-unit
+}
+
+run_suite "kaal" "core/kaal"
+run_suite "kaal-activerecord" "core/kaal-activerecord"
+run_suite "kaal-sequel" "core/kaal-sequel"
+run_suite "kaal-rails" "gems/kaal-rails"

@@ -30,7 +30,7 @@ Gem::Specification.new do |spec|
   spec.files = Dir.chdir(File.expand_path(__dir__)) do
     Dir['{config,exe,lib}/**/*', 'LICENSE', 'Rakefile', 'README.md']
   end
-  spec.add_dependency 'kaal', "~> #{version}"
+  spec.add_dependency 'kaal', "= #{version}"
   spec.add_dependency 'rails', '>= 7.1', '< 9.0'
   spec.add_dependency 'rails-i18n', '>= 7.0'
   spec.required_ruby_version = '>= 3.2'

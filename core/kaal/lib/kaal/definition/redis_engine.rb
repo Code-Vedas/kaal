@@ -8,6 +8,7 @@ require 'json'
 require 'time'
 require_relative 'registry'
 require 'kaal/support/hash_tools'
+require 'kaal/definition/persistence_helpers'
 
 module Kaal
   module Definition
@@ -32,13 +33,7 @@ module Kaal
           metadata: deep_dup(metadata || {}),
           created_at: existing ? existing[:created_at] : now,
           updated_at: now,
-          disabled_at: if enabled
-                         nil
-                       elsif existing && existing[:enabled] == false
-                         existing[:disabled_at]
-                       else
-                         now
-                       end
+          disabled_at: PersistenceHelpers.disabled_at_for(existing, enabled, now)
         }
 
         @redis.hset(storage_key, key, JSON.generate(self.class.serialize_payload(payload)))

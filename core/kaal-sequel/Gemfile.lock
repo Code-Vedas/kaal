@@ -11,7 +11,7 @@ PATH
   remote: .
   specs:
     kaal-sequel (0.2.1)
-      kaal (~> 0.2.1)
+      kaal (= 0.2.1)
       sequel (~> 5.0)
 
 GEM
