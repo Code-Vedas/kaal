@@ -170,15 +170,12 @@ RSpec.describe Kaal::ActiveRecord do
 
   it 'omits mysql text defaults in test schema helpers' do
     connection = instance_double(ActiveRecord::ConnectionAdapters::AbstractAdapter, adapter_name: 'Mysql2')
-    table_definition = double('table_definition')
+    table_definition = instance_spy(ActiveRecord::ConnectionAdapters::TableDefinition)
     allow(connection).to receive(:create_table).with(:kaal_definitions).and_yield(table_definition)
     allow(connection).to receive(:add_index)
-    allow(table_definition).to receive(:string)
-    allow(table_definition).to receive(:boolean)
-    allow(table_definition).to receive(:datetime)
-
-    expect(table_definition).to receive(:text).with(:metadata, null: false)
 
     KaalActiveRecordSupport.create_definitions_table(connection)
+
+    expect(table_definition).to have_received(:text).with(:metadata, null: false)
   end
 end

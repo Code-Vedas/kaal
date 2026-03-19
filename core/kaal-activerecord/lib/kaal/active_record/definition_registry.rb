@@ -6,6 +6,7 @@
 # LICENSE file in the root directory of this source tree.
 require 'json'
 require 'kaal/definition/registry'
+require 'kaal/definition/persistence_helpers'
 
 module Kaal
   module ActiveRecord
@@ -64,22 +65,20 @@ module Kaal
       def normalize(record)
         return nil unless record
 
+        normalize_definition_record(record)
+      end
+
+      def normalize_definition_record(record)
         {
           key: record.key,
           cron: record.cron,
           enabled: record.enabled ? true : false,
           source: record.source,
-          metadata: parse_metadata(record.metadata),
+          metadata: Kaal::Definition::PersistenceHelpers.parse_metadata(record.metadata),
           created_at: record.created_at,
           updated_at: record.updated_at,
           disabled_at: record.disabled_at
         }
-      end
-
-      def parse_metadata(raw_metadata)
-        JSON.parse(raw_metadata || '{}', symbolize_names: true)
-      rescue JSON::ParserError
-        {}
       end
     end
   end
