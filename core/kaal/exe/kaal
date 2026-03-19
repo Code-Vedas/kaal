@@ -5,7 +5,8 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-require 'bundler/setup'
+gemfile_path = File.expand_path('../Gemfile', __dir__)
+require 'bundler/setup' if File.exist?(gemfile_path)
 require 'kaal/cli'
 
 Kaal::CLI.start(ARGV)
