@@ -452,7 +452,7 @@ RSpec.describe Kaal::SchedulerFileLoader do
 
     expect do
       nil_logger_applier.send(:resolve_job_class, job_class_name: '   ', key: 'restore')
-    end.to raise_error(Kaal::SchedulerConfigError, /Unknown job_class/)
+    end.to raise_error(Kaal::SchedulerConfigError, /Job class cannot be blank/)
 
     active_job_class = Class.new do
       def self.perform_later(*) = nil

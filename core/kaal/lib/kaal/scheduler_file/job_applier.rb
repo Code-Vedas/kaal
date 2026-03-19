@@ -154,10 +154,12 @@ module Kaal
       end
 
       def resolve_job_class(job_class_name:, key:)
-        error_message = "Unknown job_class '#{job_class_name}' for key '#{key}'"
         normalized_job_class_name = job_class_name.to_s.strip
+        raise SchedulerConfigError, "Job class cannot be blank for key '#{key}'" if normalized_job_class_name.empty?
+
+        error_message = "Unknown job_class #{normalized_job_class_name.inspect} for key '#{key}'"
         job_class = begin
-          Kaal::Support::HashTools.constantize(normalized_job_class_name) unless normalized_job_class_name.empty?
+          Kaal::Support::HashTools.constantize(normalized_job_class_name)
         rescue NameError
           nil
         end

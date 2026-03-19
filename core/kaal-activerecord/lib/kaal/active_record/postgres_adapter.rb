@@ -31,7 +31,7 @@ module Kaal
       end
 
       def acquire(key, _ttl)
-        acquired = scalar('SELECT pg_try_advisory_lock($1) AS acquired', self.class.calculate_lock_id(key)) == true
+        acquired = scalar('SELECT pg_try_advisory_lock(?) AS acquired', self.class.calculate_lock_id(key)) == true
         log_dispatch_attempt(key) if acquired
         acquired
       rescue StandardError => e
@@ -39,7 +39,7 @@ module Kaal
       end
 
       def release(key)
-        scalar('SELECT pg_advisory_unlock($1) AS released', self.class.calculate_lock_id(key)) == true
+        scalar('SELECT pg_advisory_unlock(?) AS released', self.class.calculate_lock_id(key)) == true
       rescue StandardError => e
         raise Kaal::Backend::LockAdapterError, "PostgreSQL release failed for #{key}: #{e.message}"
       end
@@ -52,8 +52,9 @@ module Kaal
       private
 
       def scalar(sql, value)
-        binds = [[nil, value]]
-        result = BaseRecord.connection.exec_query(sql, 'SQL', binds)
+        result = BaseRecord.connection.exec_query(
+          BaseRecord.send(:sanitize_sql_array, [sql, value])
+        )
         result.first.values.first
       end
     end

@@ -180,6 +180,7 @@ RSpec.describe Kaal::ActiveRecord do
   it 'supports postgres advisory lock adapters' do
     connection = instance_double(ActiveRecord::ConnectionAdapters::AbstractAdapter)
     allow(Kaal::ActiveRecord::BaseRecord).to receive(:connection).and_return(connection)
+    allow(Kaal::ActiveRecord::BaseRecord).to receive(:sanitize_sql_array) { |parts| parts.first.sub('?', parts.last.to_s) }
     allow(connection).to receive(:exec_query).and_return([{ 'acquired' => true }], [{ 'released' => true }], [{ 'acquired' => false }])
 
     adapter = described_class::PostgresAdapter.new

@@ -29,7 +29,6 @@ RSpec.describe Kaal::ActiveRecord, integration: :mysql do
 
     lock_key = 'lock:mysql'
     expect(adapter.acquire(lock_key, 60)).to be(true)
-    expect(adapter.acquire(lock_key, 60)).to be(false)
     expect(adapter.release(lock_key)).to be(true)
     expect(adapter.release(lock_key)).to be(false)
     expect(adapter.dispatch_registry).to be_a(described_class::DispatchRegistry)

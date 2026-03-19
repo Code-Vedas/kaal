@@ -36,6 +36,7 @@ RSpec.describe Kaal::Rails do
     expect(described_class.detect_backend_name(db_config.new('SQLite3'))).to eq('sqlite')
     expect(described_class.detect_backend_name(db_config.new('PostgreSQL'))).to eq('postgres')
     expect(described_class.detect_backend_name(db_config.new('Mysql2'))).to eq('mysql')
+    expect(described_class.detect_backend_name(db_config.new('Trilogy'))).to eq('mysql')
     expect(described_class.detect_backend_name(db_config.new('Oracle'))).to be_nil
     expect(described_class.detect_backend_name(nil)).to be_nil
 

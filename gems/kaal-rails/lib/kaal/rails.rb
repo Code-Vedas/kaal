@@ -20,7 +20,7 @@ module Kaal
 
         return 'sqlite' if adapter.include?('sqlite')
         return 'postgres' if adapter.include?('postgres')
-        return 'mysql' if adapter.include?('mysql')
+        return 'mysql' if adapter.include?('mysql') || adapter.include?('trilogy')
 
         nil
       end
