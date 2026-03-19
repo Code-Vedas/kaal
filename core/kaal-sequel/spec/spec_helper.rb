@@ -22,6 +22,7 @@ require 'fileutils'
 require 'time'
 
 Dir[File.expand_path('support/**/*.rb', __dir__)].each { |file| require file }
+Dir[File.expand_path('e2e/support/**/*.rb', __dir__)].each { |file| require file }
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

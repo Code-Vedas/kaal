@@ -23,6 +23,7 @@ require 'tmpdir'
 require 'fileutils'
 
 Dir[File.expand_path('support/**/*.rb', __dir__)].each { |file| require file }
+Dir[File.expand_path('e2e/support/**/*.rb', __dir__)].each { |file| require file }
 
 RSpec.configure do |config|
   config.expect_with :rspec do |expectations|

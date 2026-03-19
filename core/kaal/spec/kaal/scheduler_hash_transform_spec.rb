@@ -7,6 +7,7 @@
 require 'spec_helper'
 require 'open3'
 require 'rbconfig'
+require 'json'
 
 RSpec.describe Kaal::SchedulerHashTransform do
   it 'delegates stringify and symbolize helpers through the mixin' do
@@ -38,7 +39,8 @@ RSpec.describe Kaal::SchedulerHashTransform do
           include Kaal::SchedulerHashTransform
 
           def call(value)
-            stringify_keys(value)
+            require 'json'
+            JSON.generate(stringify_keys(value))
           end
         end
 
@@ -47,6 +49,6 @@ RSpec.describe Kaal::SchedulerHashTransform do
     )
 
     expect(status.success?).to be(true), stderr
-    expect(stdout.strip).to eq('{"a" => 1}')
+    expect(JSON.parse(stdout)).to eq('a' => 1)
   end
 end

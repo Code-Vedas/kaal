@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 set -euo pipefail
-bin/rspec --tag ~feature --tag ~integration "$@"
+bin/rspec spec/kaal spec/kaal_api_and_cli_spec.rb spec/kaal_spec.rb --tag ~feature --tag ~integration "$@"

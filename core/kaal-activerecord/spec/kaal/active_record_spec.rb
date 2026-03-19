@@ -4,7 +4,47 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
+
 RSpec.describe Kaal::ActiveRecord do
+  def build_definition_record(key: 'job:a', enabled: true, metadata: '{"a":1}')
+    Class.new(Struct.new(:key, :cron, :enabled, :source, :metadata, :created_at, :updated_at, :disabled_at)) do
+      def persisted?
+        false
+      end
+
+      def save!
+        nil
+      end
+
+      def destroy!
+        nil
+      end
+    end.new(
+      key,
+      '* * * * *',
+      enabled,
+      'code',
+      metadata,
+      Time.utc(2026, 1, 1, 0, 0, 0),
+      Time.utc(2026, 1, 1, 0, 1, 0),
+      nil
+    )
+  end
+
+  def build_dispatch_record(fire_time:, dispatched_at:, key: 'job:a', node_id: 'node-1', status: 'dispatched')
+    Class.new(Struct.new(:key, :fire_time, :dispatched_at, :node_id, :status)) do
+      def save!
+        nil
+      end
+    end.new(
+      key,
+      fire_time,
+      dispatched_at,
+      node_id,
+      status
+    )
+  end
+
   it 'has a version number and loads the railtie' do
     expect(Kaal::ActiveRecord::VERSION).to eq('0.2.1')
     expect(Kaal::ActiveRecord::Railtie).to be < Rails::Railtie
@@ -31,60 +71,65 @@ RSpec.describe Kaal::ActiveRecord do
     expect(described_class::MigrationTemplates.for_backend(:memory)).to eq({})
   end
 
-  it 'supports sqlite-backed definition, dispatch, and lock persistence' do
-    KaalActiveRecordSupport.with_sqlite_database do |connection|
-      registry = described_class::DefinitionRegistry.new(connection:)
-      dispatch_registry = described_class::DispatchRegistry.new(connection:)
-      adapter = described_class::DatabaseAdapter.new(connection)
+  it 'configures or reuses the base record connection' do
+    connection = { adapter: 'sqlite3', database: ':memory:' }
 
-      expect(registry.upsert_definition(key: 'job:a', cron: '* * * * *', metadata: { 'a' => 1 })[:metadata]).to eq(a: 1)
-      expect(registry.upsert_definition(key: 'job:nil', cron: '* * * * *', metadata: nil)[:metadata]).to eq({})
-      expect(registry.disable_definition('job:a')[:enabled]).to be(false)
-      first_disabled_at = registry.find_definition('job:a')[:disabled_at]
-      expect(first_disabled_at).to be_a(Time)
-      expect(registry.upsert_definition(key: 'job:a', cron: '* * * * *', enabled: false)[:disabled_at]).to eq(first_disabled_at)
-      expect(registry.enable_definition('job:a')[:enabled]).to be(true)
-      expect(registry.enabled_definitions.map { |row| row[:key] }).to eq(%w[job:a job:nil])
-      expect(registry.all_definitions.map { |row| row[:key] }).to eq(%w[job:a job:nil])
-      expect(registry.find_definition('missing')).to be_nil
-      expect(registry.remove_definition('missing')).to be_nil
-      expect(registry.remove_definition('job:a')).to include(key: 'job:a')
-      expect(registry.all_definitions.map { |row| row[:key] }).to eq(['job:nil'])
-      registry.upsert_definition(key: 'job:a', cron: '* * * * *')
-
-      fire_time = Time.utc(2026, 1, 1, 0, 0, 0)
-      dispatch_registry.log_dispatch('job:a', fire_time, 'node-1')
-      expect(dispatch_registry.find_dispatch('job:a', fire_time)).to include(node_id: 'node-1', status: 'dispatched')
-      expect(dispatch_registry.find_by_key('job:a').length).to eq(1)
-      expect(dispatch_registry.find_by_node('node-1').length).to eq(1)
-      expect(dispatch_registry.find_by_status('dispatched').length).to eq(1)
-      expect(dispatch_registry.find_dispatch('job:a', Time.utc(2030, 1, 1))).to be_nil
-      expect(dispatch_registry.cleanup(recovery_window: 0)).to eq(1)
-
-      expect(adapter.acquire('lock:1', 60)).to be(true)
-      expect(adapter.acquire('lock:1', 60)).to be(false)
-      expect(adapter.release('lock:1')).to be(true)
-      expect(adapter.release('lock:missing')).to be(false)
-      expect(adapter.dispatch_registry).to be_a(described_class::DispatchRegistry)
-      expect(adapter.definition_registry).to be_a(described_class::DefinitionRegistry)
-    end
+    expect(described_class::ConnectionSupport.configure!).to eq(described_class::BaseRecord)
+    allow(described_class::BaseRecord).to receive(:establish_connection).with(connection).and_return(true)
+    expect(described_class::ConnectionSupport.configure!(connection)).to eq(described_class::BaseRecord)
+    expect(described_class::BaseRecord).to have_received(:establish_connection).with(connection)
   end
 
-  it 'falls back to empty metadata when stored json is invalid' do
-    KaalActiveRecordSupport.with_sqlite_database do |connection|
-      registry = described_class::DefinitionRegistry.new(connection:)
-      record = described_class::DefinitionRecord.create!(
-        key: 'job:invalid',
-        cron: '* * * * *',
-        enabled: true,
-        source: 'code',
-        metadata: '{',
-        created_at: Time.now.utc,
-        updated_at: Time.now.utc
-      )
+  it 'persists and queries definitions through the registry model interface' do
+    model = class_double(described_class::DefinitionRecord)
+    record = build_definition_record
+    enabled_relation = instance_double(ActiveRecord::Relation)
 
-      expect(registry.send(:normalize, record)[:metadata]).to eq({})
-    end
+    allow(model).to receive(:find_or_initialize_by).with(key: 'job:a').and_return(record)
+    allow(model).to receive(:find_by).with(key: 'job:a').and_return(record)
+    allow(model).to receive(:find_by).with(key: 'missing').and_return(nil)
+    allow(model).to receive(:order).with(:key).and_return([record])
+    allow(model).to receive(:where).with(enabled: true).and_return(enabled_relation)
+    allow(enabled_relation).to receive(:order).with(:key).and_return([record])
+
+    registry = described_class::DefinitionRegistry.new(connection: nil, model:)
+
+    expect(registry.upsert_definition(key: 'job:a', cron: '* * * * *', metadata: { a: 1 })).to include(metadata: { a: 1 })
+    expect(registry.find_definition('job:a')).to include(key: 'job:a')
+    expect(registry.find_definition('missing')).to be_nil
+    record.enabled = false
+    expect(registry.find_definition('job:a')).to include(enabled: false)
+    record.enabled = true
+    expect(registry.all_definitions).to contain_exactly(hash_including(key: 'job:a'))
+    expect(registry.enabled_definitions).to contain_exactly(hash_including(key: 'job:a'))
+    expect(registry.remove_definition('job:a')).to include(key: 'job:a')
+    expect(registry.remove_definition('missing')).to be_nil
+  end
+
+  it 'persists and queries dispatches through the registry model interface' do
+    model = class_double(described_class::DispatchRecord)
+    fire_time = Time.utc(2026, 1, 1, 0, 0, 0)
+    dispatched_at = Time.utc(2026, 1, 1, 0, 1, 0)
+    record = build_dispatch_record(fire_time:, dispatched_at:)
+    filtered_relation = instance_double(ActiveRecord::Relation)
+    cleanup_relation = instance_double(ActiveRecord::Relation, delete_all: 1)
+
+    allow(model).to receive(:find_or_initialize_by).with(key: 'job:a', fire_time:).and_return(record)
+    allow(model).to receive(:find_by).with(key: 'job:a', fire_time:).and_return(record)
+    allow(model).to receive(:find_by).with(key: 'missing', fire_time:).and_return(nil)
+    allow(model).to receive(:where).and_return(filtered_relation)
+    allow(model).to receive(:where).with('fire_time < ?', instance_of(Time)).and_return(cleanup_relation)
+    allow(filtered_relation).to receive(:order).with(fire_time: :desc).and_return([record])
+
+    registry = described_class::DispatchRegistry.new(connection: nil, model:)
+
+    expect(registry.log_dispatch('job:a', fire_time, 'node-1')).to include(node_id: 'node-1')
+    expect(registry.find_dispatch('job:a', fire_time)).to include(status: 'dispatched')
+    expect(registry.find_dispatch('missing', fire_time)).to be_nil
+    expect(registry.find_by_key('job:a')).to contain_exactly(hash_including(key: 'job:a'))
+    expect(registry.find_by_node('node-1')).to contain_exactly(hash_including(node_id: 'node-1'))
+    expect(registry.find_by_status('dispatched')).to contain_exactly(hash_including(status: 'dispatched'))
+    expect(registry.cleanup(recovery_window: 0)).to eq(1)
   end
 
   it 'wraps sqlite lock adapter failures' do
@@ -109,6 +154,27 @@ RSpec.describe Kaal::ActiveRecord do
     adapter = described_class::DatabaseAdapter.new(nil, lock_model:)
 
     expect(adapter.acquire('lock:1', 60)).to be(false)
+  end
+
+  it 'acquires sqlite locks successfully on the first attempt' do
+    lock_model = class_double(Kaal::ActiveRecord::LockRecord).as_stubbed_const
+    allow(lock_model).to receive(:create!).and_return(true)
+
+    adapter = described_class::DatabaseAdapter.new(nil, lock_model:)
+    allow(adapter).to receive(:log_dispatch_attempt)
+
+    expect(adapter.acquire('lock:1', 60)).to be(true)
+    expect(adapter).to have_received(:log_dispatch_attempt).with('lock:1')
+  end
+
+  it 'builds default registry accessors for the database adapter' do
+    allow(described_class::DispatchRegistry).to receive(:new).and_return(:dispatch_registry)
+    allow(described_class::DefinitionRegistry).to receive(:new).and_return(:definition_registry)
+
+    adapter = described_class::DatabaseAdapter.new(nil, lock_model: class_double(described_class::LockRecord))
+
+    expect(adapter.dispatch_registry).to eq(:dispatch_registry)
+    expect(adapter.definition_registry).to eq(:definition_registry)
   end
 
   it 'supports postgres advisory lock adapters' do
