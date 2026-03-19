@@ -219,7 +219,9 @@ module Kaal
 
     def rollback_registered_definition(key, existing_definition)
       if existing_definition
-        definition_registry.upsert_definition(**existing_definition.slice(:key, :cron, :enabled, :source, :metadata))
+        definition_registry.upsert_definition(
+          **Definition::AttributeHelpers.definition_attributes(existing_definition), enabled: existing_definition[:enabled]
+        )
       elsif !registry.registered?(key)
         definition_registry.remove_definition(key)
       end

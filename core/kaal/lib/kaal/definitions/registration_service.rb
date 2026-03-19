@@ -39,7 +39,7 @@ module Kaal
           enabled: true,
           source: 'code',
           metadata: {}
-        }.merge(existing_definition&.slice(:enabled, :metadata) || {})
+        }.merge(Definition::AttributeHelpers.persisted_definition_attributes(existing_definition))
         @definition_registry.upsert_definition(key: key, cron: cron, **persisted_attributes)
         with_registered_definition_rollback(key, existing_definition) do
           @registry.add(key: key, cron: cron, enqueue: enqueue)
@@ -50,7 +50,9 @@ module Kaal
 
       def rollback_registered_definition(key, existing_definition)
         if existing_definition
-          @definition_registry.upsert_definition(**existing_definition.slice(:key, :cron, :enabled, :source, :metadata))
+          @definition_registry.upsert_definition(
+            **Definition::AttributeHelpers.definition_attributes(existing_definition), enabled: existing_definition[:enabled]
+          )
         elsif !@registry.registered?(key)
           @definition_registry.remove_definition(key)
         end

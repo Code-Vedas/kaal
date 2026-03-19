@@ -6,6 +6,29 @@
 # LICENSE file in the root directory of this source tree.
 module Kaal
   module Definition
+    # Pure helpers for extracting persisted definition attributes without ActiveSupport.
+    module AttributeHelpers
+      module_function
+
+      def definition_attributes(definition)
+        {
+          key: definition[:key],
+          cron: definition[:cron],
+          source: definition[:source],
+          metadata: definition[:metadata]
+        }
+      end
+
+      def persisted_definition_attributes(definition)
+        return {} unless definition
+
+        {
+          enabled: definition[:enabled],
+          metadata: definition[:metadata]
+        }
+      end
+    end
+
     # Base abstraction for cron definition storage.
     class Registry
       def upsert_definition(**)
@@ -42,7 +65,7 @@ module Kaal
         definition = find_definition(key)
         return nil unless definition
 
-        attributes = definition.slice(:key, :cron, :source, :metadata).merge(enabled: enabled)
+        attributes = AttributeHelpers.definition_attributes(definition).merge(enabled: enabled)
         upsert_definition(**attributes)
       end
     end

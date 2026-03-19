@@ -4,6 +4,8 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
+require 'kaal/support/hash_tools'
+
 module Kaal
   class SchedulerFileLoader
     # Applies normalized scheduler jobs and rolls them back on failure.
@@ -73,8 +75,9 @@ module Kaal
 
       def rollback_job(key:, existing_definition:, existing_registry_entry:)
         if existing_definition
-          definition_attributes = existing_definition.slice(:key, :cron, :enabled, :source, :metadata)
-          @definition_registry.upsert_definition(**definition_attributes)
+          @definition_registry.upsert_definition(
+            **Definition::AttributeHelpers.definition_attributes(existing_definition), enabled: existing_definition[:enabled]
+          )
         else
           @definition_registry.remove_definition(key)
         end
