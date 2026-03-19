@@ -32,7 +32,7 @@ module KaalActiveRecordSupport
     uri = URI.parse(database_url.gsub('\\!', '!'))
     database_name = uri.path.delete_prefix('/')
     admin_url = build_admin_database_url(uri)
-    admin_connection = ::ActiveRecord::Base.establish_connection(admin_url).connection
+    admin_connection = admin_connection_for(admin_url)
 
     case uri.scheme
     when 'postgres', 'postgresql'
@@ -117,6 +117,18 @@ module KaalActiveRecordSupport
       path: path,
       query: uri.query
     ).to_s
+  end
+
+  def admin_connection_for(admin_url)
+    connection_target = ::ActiveRecord::Base.establish_connection(admin_url)
+
+    if connection_target.respond_to?(:lease_connection)
+      connection_target.lease_connection
+    elsif connection_target.respond_to?(:connection)
+      connection_target.connection
+    else
+      ::ActiveRecord::Base.connection
+    end
   end
 
   def mysql_connection?(connection)
