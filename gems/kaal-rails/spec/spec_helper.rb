@@ -18,13 +18,13 @@ end
 
 $LOAD_PATH.unshift(File.expand_path('../lib', __dir__))
 
-ENV['KAAL_RAILS_BUNDLE_GEMFILE'] ||= File.expand_path('../Gemfile', __dir__)
 ENV['KAAL_RAILS_LIB_PATH'] ||= File.expand_path('../lib', __dir__)
 
 require 'rails'
 require 'kaal/rails'
 
 Dir[File.expand_path('support/**/*.rb', __dir__)].each { |file| require file }
+Dir[File.expand_path('e2e/support/**/*.rb', __dir__)].each { |file| require file }
 
 RSpec.configure do |config|
   config.expect_with :rspec do |expectations|

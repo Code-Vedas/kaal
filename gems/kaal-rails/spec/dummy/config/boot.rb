@@ -5,10 +5,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 # Set up gems listed in the Gemfile.
-ENV['BUNDLE_GEMFILE'] = ENV.fetch(
-  'KAAL_RAILS_BUNDLE_GEMFILE',
-  File.expand_path('../../../Gemfile', __dir__)
-)
+ENV['BUNDLE_GEMFILE'] ||= File.expand_path('../../../Gemfile', __dir__)
 
 require 'bundler/setup' if File.exist?(ENV['BUNDLE_GEMFILE'])
 $LOAD_PATH.unshift(ENV.fetch('KAAL_RAILS_LIB_PATH', File.expand_path('../../../lib', __dir__)))

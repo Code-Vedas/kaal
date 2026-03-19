@@ -38,4 +38,3 @@ RSpec.describe Kaal::Rails, integration: :sqlite do
     end
   end
 end
-

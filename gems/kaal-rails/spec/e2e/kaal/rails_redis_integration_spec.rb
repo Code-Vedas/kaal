@@ -22,4 +22,3 @@ RSpec.describe Kaal::Rails, integration: :redis do
     end
   end
 end
-

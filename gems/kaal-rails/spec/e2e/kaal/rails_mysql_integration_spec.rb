@@ -37,4 +37,3 @@ RSpec.describe Kaal::Rails, integration: :mysql do
     end
   end
 end
-

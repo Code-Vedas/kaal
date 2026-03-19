@@ -16,4 +16,3 @@ RSpec.describe Kaal::Rails, integration: :memory do
     end
   end
 end
-

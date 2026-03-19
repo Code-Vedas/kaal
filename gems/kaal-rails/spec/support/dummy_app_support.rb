@@ -57,7 +57,6 @@ module KaalRailsDummyAppSupport
 
   def default_env
     {
-      'KAAL_RAILS_BUNDLE_GEMFILE' => File.join(GEM_ROOT, 'Gemfile'),
       'KAAL_RAILS_LIB_PATH' => File.join(GEM_ROOT, 'lib'),
       'RAILS_ENV' => 'test'
     }

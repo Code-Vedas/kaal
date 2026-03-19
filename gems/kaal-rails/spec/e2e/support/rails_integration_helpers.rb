@@ -9,4 +9,3 @@ module RailsIntegrationHelpers
     KaalRailsDummyAppSupport.run!(app_root, env, 'bin/rails', 'runner', code)
   end
 end
-

@@ -37,4 +37,3 @@ RSpec.describe Kaal::Rails, integration: :pg do
     end
   end
 end
-
