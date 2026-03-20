@@ -1,0 +1,53 @@
+#!/bin/sh
+
+. "${SCRIPT_DIR}/run-common"
+
+run_suite() {
+  suite_name="$1"
+  suite_dir="$2"
+
+  cd "${REPO_ROOT}/${suite_dir}"
+
+  if gemfiles=$(suite_gemfiles "${suite_dir}"); then
+    for gemfile in ${gemfiles}; do
+      label=$(gemfile_label "${gemfile}")
+      bundle_gemfile="BUNDLE_GEMFILE=${REPO_ROOT}/${suite_dir}/${gemfile}"
+
+      run_cmd_env \
+        "${suite_name}-${label}-rspec-e2e-memory" \
+        "${bundle_gemfile}" \
+        bin/rspec-e2e memory
+      run_cmd_env \
+        "${suite_name}-${label}-rspec-e2e-redis" \
+        "${bundle_gemfile}" \
+        bin/rspec-e2e redis
+      run_cmd_env \
+        "${suite_name}-${label}-rspec-e2e-sqlite" \
+        "${bundle_gemfile}" \
+        bin/rspec-e2e sqlite
+      run_cmd_env \
+        "${suite_name}-${label}-rspec-e2e-postgres" \
+        "${bundle_gemfile}" \
+        DATABASE_URL="postgres://postgres:postgres@localhost:5432/kaal_test_auto" \
+        bin/rspec-e2e pg
+      run_cmd_env \
+        "${suite_name}-${label}-rspec-e2e-mysql" \
+        "${bundle_gemfile}" \
+        DATABASE_URL="mysql2://root:rootROOT!1@127.0.0.1:3306/kaal_test_auto" \
+        bin/rspec-e2e mysql
+    done
+    return 0
+  fi
+
+  run_cmd "${suite_name}-rspec-e2e-memory" bin/rspec-e2e memory
+  run_cmd "${suite_name}-rspec-e2e-redis" bin/rspec-e2e redis
+  run_cmd "${suite_name}-rspec-e2e-sqlite" bin/rspec-e2e sqlite
+  run_cmd_env \
+    "${suite_name}-rspec-e2e-postgres" \
+    DATABASE_URL="postgres://postgres:postgres@localhost:5432/kaal_test_auto" \
+    bin/rspec-e2e pg
+  run_cmd_env \
+    "${suite_name}-rspec-e2e-mysql" \
+    DATABASE_URL="mysql2://root:rootROOT!1@127.0.0.1:3306/kaal_test_auto" \
+    bin/rspec-e2e mysql
+}

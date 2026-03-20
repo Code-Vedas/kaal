@@ -3,7 +3,7 @@
 > Distributed cron scheduling for Ruby, split into a core engine plus datastore and framework integration gems.
 
 [![Gem](https://img.shields.io/gem/v/kaal.svg?style=flat-square)](https://rubygems.org/gems/kaal)
-[![CI core/kaal](https://github.com/Code-Vedas/kaal/actions/workflows/ci-kaal.yml/badge.svg)](https://github.com/Code-Vedas/kaal/actions/workflows/ci-kaal.yml)
+[![CI](https://github.com/Code-Vedas/kaal/actions/workflows/ci.yml/badge.svg)](https://github.com/Code-Vedas/kaal/actions/workflows/ci.yml)
 [![Maintainability](https://qlty.sh/gh/Code-Vedas/projects/kaal/maintainability.svg)](https://qlty.sh/gh/Code-Vedas/projects/kaal)
 [![Code Coverage](https://qlty.sh/gh/Code-Vedas/projects/kaal/coverage.svg)](https://qlty.sh/gh/Code-Vedas/projects/kaal)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)

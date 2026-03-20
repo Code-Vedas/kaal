@@ -55,6 +55,19 @@ module Kaal
         end
       end
 
+      def build_callback_for(key:, job_class_name:, queue:, args_template:, kwargs_template:)
+        job_class = resolve_job_class(job_class_name:, key:)
+        build_callback(
+          {
+            key: key,
+            queue: queue,
+            args: args_template,
+            kwargs: kwargs_template
+          },
+          job_class
+        )
+      end
+
       def conflict?(key:, existing_definition:)
         existing_source = existing_definition&.[](:source)
         return false unless existing_source && existing_source.to_s != 'file'
@@ -71,6 +84,10 @@ module Kaal
         else
           raise SchedulerConfigError, "Unsupported scheduler_conflict_policy '#{policy}'"
         end
+      end
+
+      def resolve_job_class_for(job_class_name:, key:)
+        resolve_job_class(job_class_name:, key:)
       end
 
       def rollback_job(key:, existing_definition:, existing_registry_entry:)
@@ -170,7 +187,14 @@ module Kaal
       end
 
       def dispatch_job(job_class, queue, args, kwargs)
-        if queue && job_class.respond_to?(:set)
+        job_class_name = job_class.name
+
+        if queue && !job_class.respond_to?(:set)
+          raise SchedulerConfigError,
+                "job_class '#{job_class_name}' must respond to .set to use queue #{queue.inspect}"
+        end
+
+        if queue
           job_class.set(queue: queue).perform_later(*args, **kwargs)
         elsif job_class.respond_to?(:perform_later)
           job_class.perform_later(*args, **kwargs)
@@ -178,7 +202,7 @@ module Kaal
           job_class.perform(*args, **kwargs)
         else
           raise SchedulerConfigError,
-                "job_class '#{job_class.name}' must respond to .perform, .perform_later, or .set(...).perform_later"
+                "job_class '#{job_class_name}' must respond to .perform, .perform_later, or .set(...).perform_later"
         end
       end
 

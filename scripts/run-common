@@ -1,0 +1,74 @@
+#!/bin/sh
+
+set -eu
+
+if [ "${SCRIPT_DIR:-}" = "" ]; then
+  SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+fi
+
+if [ "${REPO_ROOT:-}" = "" ]; then
+  REPO_ROOT=$(CDPATH= cd -- "${SCRIPT_DIR}/.." && pwd)
+fi
+TMP_DIR="${REPO_ROOT}/tmp/run-all"
+
+mkdir -p "${TMP_DIR}"
+
+run_cmd() {
+  name="$1"
+  shift
+  log_file="${TMP_DIR}/${name}.log"
+
+  echo "==> ${name}"
+
+  if "$@" >"${log_file}" 2>&1; then
+    rm -f "${log_file}"
+    return 0
+  fi
+
+  echo "-- ${name} failed --"
+  cat "${log_file}"
+  return 1
+}
+
+run_cmd_env() {
+  name="$1"
+  shift
+  log_file="${TMP_DIR}/${name}.log"
+
+  echo "==> ${name}"
+
+  if env "$@" >"${log_file}" 2>&1; then
+    rm -f "${log_file}"
+    return 0
+  fi
+
+  echo "-- ${name} failed --"
+  cat "${log_file}"
+  return 1
+}
+
+current_ruby_series() {
+  ruby -e 'print RUBY_VERSION.split(".").first(2).join(".")'
+}
+
+gemfile_label() {
+  basename "$1" .gemfile | tr '_' '-'
+}
+
+suite_gemfiles() {
+  suite_dir="$1"
+
+  case "${suite_dir}" in
+    core/kaal-activerecord|gems/kaal-rails)
+      printf '%s\n' "gemfiles/rails_7_2.gemfile"
+      printf '%s\n' "gemfiles/rails_8_0.gemfile"
+      printf '%s\n' "gemfiles/rails_8_1.gemfile"
+      if [ "$(current_ruby_series)" != "3.2" ]; then
+        printf '%s\n' "gemfiles/rails_edge.gemfile"
+      fi
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}

@@ -107,7 +107,16 @@ RSpec.describe Kaal::SchedulerFileLoader do
 
     expect(loader.send(:extract_job_options, { 'args' => [], 'kwargs' => {}, 'metadata' => {} }, key: 'job')).to include(enabled: true)
     expect(loader.send(:resolve_job_class, job_class_name: 'ExampleSchedulerJob', key: 'job')).to eq(ExampleSchedulerJob)
-    expect(loader.send(:build_callback, key: 'job', job_class_name: 'ExampleSchedulerJob', queue: nil, args_template: [], kwargs_template: {})).to be_a(Proc)
+    expect(
+      loader.send(
+        :build_callback,
+        key: 'job',
+        job_class_name: 'ExampleSchedulerJob',
+        queue: nil,
+        args_template: [],
+        kwargs_template: {}
+      )
+    ).to be_a(Proc)
     expect(loader.send(:helper_bundle)).to be_a(Kaal::SchedulerFileLoader::HelperBundle)
   end
 
@@ -196,7 +205,7 @@ RSpec.describe Kaal::SchedulerFileLoader do
     end.to raise_error(Kaal::SchedulerConfigError, /Unsupported/)
 
     expect do
-      applier.send(:resolve_job_class, job_class_name: 'MissingJobClass', key: 'missing')
+      applier.resolve_job_class_for(job_class_name: 'MissingJobClass', key: 'missing')
     end.to raise_error(Kaal::SchedulerConfigError, /Unknown job_class/)
 
     expect do
@@ -208,6 +217,10 @@ RSpec.describe Kaal::SchedulerFileLoader do
     expect do
       applier.send(:dispatch_job, bad_job, nil, [], {})
     end.to raise_error(Kaal::SchedulerConfigError, /must respond to/)
+
+    expect do
+      applier.send(:dispatch_job, bad_job, 'low', [], {})
+    end.to raise_error(Kaal::SchedulerConfigError, /must respond to \.set to use queue/)
 
     expect(loader.send(:stringify_keys, a: { b: 1 })).to eq('a' => { 'b' => 1 })
     expect(loader.send(:symbolize_keys_deep, 'a' => { 'b' => 1 })).to eq(a: { b: 1 })
@@ -447,11 +460,11 @@ RSpec.describe Kaal::SchedulerFileLoader do
     allow(Kaal::Support::HashTools).to receive(:constantize).and_call_original
     allow(Kaal::Support::HashTools).to receive(:constantize).with('MissingJob').and_raise(NameError)
     expect do
-      nil_logger_applier.send(:resolve_job_class, job_class_name: 'MissingJob', key: 'restore')
+      nil_logger_applier.resolve_job_class_for(job_class_name: 'MissingJob', key: 'restore')
     end.to raise_error(Kaal::SchedulerConfigError, /Unknown job_class/)
 
     expect do
-      nil_logger_applier.send(:resolve_job_class, job_class_name: '   ', key: 'restore')
+      nil_logger_applier.resolve_job_class_for(job_class_name: '   ', key: 'restore')
     end.to raise_error(Kaal::SchedulerConfigError, /Job class cannot be blank/)
 
     active_job_class = Class.new do
