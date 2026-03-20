@@ -55,19 +55,6 @@ module Kaal
         end
       end
 
-      def build_callback_for(key:, job_class_name:, queue:, args_template:, kwargs_template:)
-        job_class = resolve_job_class(job_class_name:, key:)
-        build_callback(
-          {
-            key: key,
-            queue: queue,
-            args: args_template,
-            kwargs: kwargs_template
-          },
-          job_class
-        )
-      end
-
       def conflict?(key:, existing_definition:)
         existing_source = existing_definition&.[](:source)
         return false unless existing_source && existing_source.to_s != 'file'
@@ -84,10 +71,6 @@ module Kaal
         else
           raise SchedulerConfigError, "Unsupported scheduler_conflict_policy '#{policy}'"
         end
-      end
-
-      def resolve_job_class_for(job_class_name:, key:)
-        resolve_job_class(job_class_name:, key:)
       end
 
       def rollback_job(key:, existing_definition:, existing_registry_entry:)
@@ -111,8 +94,6 @@ module Kaal
       rescue StandardError => e
         @logger&.error("Failed to rollback scheduler file application for #{key}: #{e.message}")
       end
-
-      private
 
       def persisted_metadata(job, job_class)
         metadata, job_class_name, queue, args, kwargs =
@@ -185,6 +166,8 @@ module Kaal
 
         raise_unknown_job_class(error_message)
       end
+
+      private
 
       def dispatch_job(job_class, queue, args, kwargs)
         job_class_name = job_class.name

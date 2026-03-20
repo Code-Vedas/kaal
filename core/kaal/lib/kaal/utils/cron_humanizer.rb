@@ -186,7 +186,8 @@ module Kaal
       return if I18n.load_path.include?(locale_file)
 
       I18n.load_path << locale_file
-      I18n.available_locales |= YAML.load_file(locale_file).keys.map(&:to_sym)
+      locales = YAML.safe_load_file(locale_file, aliases: true) || {}
+      I18n.available_locales |= locales.keys.map(&:to_sym)
       I18n.backend.load_translations
     end
     private_class_method :ensure_i18n_loaded!

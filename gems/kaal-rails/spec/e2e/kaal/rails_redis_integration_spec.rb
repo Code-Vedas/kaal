@@ -11,6 +11,9 @@ RSpec.describe Kaal::Rails, integration: :redis do
   include RailsIntegrationHelpers
 
   it 'boots the dummy app with a redis backend override and loads scheduler definitions into redis' do
+    namespace = nil
+    redis = nil
+
     KaalRailsDummyAppSupport.with_dummy_app do |app_root, env|
       namespace = "kaal-rails-test:#{File.basename(app_root)}"
       redis = Redis.new(url: ENV.fetch('REDIS_URL'))
@@ -48,8 +51,10 @@ RSpec.describe Kaal::Rails, integration: :redis do
       expect(output.strip).to eq('Kaal::Backend::RedisAdapter')
       expect(redis.hget("#{namespace}:definitions", 'example:heartbeat')).to include('"key":"example:heartbeat"')
     ensure
-      redis.scan_each(match: "#{namespace}:*") { |key| redis.del(key) }
-      redis.close
+      if redis && namespace
+        redis.scan_each(match: "#{namespace}:*") { |key| redis.del(key) }
+        redis.close
+      end
     end
   end
 end

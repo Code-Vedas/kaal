@@ -34,84 +34,34 @@ jobs:
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y \
             build-essential git libmysqlclient-dev libpq-dev libyaml-dev pkg-config
-      - name: Set up Ruby for core/kaal
+      - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/core/kaal
-      - name: Set up Ruby for core/kaal-sequel
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/core/kaal-sequel
-      - name: Set up Ruby for core/kaal-activerecord Rails 7.2
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/core/kaal-activerecord/gemfiles/rails_7_2.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/core/kaal-activerecord
-      - name: Set up Ruby for core/kaal-activerecord Rails 8.0
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/core/kaal-activerecord/gemfiles/rails_8_0.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/core/kaal-activerecord
-      - name: Set up Ruby for core/kaal-activerecord Rails 8.1
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/core/kaal-activerecord/gemfiles/rails_8_1.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/core/kaal-activerecord
-      - name: Set up Ruby for core/kaal-activerecord Rails Edge
-        if: matrix.ruby_version != '3.2'
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/core/kaal-activerecord/gemfiles/rails_edge.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/core/kaal-activerecord
-      - name: Set up Ruby for gems/kaal-rails Rails 7.2
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/gems/kaal-rails/gemfiles/rails_7_2.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/gems/kaal-rails
-      - name: Set up Ruby for gems/kaal-rails Rails 8.0
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/gems/kaal-rails/gemfiles/rails_8_0.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/gems/kaal-rails
-      - name: Set up Ruby for gems/kaal-rails Rails 8.1
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/gems/kaal-rails/gemfiles/rails_8_1.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/gems/kaal-rails
-      - name: Set up Ruby for gems/kaal-rails Rails Edge
-        if: matrix.ruby_version != '3.2'
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/gems/kaal-rails/gemfiles/rails_edge.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/gems/kaal-rails
+          bundler-cache: false
+      - name: Install bundles
+        run: |
+          cd "${GITHUB_WORKSPACE}/core/kaal"
+          bundle install
+
+          cd "${GITHUB_WORKSPACE}/core/kaal-sequel"
+          bundle install
+
+          cd "${GITHUB_WORKSPACE}/core/kaal-activerecord"
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_7_2.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_8_0.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_8_1.gemfile" bundle install
+          if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
+            BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_edge.gemfile" bundle install
+          fi
+
+          cd "${GITHUB_WORKSPACE}/gems/kaal-rails"
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_7_2.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_8_0.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_8_1.gemfile" bundle install
+          if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
+            BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_edge.gemfile" bundle install
+          fi
       - name: Run RuboCop
         run: scripts/run-rubocop-all
 
@@ -135,84 +85,34 @@ jobs:
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y \
             build-essential git libmysqlclient-dev libpq-dev libyaml-dev pkg-config
-      - name: Set up Ruby for core/kaal
+      - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/core/kaal
-      - name: Set up Ruby for core/kaal-sequel
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/core/kaal-sequel
-      - name: Set up Ruby for core/kaal-activerecord Rails 7.2
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/core/kaal-activerecord/gemfiles/rails_7_2.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/core/kaal-activerecord
-      - name: Set up Ruby for core/kaal-activerecord Rails 8.0
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/core/kaal-activerecord/gemfiles/rails_8_0.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/core/kaal-activerecord
-      - name: Set up Ruby for core/kaal-activerecord Rails 8.1
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/core/kaal-activerecord/gemfiles/rails_8_1.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/core/kaal-activerecord
-      - name: Set up Ruby for core/kaal-activerecord Rails Edge
-        if: matrix.ruby_version != '3.2'
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/core/kaal-activerecord/gemfiles/rails_edge.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/core/kaal-activerecord
-      - name: Set up Ruby for gems/kaal-rails Rails 7.2
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/gems/kaal-rails/gemfiles/rails_7_2.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/gems/kaal-rails
-      - name: Set up Ruby for gems/kaal-rails Rails 8.0
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/gems/kaal-rails/gemfiles/rails_8_0.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/gems/kaal-rails
-      - name: Set up Ruby for gems/kaal-rails Rails 8.1
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/gems/kaal-rails/gemfiles/rails_8_1.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/gems/kaal-rails
-      - name: Set up Ruby for gems/kaal-rails Rails Edge
-        if: matrix.ruby_version != '3.2'
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/gems/kaal-rails/gemfiles/rails_edge.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/gems/kaal-rails
+          bundler-cache: false
+      - name: Install bundles
+        run: |
+          cd "${GITHUB_WORKSPACE}/core/kaal"
+          bundle install
+
+          cd "${GITHUB_WORKSPACE}/core/kaal-sequel"
+          bundle install
+
+          cd "${GITHUB_WORKSPACE}/core/kaal-activerecord"
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_7_2.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_8_0.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_8_1.gemfile" bundle install
+          if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
+            BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_edge.gemfile" bundle install
+          fi
+
+          cd "${GITHUB_WORKSPACE}/gems/kaal-rails"
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_7_2.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_8_0.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_8_1.gemfile" bundle install
+          if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
+            BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_edge.gemfile" bundle install
+          fi
       - name: Run Reek
         run: scripts/run-reek-all
 
@@ -236,84 +136,34 @@ jobs:
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y \
             build-essential git libmysqlclient-dev libpq-dev libyaml-dev pkg-config
-      - name: Set up Ruby for core/kaal
+      - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/core/kaal
-      - name: Set up Ruby for core/kaal-sequel
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/core/kaal-sequel
-      - name: Set up Ruby for core/kaal-activerecord Rails 7.2
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/core/kaal-activerecord/gemfiles/rails_7_2.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/core/kaal-activerecord
-      - name: Set up Ruby for core/kaal-activerecord Rails 8.0
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/core/kaal-activerecord/gemfiles/rails_8_0.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/core/kaal-activerecord
-      - name: Set up Ruby for core/kaal-activerecord Rails 8.1
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/core/kaal-activerecord/gemfiles/rails_8_1.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/core/kaal-activerecord
-      - name: Set up Ruby for core/kaal-activerecord Rails Edge
-        if: matrix.ruby_version != '3.2'
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/core/kaal-activerecord/gemfiles/rails_edge.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/core/kaal-activerecord
-      - name: Set up Ruby for gems/kaal-rails Rails 7.2
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/gems/kaal-rails/gemfiles/rails_7_2.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/gems/kaal-rails
-      - name: Set up Ruby for gems/kaal-rails Rails 8.0
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/gems/kaal-rails/gemfiles/rails_8_0.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/gems/kaal-rails
-      - name: Set up Ruby for gems/kaal-rails Rails 8.1
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/gems/kaal-rails/gemfiles/rails_8_1.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/gems/kaal-rails
-      - name: Set up Ruby for gems/kaal-rails Rails Edge
-        if: matrix.ruby_version != '3.2'
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/gems/kaal-rails/gemfiles/rails_edge.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/gems/kaal-rails
+          bundler-cache: false
+      - name: Install bundles
+        run: |
+          cd "${GITHUB_WORKSPACE}/core/kaal"
+          bundle install
+
+          cd "${GITHUB_WORKSPACE}/core/kaal-sequel"
+          bundle install
+
+          cd "${GITHUB_WORKSPACE}/core/kaal-activerecord"
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_7_2.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_8_0.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_8_1.gemfile" bundle install
+          if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
+            BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_edge.gemfile" bundle install
+          fi
+
+          cd "${GITHUB_WORKSPACE}/gems/kaal-rails"
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_7_2.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_8_0.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_8_1.gemfile" bundle install
+          if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
+            BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_edge.gemfile" bundle install
+          fi
       - name: Run unit tests
         run: scripts/run-rspec-unit-all
       - name: Publish coverage to Qlty
@@ -381,83 +231,33 @@ jobs:
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y \
             build-essential git libmysqlclient-dev libpq-dev libyaml-dev pkg-config
-      - name: Set up Ruby for core/kaal
+      - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/core/kaal
-      - name: Set up Ruby for core/kaal-sequel
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/core/kaal-sequel
-      - name: Set up Ruby for core/kaal-activerecord Rails 7.2
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/core/kaal-activerecord/gemfiles/rails_7_2.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/core/kaal-activerecord
-      - name: Set up Ruby for core/kaal-activerecord Rails 8.0
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/core/kaal-activerecord/gemfiles/rails_8_0.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/core/kaal-activerecord
-      - name: Set up Ruby for core/kaal-activerecord Rails 8.1
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/core/kaal-activerecord/gemfiles/rails_8_1.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/core/kaal-activerecord
-      - name: Set up Ruby for core/kaal-activerecord Rails Edge
-        if: matrix.ruby_version != '3.2'
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/core/kaal-activerecord/gemfiles/rails_edge.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/core/kaal-activerecord
-      - name: Set up Ruby for gems/kaal-rails Rails 7.2
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/gems/kaal-rails/gemfiles/rails_7_2.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/gems/kaal-rails
-      - name: Set up Ruby for gems/kaal-rails Rails 8.0
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/gems/kaal-rails/gemfiles/rails_8_0.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/gems/kaal-rails
-      - name: Set up Ruby for gems/kaal-rails Rails 8.1
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/gems/kaal-rails/gemfiles/rails_8_1.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/gems/kaal-rails
-      - name: Set up Ruby for gems/kaal-rails Rails Edge
-        if: matrix.ruby_version != '3.2'
-        uses: ruby/setup-ruby@v1
-        env:
-          BUNDLE_GEMFILE: ${{ github.workspace }}/gems/kaal-rails/gemfiles/rails_edge.gemfile
-        with:
-          ruby-version: ${{ matrix.ruby_version }}
-          bundler-cache: true
-          working-directory: ${{ github.workspace }}/gems/kaal-rails
+          bundler-cache: false
+      - name: Install bundles
+        run: |
+          cd "${GITHUB_WORKSPACE}/core/kaal"
+          bundle install
+
+          cd "${GITHUB_WORKSPACE}/core/kaal-sequel"
+          bundle install
+
+          cd "${GITHUB_WORKSPACE}/core/kaal-activerecord"
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_7_2.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_8_0.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_8_1.gemfile" bundle install
+          if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
+            BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_edge.gemfile" bundle install
+          fi
+
+          cd "${GITHUB_WORKSPACE}/gems/kaal-rails"
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_7_2.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_8_0.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_8_1.gemfile" bundle install
+          if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
+            BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_edge.gemfile" bundle install
+          fi
       - name: Run e2e tests
         run: scripts/run-rspec-e2e-all
