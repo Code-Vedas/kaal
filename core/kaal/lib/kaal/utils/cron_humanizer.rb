@@ -12,6 +12,7 @@ module Kaal
   ##
   # Human-friendly cron phrase generation with i18n support.
   module CronHumanizer
+    I18N_LOAD_MUTEX = Mutex.new
     MACRO_PHRASES = {
       '@yearly' => 'phrases.yearly',
       '@monthly' => 'phrases.monthly',
@@ -185,10 +186,14 @@ module Kaal
       locale_file = File.expand_path('../../../config/locales/en.yml', __dir__)
       return if I18n.load_path.include?(locale_file)
 
-      I18n.load_path << locale_file
-      locales = YAML.safe_load_file(locale_file, aliases: true) || {}
-      I18n.available_locales |= locales.keys.map(&:to_sym)
-      I18n.backend.load_translations
+      I18N_LOAD_MUTEX.synchronize do
+        return if I18n.load_path.include?(locale_file)
+
+        I18n.load_path << locale_file
+        locales = YAML.safe_load_file(locale_file, aliases: true) || {}
+        I18n.available_locales |= locales.keys.map(&:to_sym)
+        I18n.backend.load_translations
+      end
     end
     private_class_method :ensure_i18n_loaded!
   end

@@ -45,6 +45,7 @@ update_bundle_file() {
 }
 
 update_bundle_dir "root-ruby-lsp" ".ruby-lsp"
+update_bundle_dir "danger" "danger"
 update_bundle_dir "core-kaal" "core/kaal"
 update_bundle_dir "core-kaal-sequel" "core/kaal-sequel"
 update_bundle_dir "core-kaal-activerecord" "core/kaal-activerecord"

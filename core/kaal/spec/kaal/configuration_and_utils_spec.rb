@@ -257,6 +257,20 @@ RSpec.describe Kaal::Configuration do
       expect(I18n.load_path).to include(locale_file)
       expect(I18n.available_locales).to include(:en)
     end
+
+    it 'skips locale loading when another thread loads the locale before the mutex-protected section runs' do
+      load_path = []
+
+      allow(I18n).to receive(:load_path).and_return(load_path)
+      allow(load_path).to receive(:include?).and_return(false, true)
+      allow(I18n.backend).to receive(:load_translations)
+      allow(YAML).to receive(:safe_load_file).and_call_original
+
+      described_class.send(:ensure_i18n_loaded!)
+
+      expect(YAML).not_to have_received(:safe_load_file)
+      expect(I18n.backend).not_to have_received(:load_translations)
+    end
   end
 
   describe Kaal::IdempotencyKeyGenerator do

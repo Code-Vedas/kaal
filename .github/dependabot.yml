@@ -1,6 +1,10 @@
 version: 2
 updates:
   - package-ecosystem: bundler
+    directory: /danger
+    schedule:
+      interval: daily
+  - package-ecosystem: bundler
     directory: /core/kaal
     schedule:
       interval: daily
