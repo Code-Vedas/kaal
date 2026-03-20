@@ -293,6 +293,12 @@ RSpec.describe Kaal::Registry do
       expect(described_class.parse_lock_key('kaal:dispatch:job:alpha:100')).to eq(['job:alpha', Time.at(100)])
     end
 
+    it 'rejects malformed lock keys' do
+      expect { described_class.parse_lock_key('kaal:dispatch:job:alpha:not-a-time') }.to raise_error(ArgumentError, /Invalid dispatch lock key format/)
+      expect { described_class.parse_lock_key('kaal:other:job:alpha:100') }.to raise_error(ArgumentError, /Invalid dispatch lock key format/)
+      expect { described_class.parse_lock_key('kaal:dispatch::100') }.to raise_error(ArgumentError, /Invalid dispatch lock key format/)
+    end
+
     it 'exposes default dispatch registry and instance parsing helpers' do
       klass = Class.new do
         include Kaal::Backend::DispatchLogging

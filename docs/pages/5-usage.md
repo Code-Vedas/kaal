@@ -44,7 +44,8 @@ require "kaal"
 require "redis"
 
 Kaal.configure do |config|
-  config.backend = Kaal::Backend::RedisAdapter.new(ENV.fetch("REDIS_URL"))
+  redis = Redis.new(url: ENV.fetch("REDIS_URL"))
+  config.backend = Kaal::Backend::RedisAdapter.new(redis)
   config.scheduler_config_path = "config/scheduler.yml"
 end
 ```
@@ -155,3 +156,5 @@ ExecStartPre=/usr/bin/bash -lc 'bundle exec kaal status'
 - Use `kaal-sequel` for Sequel-backed SQL persistence in plain Ruby apps.
 - Use `kaal-activerecord` for Active Record-backed SQL persistence in plain Ruby apps.
 - Use `kaal-rails` for Rails apps; it pulls in `kaal-activerecord` and provides Rails-native integration.
+
+For plain Ruby jobs dispatched through `.perform(*args, **kwargs)`, Kaal considers the run successful unless the job raises. Return values are not inspected.

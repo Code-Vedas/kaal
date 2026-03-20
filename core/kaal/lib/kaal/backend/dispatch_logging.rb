@@ -54,12 +54,20 @@ module Kaal
 
       def self.parse_lock_key(key)
         parts = key.split(':')
-        fire_time_unix = parts.pop.to_i
-        2.times { parts.shift } # Remove namespace and "dispatch"
-        cron_key = parts.join(':')
+        invalid_message = "Invalid dispatch lock key format: #{key.inspect}"
+        valid_key = parts.length >= 4 && parts[1] == 'dispatch' && parts[-1].match?(/\A\d+\z/)
+        fire_time_unix = parts.pop.to_i if valid_key
+        2.times { parts.shift } if valid_key # Remove namespace and "dispatch"
+        cron_key = valid_key ? parts.join(':') : nil
+        invalid_dispatch_lock_key!(invalid_message) unless valid_key && !cron_key.empty?
+
         fire_time = Time.at(fire_time_unix)
 
         [cron_key, fire_time]
+      end
+
+      def self.invalid_dispatch_lock_key!(message)
+        raise ArgumentError, message
       end
 
       private

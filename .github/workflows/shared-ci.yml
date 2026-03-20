@@ -1,0 +1,264 @@
+name: Shared CI
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+    inputs:
+      upload_coverage:
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      QLTY_COVERAGE_TOKEN:
+        required: false
+
+jobs:
+  rubocop:
+    name: RuboCop · Ruby ${{ matrix.ruby_version }}
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby_version:
+          - '3.2'
+          - '3.4'
+          - '4.0'
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install apt packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            build-essential git libmysqlclient-dev libpq-dev libyaml-dev pkg-config
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby_version }}
+          bundler-cache: false
+      - name: Install bundles
+        run: |
+          cd "${GITHUB_WORKSPACE}/core/kaal"
+          bundle install
+
+          cd "${GITHUB_WORKSPACE}/core/kaal-sequel"
+          bundle install
+
+          cd "${GITHUB_WORKSPACE}/core/kaal-activerecord"
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_7_2.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_8_0.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_8_1.gemfile" bundle install
+          if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
+            BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_edge.gemfile" bundle install
+          fi
+
+          cd "${GITHUB_WORKSPACE}/gems/kaal-rails"
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_7_2.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_8_0.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_8_1.gemfile" bundle install
+          if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
+            BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_edge.gemfile" bundle install
+          fi
+      - name: Run RuboCop
+        run: scripts/run-rubocop-all
+
+  reek:
+    name: Reek · Ruby ${{ matrix.ruby_version }}
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    needs: rubocop
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby_version:
+          - '3.2'
+          - '3.4'
+          - '4.0'
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install apt packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            build-essential git libmysqlclient-dev libpq-dev libyaml-dev pkg-config
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby_version }}
+          bundler-cache: false
+      - name: Install bundles
+        run: |
+          cd "${GITHUB_WORKSPACE}/core/kaal"
+          bundle install
+
+          cd "${GITHUB_WORKSPACE}/core/kaal-sequel"
+          bundle install
+
+          cd "${GITHUB_WORKSPACE}/core/kaal-activerecord"
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_7_2.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_8_0.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_8_1.gemfile" bundle install
+          if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
+            BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_edge.gemfile" bundle install
+          fi
+
+          cd "${GITHUB_WORKSPACE}/gems/kaal-rails"
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_7_2.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_8_0.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_8_1.gemfile" bundle install
+          if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
+            BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_edge.gemfile" bundle install
+          fi
+      - name: Run Reek
+        run: scripts/run-reek-all
+
+  test:
+    name: Unit Tests · Ruby ${{ matrix.ruby_version }}
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    needs: reek
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby_version:
+          - '3.2'
+          - '3.4'
+          - '4.0'
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install apt packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            build-essential git libmysqlclient-dev libpq-dev libyaml-dev pkg-config
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby_version }}
+          bundler-cache: false
+      - name: Install bundles
+        run: |
+          cd "${GITHUB_WORKSPACE}/core/kaal"
+          bundle install
+
+          cd "${GITHUB_WORKSPACE}/core/kaal-sequel"
+          bundle install
+
+          cd "${GITHUB_WORKSPACE}/core/kaal-activerecord"
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_7_2.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_8_0.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_8_1.gemfile" bundle install
+          if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
+            BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_edge.gemfile" bundle install
+          fi
+
+          cd "${GITHUB_WORKSPACE}/gems/kaal-rails"
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_7_2.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_8_0.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_8_1.gemfile" bundle install
+          if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
+            BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_edge.gemfile" bundle install
+          fi
+      - name: Run unit tests
+        run: scripts/run-rspec-unit-all
+      - name: Publish coverage to Qlty
+        if: inputs.upload_coverage && matrix.ruby_version == '3.4'
+        uses: qltysh/qlty-action/coverage@v2
+        with:
+          token: ${{ secrets.QLTY_COVERAGE_TOKEN }}
+          files: |
+            ${{ github.workspace }}/core/kaal/coverage/.resultset.json
+            ${{ github.workspace }}/core/kaal-sequel/coverage/.resultset.json
+            ${{ github.workspace }}/core/kaal-activerecord/coverage/.resultset.json
+            ${{ github.workspace }}/gems/kaal-rails/coverage/.resultset.json
+
+  test_e2e:
+    name: E2E Tests · Ruby ${{ matrix.ruby_version }}
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby_version:
+          - '3.2'
+          - '3.4'
+          - '4.0'
+    env:
+      RAILS_ENV: test
+      REDIS_URL: redis://127.0.0.1:6379/0
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootROOT!1
+          MYSQL_DATABASE: kaal_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -p$MYSQL_ROOT_PASSWORD"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install apt packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            build-essential git libmysqlclient-dev libpq-dev libyaml-dev pkg-config
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby_version }}
+          bundler-cache: false
+      - name: Install bundles
+        run: |
+          cd "${GITHUB_WORKSPACE}/core/kaal"
+          bundle install
+
+          cd "${GITHUB_WORKSPACE}/core/kaal-sequel"
+          bundle install
+
+          cd "${GITHUB_WORKSPACE}/core/kaal-activerecord"
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_7_2.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_8_0.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_8_1.gemfile" bundle install
+          if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
+            BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_edge.gemfile" bundle install
+          fi
+
+          cd "${GITHUB_WORKSPACE}/gems/kaal-rails"
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_7_2.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_8_0.gemfile" bundle install
+          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_8_1.gemfile" bundle install
+          if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
+            BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_edge.gemfile" bundle install
+          fi
+      - name: Run e2e tests
+        run: scripts/run-rspec-e2e-all

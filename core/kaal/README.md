@@ -92,6 +92,8 @@ defaults:
 - `.perform_later(*args, **kwargs)`
 - `.set(queue: ...).perform_later(*args, **kwargs)`
 
+For plain Ruby `.perform` jobs, Kaal treats the dispatch as successful unless the job raises an exception. Return values are ignored.
+
 ## CLI
 
 ```bash

@@ -121,16 +121,38 @@ RSpec.describe Kaal::Configuration do
       expect(resolver.time_zone_identifier).to eq('UTC')
     end
 
+    it 'falls back to Time.zone when no explicit time zone is configured' do
+      tzinfo_zone_class = Struct.new(:identifier)
+      time_zone_class = Struct.new(:tzinfo)
+      zone = time_zone_class.new(tzinfo_zone_class.new('America/New_York'))
+      time_singleton = Time.singleton_class
+      original_zone_method = time_singleton.method_defined?(:zone, false)
+      time_singleton.send(:define_method, :zone) { zone }
+
+      expect(resolver.time_zone_identifier).to eq('America/New_York')
+    ensure
+      time_singleton.send(:remove_method, :zone) unless original_zone_method
+    end
+
     it 'returns a configured time zone' do
       configuration.time_zone = 'America/Toronto'
 
       expect(resolver.time_zone_identifier).to eq('America/Toronto')
     end
 
+    it 'normalizes utc case-insensitively' do
+      configuration.time_zone = :utc
+
+      expect(resolver.time_zone_identifier).to eq('UTC')
+    end
+
     it 'raises for invalid time zone identifiers' do
       configuration.time_zone = 'Nope/Zone'
 
-      expect { resolver.time_zone_identifier }.to raise_error(Kaal::ConfigurationError, /Invalid time_zone configuration/)
+      expect { resolver.time_zone_identifier }.to raise_error(
+        Kaal::ConfigurationError,
+        %r{Invalid time_zone configuration: "Nope/Zone" \(normalized: "Nope/Zone"\)}
+      )
     end
   end
 

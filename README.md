@@ -12,14 +12,15 @@
 
 ```text
 /repo-root
-├── .github/
-├── core/
-│   ├── kaal/
-│   ├── kaal-sequel/
-│   └── kaal-activerecord/
-├── gems/
-│   └── kaal-rails/
-├── docs/
+├── .github/               
+├── core/                   # Core engine and datastore gems
+│   ├── kaal/.              #   Core engine gem 
+│   ├── kaal-sequel/        #   Sequel datastore adapter gem
+│   └── kaal-activerecord/  #   Active Record datastore adapter gem
+├── gems/                   # Framework integration gems
+│   └── kaal-rails/         #   Rails plugin gem
+├── docs/                   # Documentation source files
+├── danger/                 # Danger configuration and plugins
 └── README.md
 ```
 

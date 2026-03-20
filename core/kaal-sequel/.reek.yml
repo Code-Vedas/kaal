@@ -43,7 +43,6 @@ detectors:
       - Kaal#reset_registry!
       - Kaal::Backend::DispatchRegistryAccessor#fetch_registry
       - Kaal::Backend::RedisAdapter#initialize
-      - Kaal::SchedulerTimeZoneResolver#rails_time_zone
       - Kaal::SchedulerFileLoader::JobApplier#dispatch_job
   UtilityFunction:
     enabled: true

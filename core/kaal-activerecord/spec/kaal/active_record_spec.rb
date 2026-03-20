@@ -73,11 +73,41 @@ RSpec.describe Kaal::ActiveRecord do
 
   it 'configures or reuses the base record connection' do
     connection = { adapter: 'sqlite3', database: ':memory:' }
+    connection_config_class = Struct.new(:configuration_hash)
+    database_config_class = Struct.new(:configuration_hash)
+    config_object = instance_double(connection_config_class, configuration_hash: connection.stringify_keys)
+    db_config = instance_double(database_config_class, configuration_hash: connection.stringify_keys)
 
     expect(described_class::ConnectionSupport.configure!).to eq(described_class::BaseRecord)
+    allow(described_class::BaseRecord).to receive(:connection_db_config).and_raise(ActiveRecord::ConnectionNotEstablished)
     allow(described_class::BaseRecord).to receive(:establish_connection).with(connection).and_return(true)
     expect(described_class::ConnectionSupport.configure!(connection)).to eq(described_class::BaseRecord)
     expect(described_class::BaseRecord).to have_received(:establish_connection).with(connection)
+
+    allow(described_class::BaseRecord).to receive(:connection_db_config).and_return(db_config)
+    expect(described_class::ConnectionSupport.configure!(connection)).to eq(described_class::BaseRecord)
+    expect(described_class::BaseRecord).to have_received(:establish_connection).with(connection).once
+
+    allow(described_class::BaseRecord).to receive(:establish_connection).with(config_object).and_return(true)
+    allow(described_class::BaseRecord).to receive(:connection_db_config).and_raise(ActiveRecord::ConnectionNotEstablished)
+    expect(described_class::ConnectionSupport.configure!(config_object)).to eq(described_class::BaseRecord)
+    expect(described_class::BaseRecord).to have_received(:establish_connection).with(config_object)
+
+    expect(described_class::ConnectionSupport.normalize_connection_config(connection)).to eq(connection.merge(adapter: 'sqlite3'))
+    expect(described_class::ConnectionSupport.normalize_connection_config(config_object)).to eq(connection)
+    expect(described_class::ConnectionSupport.normalize_connection_config('sqlite://memory')).to eq('sqlite://memory')
+    expect(
+      described_class::ConnectionSupport.normalize_connection_config('adapter' => 'SQLite3', 'port' => '5432')
+    ).to eq(adapter: 'sqlite3', port: 5432)
+    expect(
+      described_class::ConnectionSupport.normalize_connection_config('adapter' => 'SQLite3', 'port' => 'not-a-number')
+    ).to eq(adapter: 'sqlite3', port: 'not-a-number')
+
+    allow(described_class::BaseRecord).to receive(:connection_db_config).and_return(nil)
+    expect(described_class::ConnectionSupport.current_connection_config).to be_nil
+
+    allow(described_class::BaseRecord).to receive(:connection_db_config).and_return(db_config)
+    expect(described_class::ConnectionSupport.current_connection_config).to eq(connection)
   end
 
   it 'persists and queries definitions through the registry model interface' do
