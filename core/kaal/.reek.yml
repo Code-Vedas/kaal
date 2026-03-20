@@ -26,8 +26,6 @@ detectors:
     max_instance_variables: 10
   DataClump:
     enabled: false
-  DuplicateMethodCall:
-    enabled: true
   MissingSafeMethod:
     enabled: true
     exclude:
@@ -74,6 +72,10 @@ detectors:
       - Kaal::Definition::DatabaseEngine#normalize_row
       - Kaal::SchedulerFileLoader::JobApplier#dispatch_job
       - Kaal::SchedulerFileLoader::JobApplier#validate_keyword_keys
+  DuplicateMethodCall:
+    enabled: true
+    exclude:
+      - Kaal::CronHumanizer#ensure_i18n_loaded!
   NilCheck:
     enabled: true
     exclude:

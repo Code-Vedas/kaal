@@ -36,20 +36,15 @@ module KaalActiveRecordSupport
 
     case uri.scheme
     when 'postgres', 'postgresql'
-      admin_connection.execute(<<~SQL)
-        SELECT pg_terminate_backend(pid)
-        FROM pg_stat_activity
-        WHERE datname = #{admin_connection.quote(database_name)}
-          AND pid <> pg_backend_pid()
-      SQL
-      admin_connection.execute("DROP DATABASE IF EXISTS #{database_name}")
-      admin_connection.execute("CREATE DATABASE #{database_name}")
+      reset_postgres_database!(admin_connection, database_name)
     when 'mysql2'
       admin_connection.execute("DROP DATABASE IF EXISTS `#{database_name}`")
       admin_connection.execute("CREATE DATABASE `#{database_name}`")
     else
       raise ArgumentError, "Unsupported adapter: #{uri.scheme}"
     end
+  ensure
+    release_admin_connection(admin_connection)
   end
 
   def connect!(database_url)
@@ -133,5 +128,38 @@ module KaalActiveRecordSupport
 
   def mysql_connection?(connection)
     connection.adapter_name.to_s.downcase.include?('mysql')
+  end
+
+  def reset_postgres_database!(admin_connection, database_name)
+    quoted_database_name = admin_connection.quote(database_name)
+
+    admin_connection.execute(<<~SQL.squish)
+      SELECT pg_terminate_backend(pid)
+      FROM pg_stat_activity
+      WHERE datname = #{quoted_database_name}
+        AND pid <> pg_backend_pid()
+    SQL
+
+    if admin_connection.respond_to?(:raw_connection)
+      raw_connection = admin_connection.raw_connection
+      quoted_identifier = raw_connection.quote_ident(database_name)
+      raw_connection.exec("DROP DATABASE IF EXISTS #{quoted_identifier}")
+      raw_connection.exec("CREATE DATABASE #{quoted_identifier}")
+    else
+      admin_connection.execute("DROP DATABASE IF EXISTS #{admin_connection.quote_table_name(database_name)}")
+      admin_connection.execute("CREATE DATABASE #{admin_connection.quote_table_name(database_name)}")
+    end
+  end
+
+  def release_admin_connection(admin_connection)
+    return unless admin_connection
+
+    if admin_connection.respond_to?(:lease)
+      admin_connection.lease.release
+    elsif admin_connection.respond_to?(:pool)
+      admin_connection.pool.release_connection
+    end
+  rescue StandardError
+    nil
   end
 end

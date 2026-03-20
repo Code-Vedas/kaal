@@ -4,8 +4,4 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-
-# Pinned to Rails 8.0.x for CI matrix coverage.
-eval_gemfile File.expand_path('../Gemfile', __dir__)
-
-gem 'rails', '~> 8.0.0'
+require_relative '../../../../kaal/spec/support/integration_support'

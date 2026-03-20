@@ -58,6 +58,11 @@ module Kaal
       attr_reader :backend, :root, :time_source
 
       def validate_backend(backend_name)
+        if backend_name.strip.empty?
+          raise ArgumentError,
+                'Could not detect backend from ActiveRecord adapter; pass --backend (sqlite/postgres/mysql)'
+        end
+
         return backend_name if %w[sqlite postgres mysql].include?(backend_name)
 
         raise ArgumentError, "Unsupported Rails datastore backend: #{backend_name.inspect}"

@@ -12,9 +12,14 @@ when 'memory'
   end
 when 'redis'
   require 'redis'
+  namespace = ENV.fetch('KAAL_TEST_NAMESPACE', 'kaal-rails-test')
 
   Kaal.configure do |config|
-    config.backend = Kaal::Backend::RedisAdapter.new(Redis.new(url: ENV.fetch('REDIS_URL')), namespace: 'kaal-rails-test')
+    config.backend = Kaal::Backend::RedisAdapter.new(
+      Redis.new(url: ENV.fetch('REDIS_URL')),
+      namespace: namespace
+    )
+    config.namespace = namespace
     config.scheduler_config_path = 'config/scheduler.yml'
   end
 end

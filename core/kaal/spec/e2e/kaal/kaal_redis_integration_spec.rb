@@ -9,8 +9,6 @@ require 'redis'
 
 RSpec.describe Kaal, integration: :redis do
   it 'persists definitions and dispatches through redis' do
-    skip 'REDIS_URL not set' if ENV['REDIS_URL'].to_s.empty?
-
     key = 'integration:redis'
     namespace = KaalIntegrationSupport.namespace('redis')
     fixed_time = Time.utc(2026, 1, 1, 0, 0, 30)

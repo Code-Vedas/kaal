@@ -14,28 +14,27 @@ run_suite() {
   if gemfiles=$(suite_gemfiles "${suite_dir}"); then
     for gemfile in ${gemfiles}; do
       label=$(gemfile_label "${gemfile}")
-      bundle_gemfile="BUNDLE_GEMFILE=${REPO_ROOT}/${suite_dir}/${gemfile}"
-
-      run_cmd_env \
+      RUN_ALL_EXPECT_RAILS=1 RUN_ALL_BUNDLE_GEMFILE="${REPO_ROOT}/${suite_dir}/${gemfile}" run_cmd_env \
         "${suite_name}-${label}-rspec-e2e-memory" \
-        "${bundle_gemfile}" \
+        BUNDLE_GEMFILE="${REPO_ROOT}/${suite_dir}/${gemfile}" \
         bin/rspec-e2e memory
-      run_cmd_env \
+      RUN_ALL_EXPECT_RAILS=1 RUN_ALL_BUNDLE_GEMFILE="${REPO_ROOT}/${suite_dir}/${gemfile}" run_cmd_env \
         "${suite_name}-${label}-rspec-e2e-redis" \
-        "${bundle_gemfile}" \
+        BUNDLE_GEMFILE="${REPO_ROOT}/${suite_dir}/${gemfile}" \
+        REDIS_URL="redis://127.0.0.1:6379/0" \
         bin/rspec-e2e redis
-      run_cmd_env \
+      RUN_ALL_EXPECT_RAILS=1 RUN_ALL_BUNDLE_GEMFILE="${REPO_ROOT}/${suite_dir}/${gemfile}" run_cmd_env \
         "${suite_name}-${label}-rspec-e2e-sqlite" \
-        "${bundle_gemfile}" \
+        BUNDLE_GEMFILE="${REPO_ROOT}/${suite_dir}/${gemfile}" \
         bin/rspec-e2e sqlite
-      run_cmd_env \
+      RUN_ALL_EXPECT_RAILS=1 RUN_ALL_BUNDLE_GEMFILE="${REPO_ROOT}/${suite_dir}/${gemfile}" run_cmd_env \
         "${suite_name}-${label}-rspec-e2e-postgres" \
-        "${bundle_gemfile}" \
+        BUNDLE_GEMFILE="${REPO_ROOT}/${suite_dir}/${gemfile}" \
         DATABASE_URL="postgres://postgres:postgres@localhost:5432/kaal_test_auto" \
         bin/rspec-e2e pg
-      run_cmd_env \
+      RUN_ALL_EXPECT_RAILS=1 RUN_ALL_BUNDLE_GEMFILE="${REPO_ROOT}/${suite_dir}/${gemfile}" run_cmd_env \
         "${suite_name}-${label}-rspec-e2e-mysql" \
-        "${bundle_gemfile}" \
+        BUNDLE_GEMFILE="${REPO_ROOT}/${suite_dir}/${gemfile}" \
         DATABASE_URL="mysql2://root:rootROOT!1@127.0.0.1:3306/kaal_test_auto" \
         bin/rspec-e2e mysql
     done
@@ -43,7 +42,10 @@ run_suite() {
   fi
 
   run_cmd "${suite_name}-rspec-e2e-memory" bin/rspec-e2e memory
-  run_cmd "${suite_name}-rspec-e2e-redis" bin/rspec-e2e redis
+  run_cmd_env \
+    "${suite_name}-rspec-e2e-redis" \
+    REDIS_URL="redis://127.0.0.1:6379/0" \
+    bin/rspec-e2e redis
   run_cmd "${suite_name}-rspec-e2e-sqlite" bin/rspec-e2e sqlite
   run_cmd_env \
     "${suite_name}-rspec-e2e-postgres" \

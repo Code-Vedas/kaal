@@ -13,7 +13,7 @@ run_suite() {
 
   if gemfiles=$(suite_gemfiles "${suite_dir}"); then
     for gemfile in ${gemfiles}; do
-      run_cmd_env \
+      RUN_ALL_EXPECT_RAILS=1 RUN_ALL_BUNDLE_GEMFILE="${REPO_ROOT}/${suite_dir}/${gemfile}" run_cmd_env \
         "${suite_name}-$(gemfile_label "${gemfile}")-rspec-unit" \
         BUNDLE_GEMFILE="${REPO_ROOT}/${suite_dir}/${gemfile}" \
         bin/rspec-unit

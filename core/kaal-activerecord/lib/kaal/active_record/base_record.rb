@@ -6,8 +6,13 @@
 # LICENSE file in the root directory of this source tree.
 module Kaal
   module ActiveRecord
+    # Shared abstract ApplicationRecord class for Kaal tables.
+    class ApplicationRecord < ::ActiveRecord::Base
+      self.abstract_class = true
+    end
+
     # Shared abstract Active Record base class for Kaal tables.
-    class BaseRecord < ::ActiveRecord::Base
+    class BaseRecord < ApplicationRecord
       self.abstract_class = true
     end
   end

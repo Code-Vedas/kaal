@@ -40,4 +40,138 @@ RSpec.describe Kaal::Dispatch::DatabaseEngine do
     expect(engine.find_by_status('failed').length).to eq(1)
     expect(engine.cleanup(recovery_window: 60)).to eq(1)
   end
+
+  it 'falls back to update-or-insert when insert_conflict is unavailable' do
+    wrapper_dataset = Class.new do
+      def initialize(dataset)
+        @dataset = dataset
+      end
+
+      def respond_to_missing?(method_name, include_private = false)
+        return false if method_name == :insert_conflict
+
+        @dataset.respond_to?(method_name, include_private) || super
+      end
+
+      def method_missing(method_name, ...)
+        return super if method_name == :insert_conflict
+
+        @dataset.public_send(method_name, ...)
+      end
+    end.new(db[:kaal_dispatches])
+    wrapped_engine = described_class.new(database: db)
+    wrapped_engine.instance_variable_set(
+      :@database,
+      Struct.new(:dispatches_dataset).new(wrapper_dataset)
+    )
+
+    fire_time = Time.now.utc
+    wrapped_engine.log_dispatch('job:fallback', fire_time, 'node-1')
+    wrapped_engine.log_dispatch('job:fallback', fire_time, 'node-2', 'failed')
+
+    expect(wrapped_engine.find_dispatch('job:fallback', fire_time)).to include(node_id: 'node-2', status: 'failed')
+  end
+
+  it 'updates an existing dispatch when insert_conflict is unavailable' do
+    wrapper_dataset = Class.new do
+      def initialize(dataset)
+        @dataset = dataset
+      end
+
+      def respond_to_missing?(method_name, include_private = false)
+        return false if method_name == :insert_conflict
+
+        @dataset.respond_to?(method_name, include_private) || super
+      end
+
+      def method_missing(method_name, ...)
+        return super if method_name == :insert_conflict
+
+        @dataset.public_send(method_name, ...)
+      end
+    end.new(db[:kaal_dispatches])
+    wrapped_engine = described_class.new(database: db)
+    wrapped_engine.instance_variable_set(
+      :@database,
+      Struct.new(:dispatches_dataset).new(wrapper_dataset)
+    )
+
+    fire_time = Time.now.utc
+    db[:kaal_dispatches].insert(
+      key: 'job:existing',
+      fire_time: fire_time,
+      dispatched_at: fire_time,
+      node_id: 'node-1',
+      status: 'dispatched'
+    )
+
+    wrapped_engine.log_dispatch('job:existing', fire_time, 'node-2', 'failed')
+
+    expect(wrapped_engine.find_dispatch('job:existing', fire_time)).to include(node_id: 'node-2', status: 'failed')
+  end
+
+  it 'rescues unique violations and updates the existing dispatch when insert_conflict is unavailable' do
+    wrapper_dataset = Class.new do
+      def initialize(dataset)
+        @dataset = dataset
+      end
+
+      def respond_to_missing?(method_name, include_private = false)
+        return false if method_name == :insert_conflict
+
+        @dataset.respond_to?(method_name, include_private) || super
+      end
+
+      def insert(_attributes)
+        raise Sequel::UniqueConstraintViolation, 'duplicate dispatch'
+      end
+
+      def method_missing(method_name, ...)
+        return super if method_name == :insert_conflict
+
+        @dataset.public_send(method_name, ...)
+      end
+    end.new(db[:kaal_dispatches])
+
+    wrapped_engine = described_class.new(database: db)
+    wrapped_engine.instance_variable_set(
+      :@database,
+      Struct.new(:dispatches_dataset).new(wrapper_dataset)
+    )
+
+    fire_time = Time.now.utc
+    db[:kaal_dispatches].insert(
+      key: 'job:race',
+      fire_time: fire_time,
+      dispatched_at: fire_time,
+      node_id: 'node-1',
+      status: 'dispatched'
+    )
+
+    wrapped_engine.log_dispatch('job:race', fire_time, 'node-2', 'failed')
+
+    expect(wrapped_engine.find_dispatch('job:race', fire_time)).to include(node_id: 'node-2', status: 'failed')
+  end
+
+  it 're-raises unrelated NoMethodError exceptions from the insert_conflict path' do
+    wrapper_dataset = Class.new do
+      def insert_conflict(...)
+        Class.new do
+          def insert(_attributes)
+            raise NoMethodError, "undefined method `missing_insert' for dispatch relation"
+          end
+        end.new
+      end
+    end.new
+
+    wrapped_engine = described_class.new(database: db)
+    wrapped_engine.instance_variable_set(
+      :@database,
+      Struct.new(:dispatches_dataset).new(wrapper_dataset)
+    )
+
+    expect do
+      wrapped_engine.log_dispatch('job:boom', Time.now.utc, 'node-1')
+    end.to raise_error(NoMethodError, /missing_insert/)
+  end
 end

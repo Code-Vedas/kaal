@@ -43,7 +43,7 @@ module Kaal
 
       def cleanup(recovery_window: 86_400)
         cutoff_time = Time.now.utc - recovery_window
-        @model.where('fire_time < ?', cutoff_time).delete_all
+        @model.where(fire_time: ...cutoff_time).delete_all
       end
 
       private

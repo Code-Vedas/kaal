@@ -118,7 +118,7 @@ RSpec.describe Kaal::ActiveRecord do
     allow(model).to receive(:find_by).with(key: 'job:a', fire_time:).and_return(record)
     allow(model).to receive(:find_by).with(key: 'missing', fire_time:).and_return(nil)
     allow(model).to receive(:where).and_return(filtered_relation)
-    allow(model).to receive(:where).with('fire_time < ?', instance_of(Time)).and_return(cleanup_relation)
+    allow(model).to receive(:where).with(fire_time: kind_of(Range)).and_return(cleanup_relation)
     allow(filtered_relation).to receive(:order).with(fire_time: :desc).and_return([record])
 
     registry = described_class::DispatchRegistry.new(connection: nil, model:)
@@ -126,9 +126,9 @@ RSpec.describe Kaal::ActiveRecord do
     expect(registry.log_dispatch('job:a', fire_time, 'node-1')).to include(node_id: 'node-1')
     expect(registry.find_dispatch('job:a', fire_time)).to include(status: 'dispatched')
     expect(registry.find_dispatch('missing', fire_time)).to be_nil
-    expect(registry.find_by_key('job:a')).to contain_exactly(hash_including(key: 'job:a'))
-    expect(registry.find_by_node('node-1')).to contain_exactly(hash_including(node_id: 'node-1'))
-    expect(registry.find_by_status('dispatched')).to contain_exactly(hash_including(status: 'dispatched'))
+    expect(registry.method(:find_by_key).call('job:a')).to contain_exactly(hash_including(key: 'job:a'))
+    expect(registry.method(:find_by_node).call('node-1')).to contain_exactly(hash_including(node_id: 'node-1'))
+    expect(registry.method(:find_by_status).call('dispatched')).to contain_exactly(hash_including(status: 'dispatched'))
     expect(registry.cleanup(recovery_window: 0)).to eq(1)
   end
 

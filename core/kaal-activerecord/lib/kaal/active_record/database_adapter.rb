@@ -57,7 +57,7 @@ module Kaal
       end
 
       def cleanup_expired_locks
-        @lock_model.where('expires_at < ?', Time.now.utc).delete_all
+        @lock_model.where(expires_at: ...Time.now.utc).delete_all
       end
     end
 

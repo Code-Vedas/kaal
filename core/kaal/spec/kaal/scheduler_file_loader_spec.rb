@@ -177,6 +177,38 @@ RSpec.describe Kaal::SchedulerFileLoader do
     expect(applier.conflict?(key: 'conflict', existing_definition: Kaal.definition_registry.find_definition('conflict'))).to be(true)
   end
 
+  it 'applies scheduler jobs through .perform when .perform_later is unavailable' do
+    perform_calls = []
+    perform_job = Class.new do
+      define_singleton_method(:perform) { |*args, **kwargs| perform_calls << [args, kwargs] }
+    end
+    stub_const('ExamplePerformJob', perform_job)
+
+    loader = described_class.new(
+      configuration: Kaal.configuration,
+      definition_registry: Kaal.definition_registry,
+      registry: Kaal.registry,
+      logger: Logger.new(StringIO.new),
+      runtime_context: runtime_context
+    )
+    applier = loader.send(:job_applier)
+
+    applier.apply(
+      key: 'perform',
+      cron: '* * * * *',
+      job_class_name: 'ExamplePerformJob',
+      queue: nil,
+      args: ['{{key}}'],
+      kwargs: {},
+      enabled: true,
+      metadata: {}
+    )
+
+    Kaal.registry.find('perform').enqueue.call(fire_time: Time.utc(2026, 1, 1), idempotency_key: 'abc')
+
+    expect(perform_calls).to eq([[['perform'], {}]])
+  end
+
   it 'covers job applier rollback and callback error paths' do
     loader = described_class.new(
       configuration: Kaal.configuration,

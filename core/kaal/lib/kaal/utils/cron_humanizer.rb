@@ -6,6 +6,7 @@
 # LICENSE file in the root directory of this source tree.
 require 'fugit'
 require 'i18n'
+require 'yaml'
 
 module Kaal
   ##
@@ -22,6 +23,8 @@ module Kaal
     module_function
 
     def to_human(expression, locale: nil)
+      ensure_i18n_loaded!
+
       normalized = CronUtils.safe_normalize_expression(expression)
       raise ArgumentError, CronUtils.invalid_expression_error_message('') unless normalized
       raise ArgumentError, CronUtils.invalid_expression_error_message(normalized) if normalized.empty?
@@ -177,5 +180,15 @@ module Kaal
       I18n.t("kaal.#{key}", **)
     end
     private_class_method :translate_phrase
+
+    def ensure_i18n_loaded!
+      locale_file = File.expand_path('../../../config/locales/en.yml', __dir__)
+      return if I18n.load_path.include?(locale_file)
+
+      I18n.load_path << locale_file
+      I18n.available_locales |= YAML.load_file(locale_file).keys.map(&:to_sym)
+      I18n.backend.load_translations
+    end
+    private_class_method :ensure_i18n_loaded!
   end
 end

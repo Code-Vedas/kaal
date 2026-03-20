@@ -5,9 +5,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 require 'fileutils'
-require 'uri'
 require 'open3'
+require 'pathname'
 require 'tmpdir'
+require 'uri'
 
 module KaalRailsDummyAppSupport
   module_function
@@ -24,7 +25,7 @@ module KaalRailsDummyAppSupport
   end
 
   def run!(app_root, env, *command)
-    stdout, stderr, status = Open3.capture3(env, *command, chdir: app_root)
+    stdout, stderr, status = Open3.capture3(normalized_env(env), *command, chdir: app_root)
     return stdout if status.success?
 
     raise <<~ERROR
@@ -60,6 +61,16 @@ module KaalRailsDummyAppSupport
       'KAAL_RAILS_LIB_PATH' => File.join(GEM_ROOT, 'lib'),
       'RAILS_ENV' => 'test'
     }
+  end
+
+  def normalized_env(env)
+    merged_env = default_env.merge(env)
+    bundle_gemfile = merged_env['BUNDLE_GEMFILE'] || ENV.fetch('BUNDLE_GEMFILE', nil)
+
+    return merged_env if bundle_gemfile.to_s.empty?
+    return merged_env.merge('BUNDLE_GEMFILE' => bundle_gemfile) if Pathname.new(bundle_gemfile).absolute?
+
+    merged_env.merge('BUNDLE_GEMFILE' => File.expand_path(bundle_gemfile, GEM_ROOT))
   end
 
   def reset_postgres_database!(uri)

@@ -13,20 +13,86 @@ TMP_DIR="${REPO_ROOT}/tmp/run-all"
 
 mkdir -p "${TMP_DIR}"
 
+reset_terminal_color() {
+  printf '\033[0m'
+}
+
+runtime_ruby_version() {
+  ruby -v
+}
+
+runtime_rails_version() {
+  bundle_gemfile="${RUN_ALL_BUNDLE_GEMFILE:-${BUNDLE_GEMFILE:-}}"
+
+  if [ "${bundle_gemfile}" != "" ]; then
+    BUNDLE_GEMFILE="${bundle_gemfile}" bundle exec ruby -e 'require "rails"; puts "Rails #{Rails.version}"' 2>/dev/null || true
+    return 0
+  fi
+
+  bundle exec ruby -e 'require "rails"; puts "Rails #{Rails.version}"' 2>/dev/null || true
+}
+
+print_runtime_context() {
+  echo "ruby: $(runtime_ruby_version)"
+  echo "pwd: $(pwd)"
+  if [ "${RUN_ALL_BUNDLE_GEMFILE:-}" != "" ]; then
+    echo "gemfile: $(basename "${RUN_ALL_BUNDLE_GEMFILE}")"
+  fi
+
+  if [ "${RUN_ALL_EXPECT_RAILS:-0}" = "1" ]; then
+    rails_version=$(runtime_rails_version)
+    if [ "${rails_version}" != "" ]; then
+      echo "rails: ${rails_version}"
+    fi
+  fi
+}
+
+print_run_summary() {
+  log_file="$1"
+  summary_lines=$(
+    grep -E 'Finished in|examples?, [0-9]+ failures|files? inspected|offenses? detected|total warnings?|Line Coverage:|Branch Coverage:' "${log_file}" \
+      | tail -n 3 || true
+  )
+
+  if [ "${summary_lines}" = "" ]; then
+    summary_lines=$(
+      tail -n 8 "${log_file}" \
+        | grep -v '^You can opt out of this message' \
+        | grep -v '^  AllCops:' \
+        | grep -v '^    SuggestExtensions:' \
+        | sed '/^[[:space:]]*$/d' \
+        | tail -n 3
+    )
+  fi
+
+  [ "${summary_lines}" = "" ] && return 0
+
+  echo "run summary:"
+  printf '%s\n' "${summary_lines}"
+}
+
 run_cmd() {
   name="$1"
   shift
   log_file="${TMP_DIR}/${name}.log"
 
+  reset_terminal_color
   echo "==> ${name}"
+  print_runtime_context
 
   if "$@" >"${log_file}" 2>&1; then
+    reset_terminal_color
+    print_run_summary "${log_file}"
+    reset_terminal_color
+    echo
     rm -f "${log_file}"
     return 0
   fi
 
+  reset_terminal_color
   echo "-- ${name} failed --"
   cat "${log_file}"
+  reset_terminal_color
   return 1
 }
 
@@ -35,15 +101,23 @@ run_cmd_env() {
   shift
   log_file="${TMP_DIR}/${name}.log"
 
+  reset_terminal_color
   echo "==> ${name}"
+  print_runtime_context
 
   if env "$@" >"${log_file}" 2>&1; then
+    reset_terminal_color
+    print_run_summary "${log_file}"
+    reset_terminal_color
+    echo
     rm -f "${log_file}"
     return 0
   fi
 
+  reset_terminal_color
   echo "-- ${name} failed --"
   cat "${log_file}"
+  reset_terminal_color
   return 1
 }
 

@@ -48,6 +48,7 @@ RSpec.describe Kaal, integration: :mysql do
       end
 
       expect(database[:kaal_definitions].count).to eq(1)
+      expect(database[:kaal_dispatches].count).to eq(job_calls.length)
       expect(job_calls.length).to be >= 1
     ensure
       lock_keys.each { |lock_key| described_class.backend&.release(lock_key) }

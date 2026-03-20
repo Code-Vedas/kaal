@@ -7,59 +7,47 @@
 require 'spec_helper'
 
 RSpec.describe Kaal::ActiveRecord, integration: :sqlite do
-  it 'supports sqlite-backed definition, dispatch, and lock persistence' do
-    KaalActiveRecordSupport.with_sqlite_database do |connection|
-      registry = described_class::DefinitionRegistry.new(connection:)
-      dispatch_registry = described_class::DispatchRegistry.new(connection:)
-      adapter = described_class::DatabaseAdapter.new(connection)
+  it 'supports sqlite-backed scheduling through the documented plain-ruby API' do
+    key = 'integration:sqlite'
+    namespace = KaalIntegrationSupport.namespace('activerecord-sqlite')
+    fixed_time = Time.utc(2026, 1, 1, 0, 0, 30)
+    allow(Time).to receive(:now).and_return(*Array.new(100, fixed_time))
 
-      expect(registry.upsert_definition(key: 'job:a', cron: '* * * * *', metadata: { 'a' => 1 })[:metadata]).to eq(a: 1)
-      expect(registry.upsert_definition(key: 'job:nil', cron: '* * * * *', metadata: nil)[:metadata]).to eq({})
-      expect(registry.disable_definition('job:a')[:enabled]).to be(false)
-      first_disabled_at = registry.find_definition('job:a')[:disabled_at]
-      expect(first_disabled_at).to be_a(Time)
-      expect(registry.upsert_definition(key: 'job:a', cron: '* * * * *', enabled: false)[:disabled_at]).to eq(first_disabled_at)
-      expect(registry.enable_definition('job:a')[:enabled]).to be(true)
-      expect(registry.enabled_definitions.map { |row| row[:key] }).to eq(%w[job:a job:nil])
-      expect(registry.all_definitions.map { |row| row[:key] }).to eq(%w[job:a job:nil])
-      expect(registry.find_definition('missing')).to be_nil
-      expect(registry.remove_definition('missing')).to be_nil
-      expect(registry.remove_definition('job:a')).to include(key: 'job:a')
-      expect(registry.all_definitions.map { |row| row[:key] }).to eq(['job:nil'])
-      registry.upsert_definition(key: 'job:a', cron: '* * * * *')
+    KaalIntegrationSupport.with_project_root('activerecord-sqlite') do |root|
+      db_dir = File.join(root, 'db')
+      db_path = File.join(db_dir, 'kaal.sqlite3')
+      FileUtils.mkdir_p(db_dir)
+      Kaal::ActiveRecord::ConnectionSupport.configure!(adapter: 'sqlite3', database: db_path)
+      KaalActiveRecordSupport.create_schema!(locks: true)
 
-      fire_time = Time.utc(2026, 1, 1, 0, 0, 0)
-      dispatch_registry.log_dispatch('job:a', fire_time, 'node-1')
-      expect(dispatch_registry.find_dispatch('job:a', fire_time)).to include(node_id: 'node-1', status: 'dispatched')
-      expect(dispatch_registry.find_by_key('job:a').length).to eq(1)
-      expect(dispatch_registry.find_by_node('node-1').length).to eq(1)
-      expect(dispatch_registry.find_by_status('dispatched').length).to eq(1)
-      expect(dispatch_registry.find_dispatch('job:a', Time.utc(2030, 1, 1))).to be_nil
-      expect(dispatch_registry.cleanup(recovery_window: 0)).to eq(1)
+      KaalIntegrationSupport.write_scheduler(root, key:)
+      KaalIntegrationSupport.write_config(root, <<~RUBY)
+        require 'kaal/active_record'
 
-      expect(adapter.acquire('lock:1', 60)).to be(true)
-      expect(adapter.acquire('lock:1', 60)).to be(false)
-      expect(adapter.release('lock:1')).to be(true)
-      expect(adapter.release('lock:missing')).to be(false)
-      expect(adapter.dispatch_registry).to be_a(described_class::DispatchRegistry)
-      expect(adapter.definition_registry).to be_a(described_class::DefinitionRegistry)
-    end
-  end
+        Kaal::ActiveRecord::ConnectionSupport.configure!(
+          adapter: 'sqlite3',
+          database: File.expand_path('../db/kaal.sqlite3', __dir__)
+        )
 
-  it 'falls back to empty metadata when stored json is invalid' do
-    KaalActiveRecordSupport.with_sqlite_database do |connection|
-      registry = described_class::DefinitionRegistry.new(connection:)
-      record = described_class::DefinitionRecord.create!(
-        key: 'job:invalid',
-        cron: '* * * * *',
-        enabled: true,
-        source: 'code',
-        metadata: '{',
-        created_at: Time.now.utc,
-        updated_at: Time.now.utc
-      )
+        Kaal.configure do |config|
+          config.backend = Kaal::ActiveRecord::DatabaseAdapter.new
+          config.namespace = '#{namespace}'
+          config.window_lookback = 65
+          config.window_lookahead = 0
+          config.lease_ttl = 120
+          config.enable_log_dispatch_registry = true
+          config.enable_dispatch_recovery = false
+          config.recovery_startup_jitter = 0
+          config.scheduler_config_path = 'config/scheduler.yml'
+        end
+      RUBY
 
-      expect(registry.send(:normalize, record)[:metadata]).to eq({})
+      job_calls = KaalIntegrationSupport.perform_tick_flow(root, key:)
+
+      expect(Kaal.backend).to be_a(Kaal::ActiveRecord::DatabaseAdapter)
+      expect(Kaal::ActiveRecord::DefinitionRecord.count).to eq(1)
+      expect(Kaal::ActiveRecord::DispatchRecord.count).to eq(job_calls.length)
+      expect(Kaal::ActiveRecord::LockRecord.count).to eq(job_calls.length)
     end
   end
 end

@@ -18,17 +18,29 @@ module Kaal
 
       def log_dispatch(key, fire_time, node_id, status = 'dispatched')
         now = Time.now.utc
-
-        dataset.insert_conflict(
-          target: %i[key fire_time],
-          update: { dispatched_at: now, node_id: node_id, status: status }
-        ).insert(
+        attributes = {
           key: key,
           fire_time: fire_time,
           dispatched_at: now,
           node_id: node_id,
           status: status
-        )
+        }
+        dispatches_dataset = dataset
+        update_values = { dispatched_at: now, node_id: node_id, status: status }
+        begin
+          dispatches_dataset.insert_conflict(
+            target: %i[key fire_time],
+            update: update_values
+          ).insert(attributes)
+        rescue NoMethodError => e
+          raise unless e.name == :insert_conflict
+
+          begin
+            dispatches_dataset.insert(attributes)
+          rescue ::Sequel::UniqueConstraintViolation
+            dispatches_dataset.where(key: key, fire_time: fire_time).update(update_values)
+          end
+        end
 
         find_dispatch(key, fire_time)
       end

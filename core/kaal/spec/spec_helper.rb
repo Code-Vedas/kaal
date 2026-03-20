@@ -21,6 +21,7 @@ require 'tmpdir'
 require 'stringio'
 require 'fileutils'
 require 'logger'
+require 'time'
 require 'kaal'
 require 'kaal/cli'
 

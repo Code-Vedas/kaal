@@ -190,8 +190,10 @@ RSpec.describe Kaal::Configuration do
   end
 
   describe Kaal::CronHumanizer do
+    let(:locale_file) { File.expand_path('../../config/locales/en.yml', __dir__) }
+
     before do
-      I18n.load_path = [File.expand_path('../../config/locales/en.yml', __dir__)]
+      I18n.load_path = [locale_file]
       I18n.backend.load_translations
     end
 
@@ -244,6 +246,16 @@ RSpec.describe Kaal::Configuration do
       broken_value = Object.new
       broken_value.define_singleton_method(:to_s) { raise 'boom' }
       expect { described_class.to_human(broken_value) }.to raise_error(ArgumentError, /Invalid cron expression/)
+    end
+
+    it 'reloads locale data when used in a fresh process without preloaded translations' do
+      I18n.load_path = []
+      I18n.available_locales = []
+      I18n.backend.reload!
+
+      expect(described_class.to_human('@daily')).to eq('Daily')
+      expect(I18n.load_path).to include(locale_file)
+      expect(I18n.available_locales).to include(:en)
     end
   end
 
