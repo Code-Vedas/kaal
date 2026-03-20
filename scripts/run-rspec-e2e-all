@@ -1,6 +1,8 @@
 #!/bin/sh
 
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+if [ "${SCRIPT_DIR:-}" = "" ]; then
+  SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+fi
 . "${SCRIPT_DIR}/run-common"
 
 run_suite() {
@@ -52,3 +54,10 @@ run_suite() {
     DATABASE_URL="mysql2://root:rootROOT!1@127.0.0.1:3306/kaal_test_auto" \
     bin/rspec-e2e mysql
 }
+
+if [ "${0##*/}" = "run-rspec-e2e-all" ]; then
+  run_suite "kaal" "core/kaal"
+  run_suite "kaal-activerecord" "core/kaal-activerecord"
+  run_suite "kaal-sequel" "core/kaal-sequel"
+  run_suite "kaal-rails" "gems/kaal-rails"
+fi
