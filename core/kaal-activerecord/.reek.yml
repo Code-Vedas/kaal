@@ -39,7 +39,6 @@ detectors:
   UtilityFunction:
     enabled: true
     exclude:
-      - Kaal::ActiveRecord::DefinitionRegistry#disabled_at_for
       - Kaal::ActiveRecord::DefinitionRegistry#normalize
       - Kaal::ActiveRecord::DispatchRegistry#normalize
       - Kaal::ActiveRecord::MySQLAdapter#scalar

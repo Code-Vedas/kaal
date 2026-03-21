@@ -40,6 +40,7 @@ module Kaal
 
       def install_migrations
         migrations_dir = root.join('db', 'migrate')
+        base_time = time_source.call
         FileUtils.mkdir_p(migrations_dir)
 
         Kaal::ActiveRecord::MigrationTemplates.for_backend(backend).map.with_index do |(name, contents), index|
@@ -47,7 +48,8 @@ module Kaal
           existing = Dir[migrations_dir.join("*_#{slug}").to_s].first
           next({ status: :exists, path: existing.to_s }) if existing
 
-          target = migrations_dir.join("#{timestamp_for(index)}_#{slug}")
+          timestamp = (base_time + index).strftime('%Y%m%d%H%M%S')
+          target = migrations_dir.join("#{timestamp}_#{slug}")
           File.write(target, contents)
           { status: :create, path: target.to_s }
         end
@@ -66,10 +68,6 @@ module Kaal
         return backend_name if %w[sqlite postgres mysql].include?(backend_name)
 
         raise ArgumentError, "Unsupported Rails datastore backend: #{backend_name.inspect}"
-      end
-
-      def timestamp_for(index)
-        (time_source.call + index).strftime('%Y%m%d%H%M%S')
       end
 
       def scheduler_config_path

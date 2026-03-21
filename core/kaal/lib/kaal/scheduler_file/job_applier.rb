@@ -169,7 +169,7 @@ module Kaal
         raise_unknown_job_class(error_message)
       end
 
-      public :build_callback, :resolve_job_class
+      private :build_callback, :resolve_job_class
 
       def dispatch_job(job_class, queue, args, kwargs)
         job_class_name = job_class.name

@@ -105,8 +105,9 @@ module Kaal
     end
 
     def build_callback(key:, job_class_name:, queue:, args_template:, kwargs_template:)
-      job_class = job_applier.resolve_job_class(job_class_name:, key:)
-      job_applier.build_callback(
+      job_class = job_applier.__send__(:resolve_job_class, job_class_name:, key:)
+      job_applier.__send__(
+        :build_callback,
         {
           key: key,
           queue: queue,
@@ -118,7 +119,7 @@ module Kaal
     end
 
     def resolve_job_class(job_class_name:, key:)
-      job_applier.resolve_job_class(job_class_name:, key:)
+      job_applier.__send__(:resolve_job_class, job_class_name:, key:)
     end
 
     def payload_loader
