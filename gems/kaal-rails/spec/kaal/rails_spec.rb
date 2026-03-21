@@ -82,8 +82,8 @@ RSpec.describe Kaal::Rails do
       ).to eq(
         %w[create_kaal_definitions.rb create_kaal_dispatches.rb create_kaal_locks.rb]
       )
-      expect(second_result.fetch(:scheduler_config).fetch(:status)).to eq(:identical)
-      expect(second_result.fetch(:migrations).map { |migration| migration.fetch(:status) }).to all(eq(:identical))
+      expect(second_result.fetch(:scheduler_config).fetch(:status)).to eq(:exists)
+      expect(second_result.fetch(:migrations).map { |migration| migration.fetch(:status) }).to all(eq(:exists))
       expect { described_class.install!(root:, backend: 'memory') }.to raise_error(ArgumentError, /Unsupported Rails datastore backend/)
       expect { described_class.install!(root:, backend: nil) }.to raise_error(
         ArgumentError,

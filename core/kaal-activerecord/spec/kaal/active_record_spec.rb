@@ -120,6 +120,37 @@ RSpec.describe Kaal::ActiveRecord do
 
     allow(described_class::BaseRecord).to receive(:connection_db_config).and_return(url_db_config)
     expect(described_class::ConnectionSupport.current_connection_config).to eq(connection.merge(adapter: 'sqlite3', url: url_connection))
+
+    allow(described_class::BaseRecord).to receive(:connection_db_config).and_return(url_db_config)
+    expect(described_class::ConnectionSupport.configure!(url_connection)).to eq(described_class::BaseRecord)
+    expect(described_class::BaseRecord).to have_received(:establish_connection).with(config_object).once
+
+    other_url_connection = 'sqlite3:other:memory:'
+    allow(described_class::BaseRecord).to receive(:establish_connection).with(other_url_connection).and_return(true)
+    expect(described_class::ConnectionSupport.configure!(other_url_connection)).to eq(described_class::BaseRecord)
+    expect(described_class::BaseRecord).to have_received(:establish_connection).with(other_url_connection)
+  end
+
+  it 'matches equivalent connection configs predictably' do
+    url_connection = 'sqlite3::memory:'
+    other_url_connection = 'sqlite3:other:memory:'
+
+    expect(described_class::ConnectionSupport.configs_match?({ adapter: 'sqlite3' }, { adapter: 'sqlite3' })).to be(true)
+    expect(
+      described_class::ConnectionSupport.configs_match?({ url: url_connection, adapter: 'sqlite3' }, { url: url_connection })
+    ).to be(true)
+    expect(
+      described_class::ConnectionSupport.configs_match?({ url: url_connection }, { url: other_url_connection })
+    ).to be(false)
+    expect(
+      described_class::ConnectionSupport.configs_match?({ adapter: 'sqlite3' }, { url: url_connection })
+    ).to be(false)
+    expect(
+      described_class::ConnectionSupport.configs_match?(url_connection, { url: url_connection })
+    ).to be(false)
+    expect(
+      described_class::ConnectionSupport.configs_match?({ url: url_connection }, url_connection)
+    ).to be(false)
   end
 
   it 'persists and queries definitions through the registry model interface' do

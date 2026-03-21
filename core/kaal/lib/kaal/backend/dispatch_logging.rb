@@ -58,14 +58,21 @@ module Kaal
         dispatch_index = parts[0...-1].rindex('dispatch')
         timestamp = parts[-1]
         valid_key = parts.length >= 4 && dispatch_index&.positive? && timestamp.match?(/\A\d+\z/)
-        fire_time_unix = timestamp.to_i if valid_key
-        cron_key = parts[(dispatch_index + 1)...-1].join(':') if valid_key
-        invalid_dispatch_lock_key!(invalid_message) unless valid_key && !cron_key.empty?
+        validate_lock_key!(valid_key, invalid_message)
+
+        fire_time_unix = timestamp.to_i
+        cron_key = parts[(dispatch_index + 1)...-1].join(':')
+        validate_lock_key!(!cron_key.empty?, invalid_message)
 
         fire_time = Time.at(fire_time_unix).utc
 
         [cron_key, fire_time]
       end
+
+      def self.validate_lock_key!(valid, message)
+        invalid_dispatch_lock_key!(message) unless valid
+      end
+      private_class_method :validate_lock_key!
 
       def self.invalid_dispatch_lock_key!(message)
         raise ArgumentError, message

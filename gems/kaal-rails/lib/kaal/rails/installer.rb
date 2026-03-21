@@ -32,7 +32,7 @@ module Kaal
 
       def install_scheduler_config
         ensure_scheduler_config_dir
-        return { status: :identical, path: scheduler_config_path_string } if scheduler_config_exists?
+        return { status: :exists, path: scheduler_config_path_string } if scheduler_config_exists?
 
         File.write(scheduler_config_path, SCHEDULER_TEMPLATE)
         { status: :create, path: scheduler_config_path_string }
@@ -45,7 +45,7 @@ module Kaal
         Kaal::ActiveRecord::MigrationTemplates.for_backend(backend).map.with_index do |(name, contents), index|
           slug = name.sub(/^\d+_/, '')
           existing = Dir[migrations_dir.join("*_#{slug}").to_s].first
-          next({ status: :identical, path: existing.to_s }) if existing
+          next({ status: :exists, path: existing.to_s }) if existing
 
           target = migrations_dir.join("#{timestamp_for(index)}_#{slug}")
           File.write(target, contents)

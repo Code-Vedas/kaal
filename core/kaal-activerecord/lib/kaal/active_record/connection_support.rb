@@ -18,7 +18,7 @@ module Kaal
         CONFIGURE_MUTEX.synchronize do
           current_config = current_connection_config
           target_config = normalize_connection_config(connection)
-          return BaseRecord if current_config == target_config
+          return BaseRecord if configs_match?(current_config, target_config)
 
           BaseRecord.establish_connection(connection)
         end
@@ -74,6 +74,14 @@ module Kaal
 
       def integer_like?(value)
         value.is_a?(Integer) || value.to_s.match?(/\A\d+\z/)
+      end
+
+      def configs_match?(current_config, target_config)
+        return true if current_config == target_config
+
+        current_url = current_config.is_a?(Hash) ? current_config[:url] : nil
+        target_url = target_config.is_a?(Hash) ? target_config[:url] : nil
+        !!(current_url && target_url && current_url == target_url)
       end
     end
   end
