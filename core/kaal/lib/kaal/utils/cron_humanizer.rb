@@ -191,7 +191,7 @@ module Kaal
 
         I18n.load_path << locale_file
         locales = YAML.safe_load_file(locale_file, aliases: true) || {}
-        I18n.available_locales |= locales.keys.map(&:to_sym)
+        I18n.available_locales = Array(I18n.available_locales) | locales.keys.map(&:to_sym)
         I18n.backend.load_translations
       end
     end

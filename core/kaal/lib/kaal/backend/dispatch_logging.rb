@@ -69,6 +69,7 @@ module Kaal
       def self.invalid_dispatch_lock_key!(message)
         raise ArgumentError, message
       end
+      private_class_method :invalid_dispatch_lock_key!
 
       private
 
