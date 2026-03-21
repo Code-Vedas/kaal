@@ -520,6 +520,13 @@ RSpec.describe Kaal::SchedulerFileLoader do
         unknown_target_class
       )
     ).to include('execution' => include('target' => 'ruby'))
+    expect(
+      nil_logger_applier.send(
+        :persisted_metadata,
+        { metadata: nil, job_class_name: 'SchedulerLoaderUnknownTarget', queue: nil, args: [], kwargs: {} },
+        unknown_target_class
+      )
+    ).to include('execution' => include('target' => 'ruby', 'job_class' => 'SchedulerLoaderUnknownTarget'))
   end
   # rubocop:enable RSpec/ExampleLength
 

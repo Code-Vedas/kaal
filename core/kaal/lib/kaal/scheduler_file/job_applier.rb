@@ -100,7 +100,7 @@ module Kaal
       def persisted_metadata(job, job_class)
         metadata, job_class_name, queue, args, kwargs =
           job.values_at(:metadata, :job_class_name, :queue, :args, :kwargs)
-        normalized_metadata = @helper_bundle.stringify_keys(deep_dup(metadata))
+        normalized_metadata = @helper_bundle.stringify_keys(deep_dup(metadata || {}))
         Kaal::Support::HashTools.deep_merge(
           normalized_metadata,
           'execution' => {
