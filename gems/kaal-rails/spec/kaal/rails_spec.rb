@@ -46,6 +46,12 @@ RSpec.describe Kaal::Rails do
     expect(described_class.build_backend('unknown')).to be_nil
   end
 
+  it 'returns nil when backend detection runs before active record has established a connection' do
+    allow(ActiveRecord::Base).to receive(:connection_db_config).and_raise(ActiveRecord::ConnectionNotEstablished)
+
+    expect(described_class.detect_backend_name).to be_nil
+  end
+
   it 'auto-wires the Active Record backend and preserves explicit overrides' do
     Kaal.configuration.backend = nil
     expect(described_class.configure_backend!).to be_a(Kaal::ActiveRecord::DatabaseAdapter)

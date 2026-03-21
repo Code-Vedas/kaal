@@ -95,6 +95,8 @@ module Kaal
         @logger&.error("Failed to rollback scheduler file application for #{key}: #{e.message}")
       end
 
+      private
+
       def persisted_metadata(job, job_class)
         metadata, job_class_name, queue, args, kwargs =
           job.values_at(:metadata, :job_class_name, :queue, :args, :kwargs)
@@ -167,7 +169,7 @@ module Kaal
         raise_unknown_job_class(error_message)
       end
 
-      private
+      public :build_callback, :resolve_job_class
 
       def dispatch_job(job_class, queue, args, kwargs)
         job_class_name = job_class.name

@@ -15,13 +15,18 @@ module Kaal
   # Rails integration surface for Kaal.
   module Rails
     class << self
-      def detect_backend_name(db_config = ::ActiveRecord::Base.connection_db_config)
+      DETECT_BACKEND_DEFAULT = Object.new
+
+      def detect_backend_name(db_config = DETECT_BACKEND_DEFAULT)
+        db_config = ::ActiveRecord::Base.connection_db_config if db_config.equal?(DETECT_BACKEND_DEFAULT)
         adapter = db_config&.adapter.to_s.downcase
 
         return 'sqlite' if adapter.include?('sqlite')
         return 'postgres' if adapter.include?('postgres')
         return 'mysql' if adapter.include?('mysql') || adapter.include?('trilogy')
 
+        nil
+      rescue ::ActiveRecord::ConnectionNotEstablished
         nil
       end
 
