@@ -208,8 +208,8 @@ module KaalIntegrationSupport
       @redis.call('SET', *arguments)
     end
 
-    def eval(*, **)
-      @redis.eval(*, **)
+    def eval(...)
+      @redis.eval(...)
     end
 
     def method_missing(method_name, ...)

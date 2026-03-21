@@ -263,18 +263,22 @@ RSpec.describe Kaal::ActiveRecord do
   end
 
   it 'preserves disabled_at helper behavior for new and existing records' do
-    registry = described_class::DefinitionRegistry.new(connection: nil)
+    model = class_double(described_class::DefinitionRecord)
     now = Time.utc(2026, 1, 1, 0, 0, 0)
 
-    new_record = Object.new
-    def new_record.persisted? = false
+    new_record = build_definition_record(enabled: true)
+    existing_record = build_definition_record(enabled: false)
+    existing_record.disabled_at = now
+    existing_record.define_singleton_method(:persisted?) { true }
 
-    existing_record = Object.new
-    def existing_record.persisted? = true
-    existing_record.define_singleton_method(:disabled_at) { now }
+    allow(Time).to receive(:now).and_return(now, now + 60)
+    allow(model).to receive(:find_or_initialize_by).with(key: 'new').and_return(new_record)
+    allow(model).to receive(:find_or_initialize_by).with(key: 'existing').and_return(existing_record)
 
-    expect(registry.send(:disabled_at_for, new_record, false, now)).to eq(now)
-    expect(registry.send(:disabled_at_for, existing_record, false, now + 60)).to eq(now)
+    registry = described_class::DefinitionRegistry.new(connection: nil, model:)
+
+    expect(registry.upsert_definition(key: 'new', cron: '* * * * *', enabled: false)[:disabled_at]).to eq(now)
+    expect(registry.upsert_definition(key: 'existing', cron: '* * * * *', enabled: false)[:disabled_at]).to eq(now)
   end
 
   it 'omits mysql text defaults in test schema helpers' do

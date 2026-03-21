@@ -290,7 +290,8 @@ RSpec.describe Kaal::Registry do
 
   describe Kaal::Backend::DispatchLogging do
     it 'parses lock keys' do
-      expect(described_class.parse_lock_key('kaal:dispatch:job:alpha:100')).to eq(['job:alpha', Time.at(100)])
+      expect(described_class.parse_lock_key('kaal:dispatch:job:alpha:100')).to eq(['job:alpha', Time.at(100).utc])
+      expect(described_class.parse_lock_key('myapp:prod:dispatch:job:alpha:100')).to eq(['job:alpha', Time.at(100).utc])
     end
 
     it 'rejects malformed lock keys' do
@@ -306,7 +307,7 @@ RSpec.describe Kaal::Registry do
       instance = klass.new
 
       expect(instance.dispatch_registry).to be_nil
-      expect(instance.parse_lock_key('kaal:dispatch:job:alpha:100')).to eq(['job:alpha', Time.at(100)])
+      expect(instance.parse_lock_key('kaal:dispatch:job:alpha:100')).to eq(['job:alpha', Time.at(100).utc])
       expect(instance.send(:dispatch_attempt_logger)).to be_a(Kaal::Backend::DispatchAttemptLogger)
     end
   end

@@ -20,6 +20,7 @@ module Kaal
 
       def upsert_definition(key:, cron:, enabled: true, source: 'code', metadata: {})
         record = @model.find_or_initialize_by(key: key)
+        existing = record.persisted? ? { enabled: record.enabled, disabled_at: record.disabled_at } : nil
         now = Time.now.utc
         record.cron = cron
         record.enabled = enabled
@@ -27,7 +28,7 @@ module Kaal
         record.metadata = JSON.generate(metadata || {})
         record.created_at ||= now
         record.updated_at = now
-        record.disabled_at = disabled_at_for(record, enabled, now)
+        record.disabled_at = Kaal::Definition::PersistenceHelpers.disabled_at_for(existing, enabled, now)
         record.save!
         normalize(record)
       end
@@ -54,13 +55,6 @@ module Kaal
       end
 
       private
-
-      def disabled_at_for(record, enabled, now)
-        return nil if enabled
-        return now unless record.persisted?
-
-        record.disabled_at || now
-      end
 
       def normalize(record)
         return nil unless record
