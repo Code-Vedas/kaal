@@ -6,7 +6,7 @@
 # LICENSE file in the root directory of this source tree.
 require 'json'
 require 'kaal/definition/registry'
-require_relative 'persistence_helpers'
+require 'kaal/definition/persistence_helpers'
 require 'kaal/persistence/database'
 
 module Kaal

@@ -44,8 +44,8 @@ module Kaal
 
         Kaal::ActiveRecord::MigrationTemplates.for_backend(backend).map.with_index do |(name, contents), index|
           slug = name.sub(/^\d+_/, '')
-          existing = Dir[migrations_dir.join("*_#{slug}")].first
-          next({ status: :identical, path: existing }) if existing
+          existing = Dir[migrations_dir.join("*_#{slug}").to_s].first
+          next({ status: :identical, path: existing.to_s }) if existing
 
           target = migrations_dir.join("#{timestamp_for(index)}_#{slug}")
           File.write(target, contents)
