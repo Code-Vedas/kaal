@@ -4,6 +4,7 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
+require 'uri'
 
 RSpec.describe Kaal::ActiveRecord do
   def build_definition_record(key: 'job:a', enabled: true, metadata: '{"a":1}')
@@ -151,6 +152,18 @@ RSpec.describe Kaal::ActiveRecord do
     expect(
       described_class::ConnectionSupport.configs_match?({ url: url_connection }, url_connection)
     ).to be(false)
+  end
+
+  it 'builds valid admin database urls for postgres and mysql' do
+    postgres_uri = URI.parse('postgres://user:pass@localhost:5432/kaal_test')
+    mysql_uri = URI.parse('mysql2://user:pass@localhost:3306/kaal_test')
+
+    expect(KaalActiveRecordSupport.build_admin_database_url(postgres_uri)).to eq(
+      'postgres://user:pass@localhost:5432/postgres'
+    )
+    expect(KaalActiveRecordSupport.build_admin_database_url(mysql_uri)).to eq(
+      'mysql2://user:pass@localhost:3306/'
+    )
   end
 
   it 'persists and queries definitions through the registry model interface' do

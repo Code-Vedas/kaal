@@ -102,7 +102,7 @@ module KaalActiveRecordSupport
   end
 
   def build_admin_database_url(uri)
-    path = ('/postgres' if uri.scheme.start_with?('postgres'))
+    path = uri.scheme.start_with?('postgres') ? '/postgres' : '/'
 
     URI::Generic.build(
       scheme: uri.scheme,
