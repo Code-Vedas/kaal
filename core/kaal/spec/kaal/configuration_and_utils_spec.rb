@@ -131,7 +131,7 @@ RSpec.describe Kaal::Configuration do
 
       expect(resolver.time_zone_identifier).to eq('America/New_York')
     ensure
-      time_singleton.send(:remove_method, :zone) unless original_zone_method
+      time_singleton&.send(:remove_method, :zone) unless original_zone_method
     end
 
     it 'returns a configured time zone' do

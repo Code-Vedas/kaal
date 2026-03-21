@@ -36,7 +36,8 @@ module Kaal
       end
 
       def current_connection_config
-        normalize_connection_config(BaseRecord.connection_db_config&.configuration_hash)
+        db_config = BaseRecord.connection_db_config
+        normalize_connection_config(extract_connection_config(db_config))
       rescue ::ActiveRecord::ConnectionNotEstablished
         nil
       end
@@ -45,8 +46,16 @@ module Kaal
         case connection
         when Hash
           connection
+        when String
+          { url: connection }
         else
-          connection.configuration_hash
+          config = connection.configuration_hash
+          url = begin
+            connection.url
+          rescue NoMethodError
+            nil
+          end
+          url ? config.merge(url: url) : config
         end
       rescue NoMethodError
         nil

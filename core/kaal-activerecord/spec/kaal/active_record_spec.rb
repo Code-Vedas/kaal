@@ -73,10 +73,18 @@ RSpec.describe Kaal::ActiveRecord do
 
   it 'configures or reuses the base record connection' do
     connection = { adapter: 'sqlite3', database: ':memory:' }
-    connection_config_class = Struct.new(:configuration_hash)
-    database_config_class = Struct.new(:configuration_hash)
-    config_object = instance_double(connection_config_class, configuration_hash: connection.stringify_keys)
-    db_config = instance_double(database_config_class, configuration_hash: connection.stringify_keys)
+    connection_config_class = Struct.new(:configuration_hash, :url)
+    database_config_class = Struct.new(:configuration_hash, :url)
+    config_object = instance_double(connection_config_class, configuration_hash: connection.stringify_keys, url: nil)
+    db_config = instance_double(database_config_class, configuration_hash: connection.stringify_keys, url: nil)
+    url_connection = 'sqlite3::memory:'
+    url_db_config = instance_double(
+      database_config_class,
+      configuration_hash: connection.stringify_keys,
+      url: url_connection
+    )
+    config_without_url = Object.new
+    config_without_url.define_singleton_method(:configuration_hash) { connection.stringify_keys }
 
     expect(described_class::ConnectionSupport.configure!).to eq(described_class::BaseRecord)
     allow(described_class::BaseRecord).to receive(:connection_db_config).and_raise(ActiveRecord::ConnectionNotEstablished)
@@ -95,7 +103,8 @@ RSpec.describe Kaal::ActiveRecord do
 
     expect(described_class::ConnectionSupport.normalize_connection_config(connection)).to eq(connection.merge(adapter: 'sqlite3'))
     expect(described_class::ConnectionSupport.normalize_connection_config(config_object)).to eq(connection)
-    expect(described_class::ConnectionSupport.normalize_connection_config('sqlite://memory')).to eq('sqlite://memory')
+    expect(described_class::ConnectionSupport.normalize_connection_config(config_without_url)).to eq(connection)
+    expect(described_class::ConnectionSupport.normalize_connection_config(url_connection)).to eq(url: url_connection)
     expect(
       described_class::ConnectionSupport.normalize_connection_config('adapter' => 'SQLite3', 'port' => '5432')
     ).to eq(adapter: 'sqlite3', port: 5432)
@@ -108,6 +117,9 @@ RSpec.describe Kaal::ActiveRecord do
 
     allow(described_class::BaseRecord).to receive(:connection_db_config).and_return(db_config)
     expect(described_class::ConnectionSupport.current_connection_config).to eq(connection)
+
+    allow(described_class::BaseRecord).to receive(:connection_db_config).and_return(url_db_config)
+    expect(described_class::ConnectionSupport.current_connection_config).to eq(connection.merge(adapter: 'sqlite3', url: url_connection))
   end
 
   it 'persists and queries definitions through the registry model interface' do

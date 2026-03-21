@@ -42,7 +42,7 @@ jobs:
           bundler-cache: true
           working-directory: ${{ github.workspace }}/core/kaal
       - name: Configure RubyGems Credentials
-        uses: rubygems/configure-rubygems-credentials@main
+        uses: rubygems/configure-rubygems-credentials@84d1838d405cabde880feada9a63c0b49f659ebd
       - name: Build and push gem
         working-directory: ${{ github.workspace }}/core/kaal
         run: |
@@ -67,7 +67,7 @@ jobs:
           bundler-cache: true
           working-directory: ${{ github.workspace }}/core/kaal-sequel
       - name: Configure RubyGems Credentials
-        uses: rubygems/configure-rubygems-credentials@main
+        uses: rubygems/configure-rubygems-credentials@84d1838d405cabde880feada9a63c0b49f659ebd
       - name: Build and push gem
         working-directory: ${{ github.workspace }}/core/kaal-sequel
         run: |
@@ -92,7 +92,7 @@ jobs:
           bundler-cache: true
           working-directory: ${{ github.workspace }}/core/kaal-activerecord
       - name: Configure RubyGems Credentials
-        uses: rubygems/configure-rubygems-credentials@main
+        uses: rubygems/configure-rubygems-credentials@84d1838d405cabde880feada9a63c0b49f659ebd
       - name: Build and push gem
         working-directory: ${{ github.workspace }}/core/kaal-activerecord
         run: |
@@ -117,7 +117,7 @@ jobs:
           bundler-cache: true
           working-directory: ${{ github.workspace }}/gems/kaal-rails
       - name: Configure RubyGems Credentials
-        uses: rubygems/configure-rubygems-credentials@main
+        uses: rubygems/configure-rubygems-credentials@84d1838d405cabde880feada9a63c0b49f659ebd
       - name: Build and push gem
         working-directory: ${{ github.workspace }}/gems/kaal-rails
         run: |

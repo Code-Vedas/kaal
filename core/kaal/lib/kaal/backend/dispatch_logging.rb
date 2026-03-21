@@ -61,7 +61,7 @@ module Kaal
         cron_key = valid_key ? parts.join(':') : nil
         invalid_dispatch_lock_key!(invalid_message) unless valid_key && !cron_key.empty?
 
-        fire_time = Time.at(fire_time_unix)
+        fire_time = Time.at(fire_time_unix).utc
 
         [cron_key, fire_time]
       end
