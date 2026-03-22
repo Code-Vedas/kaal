@@ -4,97 +4,95 @@ nav_order: 3
 permalink: /install
 ---
 
-# ⚙️ Installation & Setup
+# Installation & Setup
 
-This page explains how to install the `kaal` gem, generate any backend-specific database migrations, and set up the initializer for your application.
+Choose the package surface that matches your app.
 
----
-
-## 📦 Install
-
-Add to your Gemfile:
+## Plain Ruby with memory or Redis
 
 ```ruby
-# Gemfile
 gem "kaal"
 ```
 
-Then run:
+Install dependencies and generate the project files:
 
 ```bash
-# Install the gem
 bundle install
-
-# Generate the initializer and any backend-specific migrations
-bin/rails g kaal:install --backend=sqlite
+bundle exec kaal init --backend=memory
 ```
 
-Use the backend option that matches your deployment:
+`kaal init` writes:
 
-- `--backend=sqlite`: generates dispatches, locks, and definitions tables
-- `--backend=postgres` or `--backend=mysql`: generates dispatches and definitions tables
-- `--backend=redis` or `--backend=memory`: no database migrations are generated
+- `config/kaal.rb`
+- `config/scheduler.yml`
 
-For database-backed backends, run your app migrations after generating them:
+Use this path when you want:
 
-```bash
-bin/rails db:migrate
-```
+- local development with no external coordination store
+- Redis-backed coordination without SQL persistence
 
----
-
-## ⚙️ Initializer
-
-If you ran the generator, you will find the initializer at:
-
-```bash
-config/initializers/kaal.rb
-```
-
-Example:
+## Plain Ruby with Sequel-backed SQL persistence
 
 ```ruby
-# config/initializers/kaal.rb
-Kaal.configure do |c|
-  # Choose the backend that matches your deployment.
-  # See the Kaal documentation for backend-specific setup and the full
-  # configuration reference.
-  #
-  # Redis (recommended)
-  # c.backend = Kaal::Backend::RedisAdapter.new(Redis.new(url: ENV.fetch("REDIS_URL")))
-
-  # or Postgres advisory locks
-  # c.backend = Kaal::Backend::PostgresAdapter.new
-
-  # Frequency of scheduler ticks (seconds)
-  c.tick_interval    = 5
-
-  # Time window to recover missed runs (seconds)
-  c.window_lookback  = 120
-
-  # Lease duration for distributed coordination (seconds)
-  # Keep this >= window_lookback + tick_interval to prevent duplicate dispatch.
-  c.lease_ttl        = 125
-
-  # Startup recovery window (seconds)
-  c.recovery_window = 3600
-
-  # Recover missed runs on startup
-  c.enable_dispatch_recovery = true
-
-  # Persist dispatch records for recovery/idempotency checks
-  c.enable_log_dispatch_registry = false
-end
+gem "kaal"
+gem "kaal-sequel"
 ```
 
----
+Use `kaal-sequel` when you want SQL persistence outside Rails.
 
-## ✅ Verify Installation
+Typical choices:
 
-You can confirm everything is wired up by running:
+- SQLite for a single-node install
+- PostgreSQL for distributed advisory locks
+- MySQL for named locks
+
+You are responsible for creating the Kaal tables through the Sequel adapter path.
+
+## Plain Ruby with Active Record-backed SQL persistence
+
+```ruby
+gem "kaal"
+gem "kaal-activerecord"
+```
+
+Use `kaal-activerecord` when you want Active Record-backed SQL persistence outside Rails.
+
+## Rails with Active Record
+
+```ruby
+gem "kaal-rails"
+```
+
+Use `kaal-rails` when you want the Rails plugin surface, generators, tasks, and Active Record-backed persistence.
+
+Typical setup:
 
 ```bash
-bin/rails kaal:status
+bundle exec rails generate kaal:install --backend=sqlite
+bundle exec rails db:migrate
 ```
 
-If successful, you’ll see your configuration and the registered cron jobs listed.
+PostgreSQL:
+
+```bash
+bundle exec rails generate kaal:install --backend=postgres
+bundle exec rails db:migrate
+```
+
+MySQL:
+
+```bash
+bundle exec rails generate kaal:install --backend=mysql
+bundle exec rails db:migrate
+```
+
+## Core backend choices
+
+- `memory`: no external store
+- `redis`: external coordination through Redis
+
+## Verify Setup
+
+```bash
+bundle exec kaal status --config config/kaal.rb
+```

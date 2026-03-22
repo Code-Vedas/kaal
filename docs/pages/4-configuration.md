@@ -4,322 +4,123 @@ nav_order: 4
 permalink: /configuration
 ---
 
-# ⚙️ Configuration
+# Configuration
 
-Kaal can be configured globally through an initializer.  
-All configuration options are optional and can be customized per environment.
+Primary runtime configuration lives in `config/kaal.rb`.
 
----
-
-## 🧩 Example Configuration
+## Core engine example
 
 ```ruby
-# config/initializers/kaal.rb
-Kaal.configure do |c|
-  # Choose your distributed backend adapter
-  # c.backend = Kaal::Backend::RedisAdapter.new(Redis.new(url: ENV["REDIS_URL"]))
-  # c.backend = Kaal::Backend::PostgresAdapter.new
-  # c.backend = Kaal::Backend::MemoryAdapter.new # single-node only (not for production)
+require "kaal"
 
-  # Frequency of scheduler ticks (in seconds)
-  c.tick_interval    = 5
-
-  # Replays missed ticks that occurred within this time window (in seconds)
-  c.window_lookback  = 120
-
-  # Optional: trigger ticks slightly early for lookahead scenarios
-  c.window_lookahead = 0
-
-  # Lease duration (seconds) — must be >= window_lookback + tick_interval
-  c.lease_ttl        = 125
-
-  # Optional prefix for Redis/Postgres keys
-  c.namespace        = "kaal"
-
-  # Optional scheduler time zone for cron evaluation
-  # Falls back to the Rails app zone, then UTC
-  # c.time_zone      = "America/Toronto"
-
-  # Optional logger override
-  # c.logger = Logger.new($stdout, level: :info)
-
-  # Missed-run recovery (enabled by default)
-  # c.enable_dispatch_recovery = true
-  # c.recovery_window = 86_400 # 24 hours
-
-  # Dispatch logging for audit trail and efficient recovery
-  # c.enable_log_dispatch_registry = true
+Kaal.configure do |config|
+  config.backend = Kaal::Backend::MemoryAdapter.new
+  config.tick_interval = 5
+  config.window_lookback = 120
+  config.window_lookahead = 0
+  config.lease_ttl = 125
+  config.namespace = "kaal"
+  config.scheduler_config_path = "config/scheduler.yml"
+  config.enable_dispatch_recovery = true
+  config.enable_log_dispatch_registry = false
 end
 ```
 
----
-
-## 🔧 Configuration Reference
-
-| Setting                        | Type    | Default                     | Description                                                                                           |
-| ------------------------------ | ------- | --------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `backend`                      | Object  | `nil`                       | Distributed backend implementation. Use **Redis** or **Postgres** in multi-node environments.         |
-| `tick_interval`                | Integer | `5`                         | Seconds between scheduler ticks.                                                                      |
-| `window_lookback`              | Integer | `120`                       | How far back the scheduler will replay missed ticks.                                                  |
-| `window_lookahead`             | Integer | `0`                         | How far ahead to pre-trigger upcoming ticks (optional).                                               |
-| `lease_ttl`                    | Integer | `125`                       | Duration for distributed coordination lease in seconds. Must be `>= window_lookback + tick_interval`. |
-| `namespace`                    | String  | `"kaal"`                    | Key prefix used for coordination keys and dispatch records.                                           |
-| `time_zone`                    | String  | `nil`                       | Time zone used to interpret cron expressions. Falls back to the Rails app zone, then UTC.             |
-| `logger`                       | Logger  | `Rails.logger` (if present) | Logger used for scheduler messages.                                                                   |
-| `enable_log_dispatch_registry` | Boolean | `false`                     | Enable dispatch logging for audit trail and recovery.                                                 |
-| `enable_dispatch_recovery`     | Boolean | `true`                      | Automatically recover missed runs after downtime.                                                     |
-| `recovery_window`              | Integer | `86400` (24 hours)          | How far back to look for missed runs during recovery (in seconds).                                    |
-| `recovery_startup_jitter`      | Integer | `5`                         | Max random delay (seconds) before recovery to reduce lock contention on cluster restarts.             |
-
----
-
-## 🔐 Backend Adapters
-
-### Redis Adapter
+## Sequel adapter example
 
 ```ruby
-Kaal.configure do |c|
-  c.backend = Kaal::Backend::RedisAdapter.new(
-    Redis.new(url: ENV.fetch("REDIS_URL", "redis://127.0.0.1:6379/0"))
-  )
+require "kaal"
+require "kaal/sequel"
+require "sequel"
+
+database = Sequel.connect(adapter: "sqlite", database: File.expand_path("../db/kaal.sqlite3", __dir__))
+
+Kaal.configure do |config|
+  config.backend = Kaal::Backend::DatabaseAdapter.new(database)
+  config.scheduler_config_path = "config/scheduler.yml"
 end
 ```
 
-- Uses `SET NX PX` semantics for distributed coordination.
-- Low latency, great for production.
-
----
-
-### Postgres Adapter
+Alternative SQL backends:
 
 ```ruby
-Kaal.configure do |c|
-  c.backend = Kaal::Backend::PostgresAdapter.new
-end
+config.backend = Kaal::Backend::PostgresAdapter.new(database)
+config.backend = Kaal::Backend::MySQLAdapter.new(database)
 ```
 
-- Uses `pg_try_advisory_lock`.
-- Ideal for environments without Redis.
-
----
-
-### Memory Adapter
+## Active Record adapter example
 
 ```ruby
-Kaal.configure do |c|
-  c.backend = Kaal::Backend::MemoryAdapter.new
-end
-```
+require "kaal"
+require "kaal/active_record"
 
-- In-process only — suitable for **development or testing**.
-- Not safe for multi-node deployments.
-
----
-
-## 🧱 Registering Jobs
-
-After configuration, register your cron tasks (usually in `config/initializers/kaal_jobs.rb`):
-
-```ruby
-Kaal.register(
-  key: "cleanup:stale_sessions",
-  cron: "*/15 * * * *", # every 15 minutes
-  enqueue: ->(fire_time:, idempotency_key:) {
-    CleanupSessionsJob.perform_later(fire_time: fire_time, key: idempotency_key)
-  }
+Kaal::ActiveRecord::ConnectionSupport.configure!(
+  adapter: "sqlite3",
+  database: File.expand_path("../db/kaal.sqlite3", __dir__)
 )
+
+Kaal.configure do |config|
+  config.backend = Kaal::ActiveRecord::DatabaseAdapter.new
+  config.scheduler_config_path = "config/scheduler.yml"
+end
 ```
 
-**Parameters:**
-
-| Parameter         | Description                                                               |
-| ----------------- | ------------------------------------------------------------------------- |
-| `key`             | Unique identifier for the cron job.                                       |
-| `cron`            | Cron expression (supports standard syntax and `@daily`, `@hourly`, etc.). |
-| `enqueue`         | Lambda to execute when the tick fires.                                    |
-| `fire_time`       | UTC time when the job was scheduled to run.                               |
-| `idempotency_key` | Deterministic key to prevent duplicate dispatches.                        |
-
-`fire_time` is always the absolute scheduled instant passed to the callback. If you configure `time_zone`, it affects how cron expressions are interpreted, not how fire times are stored for locking, recovery, or idempotency.
-
-### Time Zone Precedence
-
-- `config.time_zone` is the scheduler-level source of truth for cron interpretation.
-- If `config.time_zone` is unset, Kaal falls back to the Rails app zone, then UTC.
-- Do not include a timezone suffix inside the cron string when using Kaal scheduling. Kaal applies the resolved scheduler zone during parsing, so a cron like `0 9 * * * America/New_York` is treated as invalid input in this path rather than overriding `config.time_zone`.
-- Migration rule: if you have existing schedules with embedded timezone suffixes, move that zone into `config.time_zone` and keep the cron string timezone-free.
-
----
-
-## 🕒 Starting the Scheduler
-
-You can start the scheduler loop either inline or as a dedicated process.
-
-### Option 1 — Inline (inside Rails)
+Alternative SQL backends:
 
 ```ruby
-# config/initializers/kaal.rb
-Kaal.start!
+config.backend = Kaal::ActiveRecord::PostgresAdapter.new
+config.backend = Kaal::ActiveRecord::MySQLAdapter.new
 ```
 
-Starts automatically when Rails boots.
-Prefer this for local/dev workflows.
+## Rails plugin behavior
 
-### Option 2 — Standalone Process (Recommended)
+When you use `kaal-rails`, the plugin selects a backend from the Rails database adapter unless you override it yourself:
+
+- SQLite -> `Kaal::ActiveRecord::DatabaseAdapter`
+- PostgreSQL -> `Kaal::ActiveRecord::PostgresAdapter`
+- MySQL -> `Kaal::ActiveRecord::MySQLAdapter`
+
+Install flow examples:
 
 ```bash
-bundle exec rails kaal:start
+bundle exec rails generate kaal:install --backend=sqlite
+bundle exec rails db:migrate
 ```
-
-Use this as the default in production so scheduler restarts and deploy lifecycles are independent from web processes.
-
-**Procfile Example:**
-
-```procfile
-web:       bundle exec puma -C config/puma.rb
-scheduler: bundle exec rails kaal:start
-```
-
-> ✅ Best practice: run one scheduler per environment — multiple nodes can start it safely (only one acquires the lock per tick).
-
----
-
-## 🧠 Logging
-
-Kaal uses the Rails logger by default. You can customize it:
-
-```ruby
-Kaal.configure do |c|
-  c.logger = Logger.new($stdout, level: :debug)
-end
-```
-
----
-
-## 🔄 Missed-Run Recovery
-
-**Automatic Recovery** (enabled by default) ensures that cron jobs that should have executed during downtime are automatically recovered when the scheduler starts.
-
-### How It Works
-
-1. **On Startup**: Before the main scheduler loop begins, Kaal looks back over a configurable window (default: 24 hours)
-2. **Computes Missed Runs**: For each registered cron job, it calculates which executions should have occurred
-3. **Checks Dispatch Records**: If dispatch logging is enabled, it skips runs that were already executed
-4. **Re-enqueues**: Missed runs are enqueued using the same coordination mechanism to prevent duplicates
-
-### Configuration
-
-```ruby
-Kaal.configure do |c|
-  # Interpret cron schedules in a specific time zone.
-  # Falls back to the Rails app zone, then UTC when unset.
-  c.time_zone = "America/Toronto"
-
-  # Enable automatic recovery (default: true)
-  c.enable_dispatch_recovery = true
-
-  # How far back to look for missed runs (default: 24 hours)
-  c.recovery_window = 86_400 # in seconds
-
-  # Random delay before recovery to reduce contention (default: 5 seconds)
-  c.recovery_startup_jitter = 5
-
-  # Enable dispatch logging for efficient recovery (default: false)
-  c.enable_log_dispatch_registry = true
-end
-```
-
-### DST Behavior
-
-- Spring-forward gaps are skipped. If a local scheduled time does not exist on that date, no run is created for it.
-- Fall-back overlaps run once per real occurrence. Repeated local clock times produce distinct absolute fire times, lock keys, and idempotency keys.
-
-### Recovery Options
-
-| Setting                        | Type    | Default | Description                                                                                         |
-| ------------------------------ | ------- | ------- | --------------------------------------------------------------------------------------------------- |
-| `enable_dispatch_recovery`     | Boolean | `true`  | Automatically recover missed runs on startup.                                                       |
-| `recovery_window`              | Integer | `86400` | How far back to look for missed runs (in seconds). 24 hours covers typical overnight downtimes.     |
-| `recovery_startup_jitter`      | Integer | `5`     | Max random delay (0-N seconds) before recovery starts. Reduces lock contention on cluster restarts. |
-| `enable_log_dispatch_registry` | Boolean | `false` | When enabled, recovery checks dispatch records first to avoid re-enqueueing already-executed jobs.  |
-
-### Interaction with Dispatch Logging
-
-When both recovery and dispatch logging are enabled:
-
-```ruby
-Kaal.configure do |c|
-  c.enable_dispatch_recovery = true
-  c.enable_log_dispatch_registry = true
-  c.backend = Kaal::Backend::RedisAdapter.new(Redis.new(url: ENV["REDIS_URL"]))
-end
-```
-
-**Benefits:**
-
-- **Efficient Recovery**: Dispatch records are checked first, avoiding unnecessary lease attempts for already-executed jobs
-- **Audit Trail**: See exactly which jobs were recovered vs. which were already executed
-- **Reduced Contention**: Fewer lease attempts = less load on your backend adapter
-
-**Without Dispatch Logging:**
-
-- Recovery still works but relies solely on distributed lease coordination to prevent duplicates
-- Each missed run will attempt to acquire a lease (even if it was already dispatched)
-- Still safe, but may cause more coordination contention during recovery
-
-### Example Scenarios
-
-#### Scenario 1: Short Downtime (< window_lookback)
-
-- Normal `window_lookback` (120 seconds) handles this automatically
-- No special recovery needed
-
-#### Scenario 2: Extended Downtime (hours/days)
-
-- Recovery kicks in on startup
-- Looks back 24 hours (default `recovery_window`)
-- Re-enqueues all missed runs that should have occurred
-
-#### Scenario 3: Cluster Restart
-
-- All nodes recover simultaneously
-- Random jitter (0-5 seconds) staggers recovery attempts
-- Distributed locks prevent duplicate enqueues
-
-### Disabling Recovery
-
-To disable automatic recovery (not recommended unless you have a custom solution):
-
-```ruby
-Kaal.configure do |c|
-  c.enable_dispatch_recovery = false
-end
-```
-
----
-
-## 🧩 Multiple Nodes
-
-You can safely run multiple schedulers (e.g., in Kubernetes, ECS, or multiple scheduler processes).
-Distributed lease coordination ensures **only one** node dispatches jobs for each tick.
-
-**Checklist:**
-
-- Use Redis or Postgres backend adapter.
-- Ensure `lease_ttl` is longer than your job dispatch time.
-- Avoid heavy logic inside the `enqueue` lambda — just enqueue your job.
-
----
-
-## ✅ Quick Commands
 
 ```bash
-# Show configuration and registered jobs
-bin/rails kaal:status
-
-# Manually trigger one scheduler tick
-bin/rails kaal:tick
-
-# Humanize a cron expression
-bin/rails kaal:explain["*/15 * * * *"]
+bundle exec rails generate kaal:install --backend=postgres
+bundle exec rails db:migrate
 ```
+
+```bash
+bundle exec rails generate kaal:install --backend=mysql
+bundle exec rails db:migrate
+```
+
+Explicit overrides still win:
+
+```ruby
+Kaal.configure do |config|
+  config.backend = Kaal::Backend::MemoryAdapter.new
+end
+```
+
+## Key Options
+
+| Setting                        | Default                  | Meaning                                        |
+| ------------------------------ | ------------------------ | ---------------------------------------------- |
+| `backend`                      | `nil`                    | Coordination or datastore backend              |
+| `tick_interval`                | `5`                      | Seconds between scheduler ticks                |
+| `window_lookback`              | `120`                    | Recovery window for missed runs                |
+| `window_lookahead`             | `0`                      | Optional future lookahead                      |
+| `lease_ttl`                    | `125`                    | Lock TTL for TTL-based adapters                |
+| `namespace`                    | `"kaal"`                 | Prefix for coordination keys                   |
+| `time_zone`                    | `nil`                    | Scheduler interpretation zone; defaults to UTC |
+| `scheduler_config_path`        | `"config/scheduler.yml"` | Scheduler file path                            |
+| `enable_dispatch_recovery`     | `true`                   | Replay missed runs on startup                  |
+| `enable_log_dispatch_registry` | `false`                  | Persist dispatch audit records                 |
+
+## Time Zone Rules
+
+- If `time_zone` is set, that zone is used to interpret cron expressions.
+- If `time_zone` is unset, Kaal uses `UTC`.

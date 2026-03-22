@@ -1,0 +1,62 @@
+#!/bin/sh
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+REPO_ROOT=$(CDPATH= cd -- "${SCRIPT_DIR}/.." && pwd)
+TMP_DIR="${REPO_ROOT}/tmp/bundle-update-all"
+
+mkdir -p "${TMP_DIR}"
+
+run_cmd() {
+  name="$1"
+  shift
+  log_file="${TMP_DIR}/${name}.log"
+
+  echo "==> ${name}"
+
+  if "$@" >"${log_file}" 2>&1; then
+    rm -f "${log_file}"
+    return 0
+  fi
+
+  echo "-- ${name} failed --"
+  cat "${log_file}"
+  return 1
+}
+
+update_bundle_dir() {
+  name="$1"
+  dir="$2"
+
+  echo "Updating bundle for ${name}"
+  cd "${REPO_ROOT}/${dir}"
+  run_cmd "${name}-bundle-update" bundle update
+}
+
+update_bundle_file() {
+  name="$1"
+  dir="$2"
+  gemfile="$3"
+
+  echo "Updating bundle for ${name}"
+  cd "${REPO_ROOT}/${dir}"
+  run_cmd "${name}-bundle-update" env BUNDLE_GEMFILE="${gemfile}" bundle update
+}
+
+update_bundle_dir "root-ruby-lsp" ".ruby-lsp"
+update_bundle_dir "danger" "danger"
+update_bundle_dir "core-kaal" "core/kaal"
+update_bundle_dir "core-kaal-sequel" "core/kaal-sequel"
+update_bundle_dir "core-kaal-activerecord" "core/kaal-activerecord"
+update_bundle_file "core-kaal-activerecord-rails-7-2" "core/kaal-activerecord" "gemfiles/rails_7_2.gemfile"
+update_bundle_file "core-kaal-activerecord-rails-8-0" "core/kaal-activerecord" "gemfiles/rails_8_0.gemfile"
+update_bundle_file "core-kaal-activerecord-rails-8-1" "core/kaal-activerecord" "gemfiles/rails_8_1.gemfile"
+update_bundle_file "core-kaal-activerecord-rails-edge" "core/kaal-activerecord" "gemfiles/rails_edge.gemfile"
+update_bundle_dir "docs" "docs"
+update_bundle_dir "docs-ruby-lsp" "docs/.ruby-lsp"
+update_bundle_dir "gems-kaal-rails" "gems/kaal-rails"
+update_bundle_file "gems-kaal-rails-rails-7-2" "gems/kaal-rails" "gemfiles/rails_7_2.gemfile"
+update_bundle_file "gems-kaal-rails-rails-8-0" "gems/kaal-rails" "gemfiles/rails_8_0.gemfile"
+update_bundle_file "gems-kaal-rails-rails-8-1" "gems/kaal-rails" "gemfiles/rails_8_1.gemfile"
+update_bundle_file "gems-kaal-rails-rails-edge" "gems/kaal-rails" "gemfiles/rails_edge.gemfile"

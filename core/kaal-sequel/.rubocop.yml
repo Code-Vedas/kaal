@@ -1,0 +1,50 @@
+plugins:
+  - rubocop-rspec
+  - rubocop-performance
+  - rubocop-rake
+  - rubocop-factory_bot
+  - rubocop-sequel
+
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 3.2
+  SuggestExtensions: true
+  Exclude:
+    - .vscode/**/*
+    - vendor/**/* # ignore vendored gems
+    - vendor/bundle/**/* # (explicitly, for Bundler’s path)
+Sequel:
+  Include:
+    - lib/kaal/backend/database_adapter.rb
+    - lib/kaal/backend/mysql_adapter.rb
+    - lib/kaal/backend/postgres_adapter.rb
+    - lib/kaal/definition/database_engine.rb
+    - lib/kaal/dispatch/database_engine.rb
+    - lib/kaal/persistence/database.rb
+    - lib/kaal/persistence/migration_templates.rb
+Metrics/MethodLength:
+  Max: 60
+Metrics/ModuleLength:
+  Max: 300
+Metrics/BlockLength:
+  Max: 50
+Metrics/ParameterLists:
+  Max: 10
+RSpec/MultipleExpectations:
+  Max: 30
+RSpec/ExampleLength:
+  Max: 50
+Layout/LineLength:
+  Max: 160
+Metrics/ClassLength:
+  Max: 275
+Metrics/AbcSize:
+  Max: 30
+RSpec/MultipleMemoizedHelpers:
+  Max: 15
+Metrics/CyclomaticComplexity:
+  Max: 10
+RSpec/NestedGroups:
+  Max: 5
+Metrics/PerceivedComplexity:
+  Max: 15

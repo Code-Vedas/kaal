@@ -177,4 +177,4 @@ Pick the version number from draft release notes on the
     gem install kaal -v <version>
     ```
 
-    and sanity-check a basic rake task in a fresh Rails app.
+    and sanity-check `bundle exec kaal status` in a fresh Ruby app.

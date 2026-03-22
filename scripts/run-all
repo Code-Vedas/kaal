@@ -1,0 +1,22 @@
+#!/bin/sh
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+
+run_phase() {
+  phase_name="$1"
+  runner="$2"
+
+  echo "Running ${phase_name} for all gems"
+  . "${SCRIPT_DIR}/${runner}"
+  run_suite "kaal" "core/kaal"
+  run_suite "kaal-activerecord" "core/kaal-activerecord"
+  run_suite "kaal-sequel" "core/kaal-sequel"
+  run_suite "kaal-rails" "gems/kaal-rails"
+}
+
+run_phase "rubocop" "run-rubocop-all"
+run_phase "reek" "run-reek-all"
+run_phase "rspec-unit" "run-rspec-unit-all"
+run_phase "rspec-e2e" "run-rspec-e2e-all"

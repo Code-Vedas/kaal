@@ -1,0 +1,12 @@
+defaults:
+  jobs:
+    - key: "example:heartbeat"
+      cron: "*/5 * * * *"
+      job_class: "ExampleHeartbeatJob"
+      enabled: true
+      args:
+        - "{{fire_time.iso8601}}"
+      kwargs:
+        idempotency_key: "{{idempotency_key}}"
+      metadata:
+        owner: "ops"
