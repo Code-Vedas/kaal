@@ -23,12 +23,20 @@ module Kaal
       def apply(job)
         key = job.fetch(:key)
         cron = job.fetch(:cron)
+        job_class_name = job.fetch(:job_class_name)
+        queue = job.fetch(:queue)
         existing_definition = @definition_registry.find_definition(key)
         existing_registry_entry = @registry.find(key)
         return nil if conflict?(key:, existing_definition:)
 
-        job_class = resolve_job_class(job_class_name: job.fetch(:job_class_name), key:)
-        callback = build_callback(job, job_class)
+        job_class = resolved_job_class(job_class_name:, key:, queue:)
+        callback = callback_for(
+          key: key,
+          job_class_name: job_class_name,
+          queue: queue,
+          args_template: job.fetch(:args),
+          kwargs_template: job.fetch(:kwargs)
+        )
         persisted_metadata = persisted_metadata(job, job_class)
 
         @definition_registry.upsert_definition(
@@ -53,6 +61,23 @@ module Kaal
         applied_job_contexts.reverse_each do |applied_job_context|
           rollback_job(**applied_job_context)
         end
+      end
+
+      def callback_for(key:, job_class_name:, queue:, args_template:, kwargs_template:)
+        job_class = resolved_job_class(job_class_name:, key:, queue:)
+        build_callback(
+          {
+            key: key,
+            queue: queue,
+            args: args_template,
+            kwargs: kwargs_template
+          },
+          job_class
+        )
+      end
+
+      def resolved_job_class(job_class_name:, key:, queue: nil)
+        resolve_job_class(job_class_name:, key:, queue:)
       end
 
       def conflict?(key:, existing_definition:)
@@ -153,7 +178,7 @@ module Kaal
         nil
       end
 
-      def resolve_job_class(job_class_name:, key:)
+      def resolve_job_class(job_class_name:, key:, queue: nil)
         normalized_job_class_name = job_class_name.to_s.strip
         raise SchedulerConfigError, "Job class cannot be blank for key '#{key}'" if normalized_job_class_name.empty?
 
@@ -164,7 +189,7 @@ module Kaal
           nil
         end
 
-        return job_class if job_class
+        return validate_dispatch_interface(job_class, key, queue) if job_class
 
         raise_unknown_job_class(error_message)
       end
@@ -193,6 +218,20 @@ module Kaal
 
       def raise_unknown_job_class(error_message)
         raise SchedulerConfigError, error_message
+      end
+
+      def validate_dispatch_interface(job_class, key, queue)
+        queue_present = !queue.nil?
+        supports_set = job_class.respond_to?(:set)
+        supports_perform_later = job_class.respond_to?(:perform_later)
+        supports_perform = job_class.respond_to?(:perform)
+
+        return job_class if queue_present && supports_set
+        return job_class if !queue_present && supports_perform_later
+        return job_class if !queue_present && supports_perform
+
+        raise SchedulerConfigError,
+              "job_class '#{job_class.name}' for key '#{key}' must respond to .perform, .perform_later, or .set(...).perform_later"
       end
 
       def active_job_dispatch?(job_class, queue)

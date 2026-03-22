@@ -209,6 +209,7 @@ RSpec.describe Kaal::SchedulerFileLoader do
     expect(perform_calls).to eq([[['perform'], {}]])
   end
 
+  # rubocop:disable RSpec/ExampleLength
   it 'covers job applier rollback and callback error paths' do
     loader = described_class.new(
       configuration: Kaal.configuration,
@@ -237,8 +238,14 @@ RSpec.describe Kaal::SchedulerFileLoader do
     end.to raise_error(Kaal::SchedulerConfigError, /Unsupported/)
 
     expect do
-      applier.__send__(:resolve_job_class, job_class_name: 'MissingJobClass', key: 'missing')
+      applier.resolved_job_class(job_class_name: 'MissingJobClass', key: 'missing')
     end.to raise_error(Kaal::SchedulerConfigError, /Unknown job_class/)
+
+    no_dispatch_job = Class.new
+    stub_const('NoDispatchJobClass', no_dispatch_job)
+    expect do
+      applier.resolved_job_class(job_class_name: 'NoDispatchJobClass', key: 'missing')
+    end.to raise_error(Kaal::SchedulerConfigError, /must respond to \.perform, \.perform_later, or \.set/)
 
     expect do
       applier.send(:validate_keyword_keys, { Object.new => 1 }, 'job')
@@ -268,6 +275,7 @@ RSpec.describe Kaal::SchedulerFileLoader do
       loader.send(:validate_placeholders, '{{ bad-placeholder }}', key: 'job')
     end.to raise_error(Kaal::SchedulerConfigError, /Malformed placeholder/)
   end
+  # rubocop:enable RSpec/ExampleLength
 
   it 'covers payload loader parsing failures and helper wrapper methods' do
     loader = described_class.new(
@@ -492,12 +500,18 @@ RSpec.describe Kaal::SchedulerFileLoader do
     allow(Kaal::Support::HashTools).to receive(:constantize).and_call_original
     allow(Kaal::Support::HashTools).to receive(:constantize).with('MissingJob').and_raise(NameError)
     expect do
-      nil_logger_applier.__send__(:resolve_job_class, job_class_name: 'MissingJob', key: 'restore')
+      nil_logger_applier.resolved_job_class(job_class_name: 'MissingJob', key: 'restore')
     end.to raise_error(Kaal::SchedulerConfigError, /Unknown job_class/)
 
     expect do
-      nil_logger_applier.__send__(:resolve_job_class, job_class_name: '   ', key: 'restore')
+      nil_logger_applier.resolved_job_class(job_class_name: '   ', key: 'restore')
     end.to raise_error(Kaal::SchedulerConfigError, /Job class cannot be blank/)
+
+    queue_only_job = Class.new do
+      def self.set(queue:) = queue
+    end
+    stub_const('QueueOnlyJobTarget', queue_only_job)
+    expect(nil_logger_applier.resolved_job_class(job_class_name: 'QueueOnlyJobTarget', key: 'restore', queue: 'low')).to eq(queue_only_job)
 
     active_job_class = Class.new do
       def self.perform_later(*) = nil

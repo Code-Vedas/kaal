@@ -43,6 +43,7 @@ detectors:
       - Kaal::Backend::RedisAdapter#initialize
       - Kaal::SchedulerFileLoader::JobApplier#dispatch_job
       - Kaal::SchedulerFileLoader::JobApplier#active_job_dispatch?
+      - Kaal::SchedulerFileLoader::JobApplier#validate_dispatch_interface
   UtilityFunction:
     enabled: true
     exclude:
@@ -70,11 +71,13 @@ detectors:
       - Kaal::Backend::DispatchRegistryAccessor#fetch_registry
       - Kaal::Definition::DatabaseEngine#normalize_row
       - Kaal::SchedulerFileLoader::JobApplier#dispatch_job
+      - Kaal::SchedulerFileLoader::JobApplier#validate_dispatch_interface
       - Kaal::SchedulerFileLoader::JobApplier#validate_keyword_keys
   DuplicateMethodCall:
     enabled: true
     exclude:
       - Kaal::CronHumanizer#ensure_i18n_loaded!
+      - Kaal::SchedulerFileLoader::JobApplier#validate_dispatch_interface
   NilCheck:
     enabled: true
     exclude:
@@ -83,6 +86,7 @@ detectors:
       - Kaal::Coordinator#cleanup_old_dispatch_records
       - Kaal#dispatch_log_registry
       - Kaal#dispatched?
+      - Kaal::SchedulerFileLoader::JobApplier#validate_dispatch_interface
 
 exclude_paths:
   - spec/**/*
