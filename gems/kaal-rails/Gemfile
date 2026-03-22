@@ -1,0 +1,38 @@
+# frozen_string_literal: true
+
+# Copyright Codevedas Inc. 2025-present
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+source 'https://rubygems.org'
+
+gemspec
+
+group :development, :test do
+  gem 'kaal', path: '../../core/kaal'
+  gem 'kaal-activerecord', path: '../../core/kaal-activerecord'
+  gem 'mysql2'
+  gem 'pg', '~> 1.1'
+  gem 'redis', '~> 5.0'
+  gem 'reek'
+  gem 'rspec'
+  gem 'rspec-rails', '~> 8.0.0'
+  gem 'rubocop-factory_bot'
+  gem 'rubocop-performance'
+  gem 'rubocop-rails'
+  gem 'rubocop-rake'
+  gem 'rubocop-rspec'
+  gem 'rubocop-rspec_rails'
+  gem 'sqlite3'
+end
+
+group :test do
+  gem 'fakeredis'
+  gem 'simplecov', require: false
+  gem 'simplecov-console', require: false
+end
+
+group :development do
+  gem 'ruby-lsp', require: false
+  gem 'ruby-lsp-rspec', require: false
+end

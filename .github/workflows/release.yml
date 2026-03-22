@@ -3,6 +3,7 @@ permissions:
   contents: read
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - v*
@@ -13,91 +14,20 @@ concurrency:
 
 env:
   RUBY_VERSION: 3.4.3
-  APP_DIR: ${{ github.workspace }}/kaal
 
 jobs:
-  setup:
-    name: Setup
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ${{ env.APP_DIR }}
-    steps:
-      - uses: actions/checkout@v6
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: ${{ env.RUBY_VERSION }}
-          bundler-cache: true
-          working-directory: ${{ env.APP_DIR }}
-      - run: bundle info rake
-
-  lint:
+  verify_release:
+    name: Verify release
     permissions:
       contents: read
-    runs-on: ubuntu-latest
-    needs: setup
-    defaults:
-      run:
-        working-directory: ${{ env.APP_DIR }}
-    steps:
-      - uses: actions/checkout@v6
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: ${{ env.RUBY_VERSION }}
-          bundler-cache: true
-          working-directory: ${{ env.APP_DIR }}
-      - name: RuboCop
-        run: bin/rubocop -f github
-
-  reek:
-    permissions:
-      contents: read
-    runs-on: ubuntu-latest
-    needs: setup
-    defaults:
-      run:
-        working-directory: ${{ env.APP_DIR }}
-    steps:
-      - uses: actions/checkout@v6
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: ${{ env.RUBY_VERSION }}
-          bundler-cache: true
-          working-directory: ${{ env.APP_DIR }}
-      - name: Reek
-        run: bin/reek
-
-  tests:
-    name: Tests (${{ matrix.name }})
-    strategy:
-      fail-fast: false
-      matrix:
-        gemfile:
-          - rails_8_1.gemfile
-          - rails_8_0.gemfile
-          - rails_7_2.gemfile
-          - rails_edge.gemfile
-        include:
-          - gemfile: rails_8_1.gemfile
-            name: Rails 8.1
-          - gemfile: rails_8_0.gemfile
-            name: Rails 8.0
-          - gemfile: rails_7_2.gemfile
-            name: Rails 7.2
-          - gemfile: rails_edge.gemfile
-            name: Rails Edge
-
-    needs: [lint, reek]
-    uses: ./.github/workflows/ruby-tests.yml
+    uses: ./.github/workflows/shared-ci.yml
     with:
-      upload_coverage: ${{ matrix.gemfile == 'rails_8_0.gemfile' }}
-      bundle_gemfile: kaal/gemfiles/${{ matrix.gemfile }}
-    secrets:
-      QLTY_COVERAGE_TOKEN: ${{ secrets.QLTY_COVERAGE_TOKEN }}
-  push:
-    name: Build & Push gem
+      upload_coverage: false
+
+  publish_kaal:
+    name: Publish core/kaal
     runs-on: ubuntu-latest
-    needs: [tests]
+    needs: [verify_release]
     permissions:
       contents: write
       id-token: write
@@ -110,11 +40,86 @@ jobs:
         with:
           ruby-version: ${{ env.RUBY_VERSION }}
           bundler-cache: true
-          working-directory: ${{ env.APP_DIR }}
+          working-directory: ${{ github.workspace }}/core/kaal
       - name: Configure RubyGems Credentials
-        uses: rubygems/configure-rubygems-credentials@main
-      - name: Release
+        uses: rubygems/configure-rubygems-credentials@84d1838d405cabde880feada9a63c0b49f659ebd
+      - name: Build and push gem
+        working-directory: ${{ github.workspace }}/core/kaal
         run: |
-          cd kaal
           gem build kaal.gemspec
           gem push kaal-*.gem
+
+  publish_kaal_sequel:
+    name: Publish core/kaal-sequel
+    runs-on: ubuntu-latest
+    needs: [publish_kaal]
+    permissions:
+      contents: write
+      id-token: write
+    environment: release
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+          working-directory: ${{ github.workspace }}/core/kaal-sequel
+      - name: Configure RubyGems Credentials
+        uses: rubygems/configure-rubygems-credentials@84d1838d405cabde880feada9a63c0b49f659ebd
+      - name: Build and push gem
+        working-directory: ${{ github.workspace }}/core/kaal-sequel
+        run: |
+          gem build kaal-sequel.gemspec
+          gem push kaal-sequel-*.gem
+
+  publish_kaal_activerecord:
+    name: Publish core/kaal-activerecord
+    runs-on: ubuntu-latest
+    needs: [publish_kaal_sequel]
+    permissions:
+      contents: write
+      id-token: write
+    environment: release
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+          working-directory: ${{ github.workspace }}/core/kaal-activerecord
+      - name: Configure RubyGems Credentials
+        uses: rubygems/configure-rubygems-credentials@84d1838d405cabde880feada9a63c0b49f659ebd
+      - name: Build and push gem
+        working-directory: ${{ github.workspace }}/core/kaal-activerecord
+        run: |
+          gem build kaal-activerecord.gemspec
+          gem push kaal-activerecord-*.gem
+
+  publish_kaal_rails:
+    name: Publish gems/kaal-rails
+    runs-on: ubuntu-latest
+    needs: [publish_kaal_activerecord]
+    permissions:
+      contents: write
+      id-token: write
+    environment: release
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+          working-directory: ${{ github.workspace }}/gems/kaal-rails
+      - name: Configure RubyGems Credentials
+        uses: rubygems/configure-rubygems-credentials@84d1838d405cabde880feada9a63c0b49f659ebd
+      - name: Build and push gem
+        working-directory: ${{ github.workspace }}/gems/kaal-rails
+        run: |
+          gem build kaal-rails.gemspec
+          gem push kaal-rails-*.gem

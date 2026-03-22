@@ -1,0 +1,32 @@
+#!/bin/sh
+
+if [ "${SCRIPT_DIR:-}" = "" ]; then
+  SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+fi
+. "${SCRIPT_DIR}/run-common"
+
+run_suite() {
+  suite_name="$1"
+  suite_dir="$2"
+
+  cd "${REPO_ROOT}/${suite_dir}"
+
+  if gemfiles=$(suite_gemfiles "${suite_dir}"); then
+    for gemfile in ${gemfiles}; do
+      RUN_ALL_EXPECT_RAILS=1 RUN_ALL_BUNDLE_GEMFILE="${REPO_ROOT}/${suite_dir}/${gemfile}" run_cmd_env \
+        "${suite_name}-$(gemfile_label "${gemfile}")-reek" \
+        BUNDLE_GEMFILE="${REPO_ROOT}/${suite_dir}/${gemfile}" \
+        bin/reek
+    done
+    return 0
+  fi
+
+  run_cmd "${suite_name}-reek" bin/reek
+}
+
+if [ "${0##*/}" = "run-reek-all" ]; then
+  run_suite "kaal" "core/kaal"
+  run_suite "kaal-activerecord" "core/kaal-activerecord"
+  run_suite "kaal-sequel" "core/kaal-sequel"
+  run_suite "kaal-rails" "gems/kaal-rails"
+fi

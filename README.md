@@ -1,141 +1,211 @@
 # Kaal
 
-> Kaal is a distributed cron scheduler for Ruby that safely executes scheduled tasks across multiple nodes.
+> Distributed cron scheduling for Ruby, split into a core engine plus datastore and framework integration gems.
 
 [![Gem](https://img.shields.io/gem/v/kaal.svg?style=flat-square)](https://rubygems.org/gems/kaal)
 [![CI](https://github.com/Code-Vedas/kaal/actions/workflows/ci.yml/badge.svg)](https://github.com/Code-Vedas/kaal/actions/workflows/ci.yml)
 [![Maintainability](https://qlty.sh/gh/Code-Vedas/projects/kaal/maintainability.svg)](https://qlty.sh/gh/Code-Vedas/projects/kaal)
 [![Code Coverage](https://qlty.sh/gh/Code-Vedas/projects/kaal/coverage.svg)](https://qlty.sh/gh/Code-Vedas/projects/kaal)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-12%2B-336791?style=flat-square&logo=postgresql&logoColor=white)
-![Redis](https://img.shields.io/badge/Redis-6%2B-d92b2b?style=flat-square&logo=redis&logoColor=white)
 
----
-
-## 🧭 Project Structure
-
-This repository contains the **Kaal** gem and its documentation site.
+## Project Structure
 
 ```text
-
 /repo-root
-├── .github/              # CI workflows, issue templates
-├── kaal/           # Gem source (lib/, bin/, gemspec)
-├── docs/                 # Documentation site (Jekyll + Markdown)
-└── README.md             # This file
+├── .github/               
+├── core/                   # Core engine and datastore gems
+│   ├── kaal/.              #   Core engine gem 
+│   ├── kaal-sequel/        #   Sequel datastore adapter gem
+│   └── kaal-activerecord/  #   Active Record datastore adapter gem
+├── gems/                   # Framework integration gems
+│   └── kaal-rails/         #   Rails plugin gem
+├── docs/                   # Documentation source files
+├── danger/                 # Danger configuration and plugins
+└── README.md
 ```
 
----
+## Package Layout
 
-## 🧩 What It Does
+- `core/kaal`
+  Core engine gem. Owns runtime coordination, registry contracts, CLI, memory backend, and redis backend.
+- `core/kaal-sequel`
+  Sequel-backed datastore adapter. Owns SQL persistence, SQL lock adapters, and SQL migrations/templates for Sequel-based installs.
+- `core/kaal-activerecord`
+  Active Record-backed datastore adapter. Owns Active Record models, registries, SQL lock adapters, and migration templates.
+- `gems/kaal-rails`
+  Rails plugin gem. Depends on `kaal` and `kaal-activerecord`, and owns Railtie, generators, tasks, and the Rails dummy app.
 
-`kaal` lets you **register, schedule, and safely run recurring tasks** across multiple Ruby nodes.  
-It ensures **exactly-once** dispatching per cron tick using distributed locks via **Redis** or **PostgreSQL advisory locks**.
+## What Kaal Does
 
-It’s **scheduler-agnostic** and works with any background job system (`ActiveJob`, `Sidekiq`, `Resque`, etc.), while exposing a clean Ruby API, CLI, and Rails integration.
+Kaal lets you register recurring jobs and coordinate dispatch across multiple processes or nodes without duplicate execution for a given cron fire time.
 
----
+The engine is framework-agnostic. You choose the datastore and framework integration that fits your app.
 
-## 📚 Documentation
+## Install Surfaces
 
-Comprehensive guides are published at:
+Use the gem surface that matches your runtime:
 
-👉 **[https://kaal.codevedas.com](https://kaal.codevedas.com)**
+- `kaal`
+  Plain Ruby with in-process memory coordination or Redis coordination.
+- `kaal` + `kaal-sequel`
+  Plain Ruby with Sequel-backed SQL persistence.
+- `kaal` + `kaal-activerecord`
+  Plain Ruby with Active Record-backed SQL persistence.
+- `kaal-rails`
+  Rails plugin with Active Record auto-wiring, generators, and rake tasks.
 
-| Section                                                      | Description                           |
-| ------------------------------------------------------------ | ------------------------------------- |
-| [Overview & Motivation](https://kaal.codevedas.com/overview) | Why Kaal exists                       |
-| [Installation & Setup](https://kaal.codevedas.com/install)   | Gem setup and initializer             |
-| [Usage](https://kaal.codevedas.com/usage)                    | Registering jobs, CLI, and Rake tasks |
-| [FAQ / Troubleshooting](https://kaal.codevedas.com/faq)      | Common issues and fixes               |
-
----
-
-## 🛠️ Local Development
-
-### 1. Clone and setup
-
-```bash
-git clone https://github.com/CodevedasInc/kaal.git
-cd kaal
-bundle install
-```
-
-### 2. Run specs
-
-```bash
-bin/rspec-unit
-```
-
-### 3. Lint and format
-
-```bash
-bin/rubocop
-```
-
-### 4. Reek
-
-```bash
-bin/Reek
-```
-
----
-
-## 🧪 Running the Gem Locally
-
-You can load a local version of the gem in a test Rails app:
-
-```bash
-gem build kaal.gemspec
-gem install ./kaal-0.1.0.gem
-```
-
-Or reference it directly in another app’s `Gemfile`:
+Plain Ruby with memory or Redis:
 
 ```ruby
-gem "kaal", path: "../kaal/kaal"
+gem 'kaal'
 ```
 
----
+Plain Ruby with Sequel-backed SQL persistence:
 
-## 🚀 Docs Site (Jekyll)
+```ruby
+gem 'kaal'
+gem 'kaal-sequel'
+```
 
-The `docs/` directory is a Jekyll site used for GitHub Pages.
+Rails with Active Record:
 
-### Run locally
+```ruby
+gem 'kaal-rails'
+```
+
+Plain Ruby with Active Record-backed SQL persistence:
+
+```ruby
+gem 'kaal'
+gem 'kaal-activerecord'
+```
+
+## Usage Paths
+
+Memory:
+
+```ruby
+require 'kaal'
+
+Kaal.configure do |config|
+  config.backend = Kaal::Backend::MemoryAdapter.new
+  config.scheduler_config_path = 'config/scheduler.yml'
+end
+```
+
+Redis:
+
+```ruby
+require 'kaal'
+require 'redis'
+
+redis = Redis.new(url: ENV.fetch('REDIS_URL'))
+
+Kaal.configure do |config|
+  config.backend = Kaal::Backend::RedisAdapter.new(redis)
+  config.scheduler_config_path = 'config/scheduler.yml'
+end
+```
+
+Sequel:
+
+```ruby
+require 'kaal'
+require 'kaal/sequel'
+require 'sequel'
+
+database = Sequel.connect(adapter: 'sqlite', database: 'db/kaal.sqlite3')
+
+Kaal.configure do |config|
+  config.backend = Kaal::Backend::DatabaseAdapter.new(database)
+  config.scheduler_config_path = 'config/scheduler.yml'
+end
+```
+
+Active Record:
+
+```ruby
+require 'kaal'
+require 'kaal/active_record'
+
+Kaal::ActiveRecord::ConnectionSupport.configure!(
+  adapter: 'sqlite3',
+  database: 'db/kaal.sqlite3'
+)
+
+Kaal.configure do |config|
+  config.backend = Kaal::ActiveRecord::DatabaseAdapter.new
+  config.scheduler_config_path = 'config/scheduler.yml'
+end
+```
+
+Rails:
+
+```ruby
+gem 'kaal-rails'
+```
 
 ```bash
-cd docs
-bundle install
-bundle exec jekyll serve
+bundle exec rails generate kaal:install --backend=sqlite
+bundle exec rails db:migrate
 ```
 
-Then open:
-👉 [http://localhost:4000](http://localhost:4000)
+Or:
 
----
+```bash
+bundle exec rails generate kaal:install --backend=postgres
+bundle exec rails db:migrate
+```
 
-## ⚙️ Continuous Integration
+```bash
+bundle exec rails generate kaal:install --backend=mysql
+bundle exec rails db:migrate
+```
 
-GitHub Actions workflows include:
+## Local Development
 
-| Workflow              | Purpose                                           |
-| --------------------- | ------------------------------------------------- |
-| `ci.yml`              | Runs tests (RSpec + RuboCop) on all Ruby versions |
-| `release.yml`         | Builds and publishes gem to RubyGems              |
-| `jekyll-gh-pages.yml` | Builds and deploys docs to GitHub Pages           |
+Run checks from the relevant gem directory.
 
----
+Examples:
 
-## Contributing, Security, Conduct
+```bash
+cd core/kaal
+bin/rspec-unit
+bin/rubocop
+bin/reek
+```
 
-- **Contributing:** see [CONTRIBUTING.md](./CONTRIBUTING.md)
-- **Security policy:** see [SECURITY.md](./SECURITY.md)
-- **Code of Conduct:** see [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
+```bash
+cd core/kaal-sequel
+bin/rspec-unit
+bin/rspec-e2e sqlite
+```
 
----
+```bash
+cd core/kaal-activerecord
+bin/rspec-unit
+bin/rspec-e2e sqlite
+```
 
-## 📄 License
+## Documentation
 
-Released under the [MIT License](LICENSE)
-© 2025 **Codevedas Inc.** — All rights reserved.
+Project docs are published at:
+
+<https://kaal.codevedas.com>
+
+Key pages:
+
+- [Overview](https://kaal.codevedas.com/overview)
+- [Installation](https://kaal.codevedas.com/install)
+- [Configuration](https://kaal.codevedas.com/configuration)
+- [Usage](https://kaal.codevedas.com/usage)
+
+## Contributing
+
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
+- [SECURITY.md](./SECURITY.md)
+- [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
+
+## License
+
+Released under the [MIT License](LICENSE).

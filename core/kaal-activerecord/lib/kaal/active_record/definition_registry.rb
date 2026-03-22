@@ -1,0 +1,79 @@
+# frozen_string_literal: true
+
+# Copyright Codevedas Inc. 2025-present
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+require 'json'
+require 'kaal/definition/registry'
+require 'kaal/definition/persistence_helpers'
+
+module Kaal
+  module ActiveRecord
+    # Active Record-backed registry for scheduler definitions.
+    class DefinitionRegistry < Kaal::Definition::Registry
+      def initialize(connection: nil, model: DefinitionRecord)
+        super()
+        ConnectionSupport.configure!(connection)
+        @model = model
+      end
+
+      def upsert_definition(key:, cron:, enabled: true, source: 'code', metadata: {})
+        record = @model.find_or_initialize_by(key: key)
+        existing = record.persisted? ? { enabled: record.enabled, disabled_at: record.disabled_at } : nil
+        now = Time.now.utc
+        record.cron = cron
+        record.enabled = enabled
+        record.source = source
+        record.metadata = JSON.generate(metadata || {})
+        record.created_at ||= now
+        record.updated_at = now
+        record.disabled_at = Kaal::Definition::PersistenceHelpers.disabled_at_for(existing, enabled, now)
+        record.save!
+        normalize(record)
+      end
+
+      def remove_definition(key)
+        record = @model.find_by(key: key)
+        return nil unless record
+
+        normalized = normalize(record)
+        record.destroy!
+        normalized
+      end
+
+      def find_definition(key)
+        normalize(@model.find_by(key: key))
+      end
+
+      def all_definitions
+        @model.order(:key).map { |record| normalize(record) }
+      end
+
+      def enabled_definitions
+        @model.where(enabled: true).order(:key).map { |record| normalize(record) }
+      end
+
+      private
+
+      def normalize(record)
+        return nil unless record
+
+        normalize_definition_record(record)
+      end
+
+      def normalize_definition_record(record)
+        {
+          key: record.key,
+          cron: record.cron,
+          enabled: record.enabled ? true : false,
+          source: record.source,
+          metadata: Kaal::Definition::PersistenceHelpers.parse_metadata(record.metadata),
+          created_at: record.created_at,
+          updated_at: record.updated_at,
+          disabled_at: record.disabled_at
+        }
+      end
+    end
+  end
+end
