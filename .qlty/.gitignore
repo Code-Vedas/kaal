@@ -5,3 +5,6 @@
 !hooks/**
 !qlty.toml
 !.gitignore
+
+# rspec failure tracking
+.rspec_status
