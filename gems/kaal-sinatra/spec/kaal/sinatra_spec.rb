@@ -57,6 +57,12 @@ RSpec.describe Kaal::Sinatra do
 
     Kaal.reset_configuration!
     expect { described_class.configure_backend!(database:, adapter: 'oracle') }.to raise_error(ArgumentError, /Unsupported Sinatra datastore backend/)
+
+    Kaal.reset_configuration!
+    expect { described_class.configure_backend!(adapter: 'sqlite') }.to raise_error(
+      ArgumentError,
+      /database is required when adapter is provided/
+    )
   ensure
     database&.disconnect
   end
@@ -164,6 +170,15 @@ RSpec.describe Kaal::Sinatra do
     allow(described_class).to receive(:load_scheduler_file!)
 
     described_class.register!(fake_app_class, scheduler_config_path: nil)
+
+    expect(Kaal.configuration.scheduler_config_path).to eq('config/scheduler.yml')
+  end
+
+  it 'preserves the default scheduler path when register! is called with blank scheduler_config_path' do
+    fake_app_class.root = Dir.pwd
+    allow(described_class).to receive(:load_scheduler_file!)
+
+    described_class.register!(fake_app_class, scheduler_config_path: '   ')
 
     expect(Kaal.configuration.scheduler_config_path).to eq('config/scheduler.yml')
   end

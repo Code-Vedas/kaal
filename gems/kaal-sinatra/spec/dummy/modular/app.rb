@@ -1,5 +1,10 @@
 # frozen_string_literal: true
 
+# Copyright Codevedas Inc. 2025-present
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
 $LOAD_PATH.unshift(ENV.fetch('KAAL_SINATRA_LIB_PATH')) unless $LOAD_PATH.include?(ENV.fetch('KAAL_SINATRA_LIB_PATH'))
 
 require 'sinatra/base'

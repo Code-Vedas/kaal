@@ -24,7 +24,8 @@ module Kaal
         adapter: nil
       )
         configuration = Kaal.configuration
-        configuration.scheduler_config_path = scheduler_config_path if scheduler_config_path
+        normalized_scheduler_config_path = scheduler_config_path.to_s.strip
+        configuration.scheduler_config_path = normalized_scheduler_config_path unless normalized_scheduler_config_path.empty?
         configuration.namespace = namespace unless namespace.nil?
 
         configure_backend!(backend:, database:, redis:, adapter:, configuration:)
@@ -43,6 +44,8 @@ module Kaal
 
         explicit_adapter = adapter.to_s.strip
         unless explicit_adapter.empty?
+          raise ArgumentError, 'database is required when adapter is provided' unless database
+
           backend_name = normalize_backend_name(explicit_adapter)
           raise ArgumentError, "Unsupported Sinatra datastore backend: #{adapter.inspect}" unless backend_name
 

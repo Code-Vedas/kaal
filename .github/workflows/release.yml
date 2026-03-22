@@ -123,3 +123,28 @@ jobs:
         run: |
           gem build kaal-rails.gemspec
           gem push kaal-rails-*.gem
+
+  publish_kaal_sinatra:
+    name: Publish gems/kaal-sinatra
+    runs-on: ubuntu-latest
+    needs: [publish_kaal_rails]
+    permissions:
+      contents: write
+      id-token: write
+    environment: release
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+          working-directory: ${{ github.workspace }}/gems/kaal-sinatra
+      - name: Configure RubyGems Credentials
+        uses: rubygems/configure-rubygems-credentials@84d1838d405cabde880feada9a63c0b49f659ebd
+      - name: Build and push gem
+        working-directory: ${{ github.workspace }}/gems/kaal-sinatra
+        run: |
+          gem build kaal-sinatra.gemspec
+          gem push kaal-sinatra-*.gem
