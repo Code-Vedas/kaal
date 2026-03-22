@@ -21,6 +21,10 @@ updates:
     schedule:
       interval: daily
   - package-ecosystem: bundler
+    directory: /gems/kaal-sinatra
+    schedule:
+      interval: daily
+  - package-ecosystem: bundler
     directory: /docs
     schedule:
       interval: daily

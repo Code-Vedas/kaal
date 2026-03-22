@@ -34,6 +34,8 @@
   Active Record-backed datastore adapter. Owns Active Record models, registries, SQL lock adapters, and migration templates.
 - `gems/kaal-rails`
   Rails plugin gem. Depends on `kaal` and `kaal-activerecord`, and owns Railtie, generators, tasks, and the Rails dummy app.
+- `gems/kaal-sinatra`
+  Sinatra integration gem. Supports memory, redis, and Sequel-backed SQL through explicit Sinatra boot wiring.
 
 ## What Kaal Does
 
@@ -53,6 +55,8 @@ Use the gem surface that matches your runtime:
   Plain Ruby with Active Record-backed SQL persistence.
 - `kaal-rails`
   Rails plugin with Active Record auto-wiring, generators, and rake tasks.
+- `kaal-sinatra`
+  Sinatra integration with memory, redis, or SQL backends.
 
 Plain Ruby with memory or Redis:
 
@@ -71,6 +75,12 @@ Rails with Active Record:
 
 ```ruby
 gem 'kaal-rails'
+```
+
+Sinatra with any supported backend:
+
+```ruby
+gem 'kaal-sinatra'
 ```
 
 Plain Ruby with Active Record-backed SQL persistence:
@@ -150,6 +160,20 @@ bundle exec rails generate kaal:install --backend=sqlite
 bundle exec rails db:migrate
 ```
 
+Sinatra with memory:
+
+```ruby
+require 'sinatra/base'
+require 'kaal/sinatra'
+
+class App < Sinatra::Base
+  register Kaal::Sinatra::Extension
+
+  kaal backend: Kaal::Backend::MemoryAdapter.new,
+       scheduler_config_path: 'config/scheduler.yml'
+end
+```
+
 Or:
 
 ```bash
@@ -184,6 +208,13 @@ bin/rspec-e2e sqlite
 ```bash
 cd core/kaal-activerecord
 bin/rspec-unit
+bin/rspec-e2e sqlite
+```
+
+```bash
+cd gems/kaal-sinatra
+bin/rspec-unit
+bin/rspec-e2e memory
 bin/rspec-e2e sqlite
 ```
 

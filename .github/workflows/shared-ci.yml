@@ -61,6 +61,9 @@ jobs:
           if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
             BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_edge.gemfile" bundle install
           fi
+
+          cd "${GITHUB_WORKSPACE}/gems/kaal-sinatra"
+          bundle install
       - name: Run RuboCop
         run: scripts/run-rubocop-all
 
@@ -112,6 +115,9 @@ jobs:
           if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
             BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_edge.gemfile" bundle install
           fi
+
+          cd "${GITHUB_WORKSPACE}/gems/kaal-sinatra"
+          bundle install
       - name: Run Reek
         run: scripts/run-reek-all
 
@@ -163,6 +169,9 @@ jobs:
           if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
             BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_edge.gemfile" bundle install
           fi
+
+          cd "${GITHUB_WORKSPACE}/gems/kaal-sinatra"
+          bundle install
       - name: Run unit tests
         run: scripts/run-rspec-unit-all
       - name: Publish coverage to Qlty
@@ -175,6 +184,7 @@ jobs:
             ${{ github.workspace }}/core/kaal-sequel/coverage/.resultset.json
             ${{ github.workspace }}/core/kaal-activerecord/coverage/.resultset.json
             ${{ github.workspace }}/gems/kaal-rails/coverage/.resultset.json
+            ${{ github.workspace }}/gems/kaal-sinatra/coverage/.resultset.json
 
   test_e2e:
     name: E2E Tests · Ruby ${{ matrix.ruby_version }}
@@ -260,5 +270,8 @@ jobs:
           if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
             BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_edge.gemfile" bundle install
           fi
+
+          cd "${GITHUB_WORKSPACE}/gems/kaal-sinatra"
+          bundle install
       - name: Run e2e tests
         run: scripts/run-rspec-e2e-all
