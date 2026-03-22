@@ -25,8 +25,9 @@ module Kaal
       )
         configuration = Kaal.configuration
         normalized_scheduler_config_path = scheduler_config_path.to_s.strip
+        normalized_namespace = namespace.to_s.strip
         configuration.scheduler_config_path = normalized_scheduler_config_path unless normalized_scheduler_config_path.empty?
-        configuration.namespace = namespace unless namespace.nil?
+        configuration.namespace = normalized_namespace unless normalized_namespace.empty?
 
         configure_backend!(backend:, database:, redis:, adapter:, configuration:)
         load_scheduler_file!(root: root_path_for(app), environment: environment_name_for(app))
@@ -158,8 +159,8 @@ module Kaal
           if Kaal.running?
             begin
               stop!
-            rescue StandardError
-              nil
+            rescue StandardError => e
+              Kaal.configuration.logger&.error("Failed to stop Kaal during Sinatra shutdown: #{e.message}")
             end
           end
         end

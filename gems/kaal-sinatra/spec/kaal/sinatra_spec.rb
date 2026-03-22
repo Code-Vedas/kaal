@@ -183,6 +183,15 @@ RSpec.describe Kaal::Sinatra do
     expect(Kaal.configuration.scheduler_config_path).to eq('config/scheduler.yml')
   end
 
+  it 'preserves the default namespace when register! is called with a blank namespace' do
+    fake_app_class.root = Dir.pwd
+    allow(described_class).to receive(:load_scheduler_file!)
+
+    described_class.register!(fake_app_class, namespace: '   ')
+
+    expect(Kaal.configuration.namespace).to eq('kaal')
+  end
+
   it 'uses an explicit backend object passed to register!' do
     fake_app_class.root = Dir.pwd
     backend = Kaal::Backend::MemoryAdapter.new
@@ -293,6 +302,8 @@ RSpec.describe Kaal::Sinatra do
 
   it 'avoids duplicate shutdown hook registration and swallows stop errors in the managed hook' do
     described_class.instance_variable_set(:@shutdown_hook_installed, nil)
+    logger = instance_double(Logger, error: nil)
+    Kaal.configuration.logger = logger
 
     allow(Kernel).to receive(:at_exit).and_yield
     allow(Kaal).to receive(:running?).and_return(true)
@@ -301,6 +312,20 @@ RSpec.describe Kaal::Sinatra do
     expect { described_class.send(:install_shutdown_hook) }.not_to raise_error
     expect { described_class.send(:install_shutdown_hook) }.not_to raise_error
     expect(Kernel).to have_received(:at_exit).once
+    expect(logger).to have_received(:error).with(/Failed to stop Kaal during Sinatra shutdown: stop failure/)
+  ensure
+    described_class.instance_variable_set(:@shutdown_hook_installed, nil)
+  end
+
+  it 'swallows managed shutdown stop errors when no logger is configured' do
+    described_class.instance_variable_set(:@shutdown_hook_installed, nil)
+    Kaal.configuration.logger = nil
+
+    allow(Kernel).to receive(:at_exit).and_yield
+    allow(Kaal).to receive(:running?).and_return(true)
+    allow(described_class).to receive(:stop!).and_raise(StandardError, 'stop failure')
+
+    expect { described_class.send(:install_shutdown_hook) }.not_to raise_error
   ensure
     described_class.instance_variable_set(:@shutdown_hook_installed, nil)
   end
