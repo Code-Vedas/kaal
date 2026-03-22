@@ -86,6 +86,26 @@ bundle exec rails generate kaal:install --backend=mysql
 bundle exec rails db:migrate
 ```
 
+## Sinatra
+
+```ruby
+gem "kaal-sinatra"
+```
+
+Use `kaal-sinatra` when you want a supported Sinatra setup path across memory, redis, or SQL backends.
+
+Typical setup:
+
+- choose one backend path:
+  - `backend:` for memory or a custom backend object
+  - `redis:` for Redis-backed coordination
+  - `database:` for Sequel-backed SQL
+- provide `config/scheduler.yml`
+- wire the app with `Kaal::Sinatra.register!` or the Sinatra extension
+- start the scheduler explicitly only when you want the web process to host it
+
+For SQL persistence, create the Kaal Sequel tables through migrations.
+
 ## Core backend choices
 
 - `memory`: no external store

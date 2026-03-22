@@ -125,6 +125,85 @@ bundle exec rails db:migrate
 
 In Rails, the backend is auto-selected from the configured database adapter unless you explicitly override it.
 
+### Sinatra
+
+Use `kaal-sinatra` with the backend style you want.
+
+Memory:
+
+```ruby
+require "sinatra/base"
+require "kaal/sinatra"
+
+class App < Sinatra::Base
+  register Kaal::Sinatra::Extension
+
+  kaal backend: Kaal::Backend::MemoryAdapter.new,
+       scheduler_config_path: "config/scheduler.yml",
+       namespace: "my-app",
+       start_scheduler: false
+end
+```
+
+Redis:
+
+```ruby
+require "sinatra/base"
+require "redis"
+require "kaal/sinatra"
+
+class App < Sinatra::Base
+  redis = Redis.new(url: ENV.fetch("REDIS_URL"))
+
+  register Kaal::Sinatra::Extension
+
+  kaal redis: redis,
+       scheduler_config_path: "config/scheduler.yml",
+       namespace: "my-app",
+       start_scheduler: false
+end
+```
+
+SQL:
+
+```ruby
+require "sinatra/base"
+require "sequel"
+require "kaal/sinatra"
+
+class App < Sinatra::Base
+  database = Sequel.connect(ENV.fetch("DATABASE_URL"))
+
+  register Kaal::Sinatra::Extension
+
+  kaal database: database,
+       adapter: "postgres",
+       scheduler_config_path: "config/scheduler.yml",
+       namespace: "my-app",
+       start_scheduler: false
+end
+```
+
+For classic Sinatra apps, use explicit registration:
+
+```ruby
+require "sinatra"
+require "sequel"
+require "kaal/sinatra"
+
+database = Sequel.connect(ENV.fetch("DATABASE_URL"))
+
+Kaal::Sinatra.register!(
+  settings,
+  database: database,
+  scheduler_config_path: "config/scheduler.yml",
+  namespace: "my-app",
+  start_scheduler: false
+)
+```
+
+`kaal-sinatra` loads `config/scheduler.yml` relative to the Sinatra app root and only starts the scheduler if you opt in.
+
 ## CLI
 
 ```bash
@@ -156,5 +235,6 @@ ExecStartPre=/usr/bin/bash -lc 'bundle exec kaal status'
 - Use `kaal-sequel` for Sequel-backed SQL persistence in plain Ruby apps.
 - Use `kaal-activerecord` for Active Record-backed SQL persistence in plain Ruby apps.
 - Use `kaal-rails` for Rails apps; it pulls in `kaal-activerecord` and provides Rails-native integration.
+- Use `kaal-sinatra` for Sinatra apps; it provides explicit Sinatra boot and lifecycle wiring across memory, redis, and SQL backends.
 
 For plain Ruby jobs dispatched through `.perform(*args, **kwargs)`, Kaal considers the run successful unless the job raises. Return values are not inspected.

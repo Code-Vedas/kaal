@@ -17,6 +17,7 @@ nav_order: 1
 [![Gem Version](https://img.shields.io/gem/v/kaal-sequel?style=flat-square&logo=rubygems&label=kaal-sequel)](https://rubygems.org/gems/kaal-sequel){:target="_blank"}
 [![Gem Version](https://img.shields.io/gem/v/kaal-activerecord?style=flat-square&logo=rubygems&label=kaal-activerecord)](https://rubygems.org/gems/kaal-activerecord){:target="_blank"}
 [![Gem Version](https://img.shields.io/gem/v/kaal-rails?style=flat-square&logo=rubygems&label=kaal-rails)](https://rubygems.org/gems/kaal-rails){:target="_blank"}
+[![Gem Version](https://img.shields.io/gem/v/kaal-sinatra?style=flat-square&logo=rubygems&label=kaal-sinatra)](https://rubygems.org/gems/kaal-sinatra){:target="_blank"}
 [![Code Coverage](https://qlty.sh/gh/Code-Vedas/projects/kaal/coverage.svg)](https://qlty.sh/gh/Code-Vedas/projects/kaal)
 [![Maintainability](https://qlty.sh/gh/Code-Vedas/projects/kaal/maintainability.svg)](https://qlty.sh/gh/Code-Vedas/projects/kaal)
 
@@ -25,6 +26,7 @@ nav_order: 1
   - [`core/kaal-sequel/`](https://github.com/Code-Vedas/kaal/tree/main/core/kaal-sequel)
   - [`core/kaal-activerecord/`](https://github.com/Code-Vedas/kaal/tree/main/core/kaal-activerecord)
   - [`gems/kaal-rails/`](https://github.com/Code-Vedas/kaal/tree/main/gems/kaal-rails)
+  - [`gems/kaal-sinatra/`](https://github.com/Code-Vedas/kaal/tree/main/gems/kaal-sinatra)
 
 ---
 
@@ -49,6 +51,12 @@ Rails with Active Record:
 gem 'kaal-rails'
 ```
 
+Sinatra with any supported backend:
+
+```ruby
+gem 'kaal-sinatra'
+```
+
 ```bash
 bundle install
 bundle exec kaal init --backend=memory
@@ -65,8 +73,9 @@ bundle exec kaal init --backend=memory
 
 - **Scheduler-agnostic**: Works with any job system (`ActiveJob`, `Sidekiq`, `Resque`, etc.)
 - **Multi-node safe**: Ensures single-dispatch execution across all app instances
-- **Split packages**: engine, datastore adapters, and Rails integration are shipped separately
+- **Split packages**: engine, datastore adapters, and framework integrations are shipped separately
 - **Backend adapters**: memory and Redis live in core; SQL persistence lives in `kaal-sequel` or `kaal-activerecord`
+- **Framework addons**: `kaal-rails` for Rails and `kaal-sinatra` for Sinatra
 - **Registry & API**: Centralized job registration with deterministic idempotency keys
 - **Dispatch recovery**: Replays missed runs within a configurable lookback window
 - **Cron utilities**: Validate, lint, simplify, and humanize via `Kaal.valid?`, `Kaal.lint`, `Kaal.simplify`, and `Kaal.to_human`

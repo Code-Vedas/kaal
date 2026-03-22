@@ -29,4 +29,5 @@ if [ "${0##*/}" = "run-reek-all" ]; then
   run_suite "kaal-activerecord" "core/kaal-activerecord"
   run_suite "kaal-sequel" "core/kaal-sequel"
   run_suite "kaal-rails" "gems/kaal-rails"
+  run_suite "kaal-sinatra" "gems/kaal-sinatra"
 fi
