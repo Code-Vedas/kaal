@@ -6,6 +6,9 @@
 # LICENSE file in the root directory of this source tree.
 require 'open3'
 require 'pathname'
+require 'fileutils'
+require 'sequel'
+require 'tmpdir'
 require 'uri'
 
 module KaalSinatraDummyAppSupport
@@ -123,8 +126,9 @@ module KaalSinatraDummyAppSupport
     end
   end
 
-  def reset_database!(database_url)
+  def reset_database!(database_url, env: ENV)
     uri = URI.parse(database_url)
+    ensure_safe_database_reset!(uri.path.delete_prefix('/'), env:)
 
     case uri.scheme
     when 'postgres', 'postgresql'
@@ -134,6 +138,18 @@ module KaalSinatraDummyAppSupport
     else
       raise ArgumentError, "Unsupported database URL for reset: #{database_url.inspect}"
     end
+  end
+
+  def ensure_safe_database_reset!(database_name, env: ENV)
+    return if env['KAAL_ALLOW_DATABASE_RESET'] == '1'
+    return if test_database_name?(database_name)
+
+    raise ArgumentError,
+          "Refusing to reset non-test database #{database_name.inspect}; set KAAL_ALLOW_DATABASE_RESET=1 to override"
+  end
+
+  def test_database_name?(database_name)
+    database_name.to_s.downcase.match?(/(?:\A|[_-])(test|spec)(?:[_-]|\z)/)
   end
 
   def reset_postgres_database!(uri)
