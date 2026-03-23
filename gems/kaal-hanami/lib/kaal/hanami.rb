@@ -83,7 +83,7 @@ module Kaal
       def load_scheduler_file!(root:, environment: nil)
         runtime_context = Kaal::Runtime::RuntimeContext.new(
           root_path: root,
-          environment_name: environment || Kaal::Runtime::RuntimeContext.environment_name_from(ENV)
+          environment_name: runtime_environment_name(environment)
         )
 
         Kaal::Runtime::SchedulerBootLoader.new(
@@ -153,6 +153,16 @@ module Kaal
 
         app_environment = app.config.env if app.respond_to?(:config) && app.config.respond_to?(:env)
         return app_environment.to_s unless app_environment.to_s.empty?
+
+        runtime_environment_name(nil)
+      end
+
+      def runtime_environment_name(environment)
+        explicit_environment = environment.to_s.strip
+        return explicit_environment unless explicit_environment.empty?
+
+        hanami_env = ENV['HANAMI_ENV'].to_s.strip
+        return hanami_env unless hanami_env.empty?
 
         return ::Hanami.env.to_s if defined?(::Hanami) && ::Hanami.respond_to?(:env)
 

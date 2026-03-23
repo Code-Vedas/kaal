@@ -219,6 +219,9 @@ RSpec.describe Kaal::Hanami do
         File.join(root, 'config', 'scheduler.yml'),
         YAML.dump(
           'defaults' => {
+            'jobs' => []
+          },
+          'test' => {
             'jobs' => [
               {
                 'key' => 'hanami:load',
@@ -267,9 +270,23 @@ RSpec.describe Kaal::Hanami do
   it 'falls back to runtime context when Hanami.env is unavailable' do
     plain_app = Object.new
 
+    original_hanami_env = ENV.fetch('HANAMI_ENV', nil)
+    ENV['HANAMI_ENV'] = 'test'
     allow(Hanami).to receive(:respond_to?).with(:env).and_return(false)
 
-    expect(described_class.send(:environment_name_for, plain_app, environment: nil)).to eq('development')
+    expect(described_class.send(:environment_name_for, plain_app, environment: nil)).to eq('test')
+  ensure
+    ENV['HANAMI_ENV'] = original_hanami_env
+  end
+
+  it 'falls back to generic runtime environment detection when Hanami env sources are unavailable' do
+    original_hanami_env = ENV.fetch('HANAMI_ENV', nil)
+    ENV.delete('HANAMI_ENV')
+    allow(Hanami).to receive(:respond_to?).with(:env).and_return(false)
+
+    expect(described_class.send(:runtime_environment_name, nil)).to eq('development')
+  ensure
+    ENV['HANAMI_ENV'] = original_hanami_env
   end
 
   it 'installs a shutdown hook only when managed startup is requested' do
