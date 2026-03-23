@@ -1,17 +1,14 @@
 {
   "folders": [
-    {
-      "name": "docs",
-      "path": "docs"
-    },
-    {
-      "name": "kaal",
-      "path": "kaal"
-    },
-    {
-      "name": "root",
-      "path": "."
-    }
+    { "name": "docs", "path": "docs" },
+    { "name": "kaal", "path": "core/kaal" },
+    { "name": "kaal-activerecord", "path": "core/kaal-activerecord" },
+    { "name": "kaal-sequel", "path": "core/kaal-sequel" },
+    { "name": "kaal-hanami", "path": "gems/kaal-hanami" },
+    { "name": "kaal-rails", "path": "gems/kaal-rails" },
+    { "name": "kaal-roda", "path": "gems/kaal-roda" },
+    { "name": "kaal-sinatra", "path": "gems/kaal-sinatra" },
+    { "name": "root", "path": "." },
   ],
   "settings": {
     "editor.formatOnSave": true,
@@ -23,10 +20,10 @@
       "*.ru": "ruby",
       "*.erb": "erb",
       "*.arb": "json",
-      "*.rb": "ruby"
+      "*.rb": "ruby",
     },
     "emmet.includeLanguages": {
-      "erb": "html"
+      "erb": "html",
     },
     "rubyLsp": {
       "enabledFeatures": {
@@ -47,20 +44,20 @@
         "definition": true,
         "workspaceSymbol": true,
         "signatureHelp": true,
-        "typeHierarchy": true
+        "typeHierarchy": true,
       },
       "erbSupport": true,
       "featureFlags": {
-        "all": true
+        "all": true,
       },
       "sigOpacityLevel": "1",
       "formatter": "auto",
       "addonSettings": {
         "Ruby LSP RSpec": {
           "enabled": true,
-          "debug": true
-        }
-      }
+          "debug": true,
+        },
+      },
     },
 
     "[ruby]": {
@@ -73,17 +70,17 @@
       "files.insertFinalNewline": true,
       "files.trimFinalNewlines": true,
       "editor.rulers": [120],
-      "editor.semanticHighlighting.enabled": true
+      "editor.semanticHighlighting.enabled": true,
     },
     "[erb]": {
       "editor.formatOnSave": true,
       "editor.defaultFormatter": "elia.erb-formatter",
-      "editor.formatOnType": true
+      "editor.formatOnType": true,
     },
     "[gemfile]": {
-      "editor.formatOnSave": true
+      "editor.formatOnSave": true,
     },
     "erb-formatter.commandPath": "wrapped-erb-formatter",
-    "erb-formatter.lineLength": 160
-  }
+    "erb-formatter.lineLength": 160,
+  },
 }
