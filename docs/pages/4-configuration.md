@@ -157,6 +157,60 @@ Kaal.configure do |config|
 end
 ```
 
+## Roda addon behavior
+
+When you use `kaal-roda`, the addon chooses the backend in this order:
+
+- preserve `Kaal.configuration.backend` if one is already set
+- use `backend:` when you pass an explicit backend object
+- use `redis:` when you pass a redis client
+- use `database:` and infer SQLite / PostgreSQL / MySQL from the Sequel adapter
+- fall back to `Kaal::Backend::MemoryAdapter` when nothing else is provided
+
+For SQL-backed Roda apps, the addon selects a backend from the Sequel adapter unless you pass `adapter:` explicitly:
+
+- SQLite -> `Kaal::Backend::DatabaseAdapter`
+- PostgreSQL -> `Kaal::Backend::PostgresAdapter`
+- MySQL -> `Kaal::Backend::MySQLAdapter`
+
+Typical setup:
+
+```ruby
+require "kaal/roda"
+
+class App < Roda
+  plugin :kaal
+
+  kaal backend: Kaal::Backend::MemoryAdapter.new,
+       scheduler_config_path: "config/scheduler.yml",
+       namespace: "my-app",
+       start_scheduler: false
+end
+```
+
+Redis setup:
+
+```ruby
+require "redis"
+
+redis = Redis.new(url: ENV.fetch("REDIS_URL"))
+
+class App < Roda
+  plugin :kaal
+
+  kaal redis: redis,
+       scheduler_config_path: "config/scheduler.yml"
+end
+```
+
+Explicit backend overrides still win:
+
+```ruby
+Kaal.configure do |config|
+  config.backend = Kaal::Backend::MemoryAdapter.new
+end
+```
+
 ## Key Options
 
 | Setting                        | Default                  | Meaning                                        |

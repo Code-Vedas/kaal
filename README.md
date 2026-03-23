@@ -18,7 +18,9 @@
 │   ├── kaal-sequel/        #   Sequel datastore adapter gem
 │   └── kaal-activerecord/  #   Active Record datastore adapter gem
 ├── gems/                   # Framework integration gems
-│   └── kaal-rails/         #   Rails plugin gem
+│   ├── kaal-rails/         #   Rails plugin gem
+│   ├── kaal-roda/          #   Roda plugin gem
+│   └── kaal-sinatra/       #   Sinatra plugin gem
 ├── docs/                   # Documentation source files
 ├── danger/                 # Danger configuration and plugins
 └── README.md
@@ -34,6 +36,8 @@
   Active Record-backed datastore adapter. Owns Active Record models, registries, SQL lock adapters, and migration templates.
 - `gems/kaal-rails`
   Rails plugin gem. Depends on `kaal` and `kaal-activerecord`, and owns Railtie, generators, tasks, and the Rails dummy app.
+- `gems/kaal-roda`
+  Roda integration gem. Depends on `kaal` and `kaal-sequel`, and owns plugin registration, backend auto-wiring, and the Roda dummy app.
 - `gems/kaal-sinatra`
   Sinatra integration gem. Supports memory, redis, and Sequel-backed SQL through explicit Sinatra boot wiring.
 
@@ -55,6 +59,8 @@ Use the gem surface that matches your runtime:
   Plain Ruby with Active Record-backed SQL persistence.
 - `kaal-rails`
   Rails plugin with Active Record auto-wiring, generators, and rake tasks.
+- `kaal-roda`
+  Roda integration with memory, redis, or SQL backends.
 - `kaal-sinatra`
   Sinatra integration with memory, redis, or SQL backends.
 
@@ -75,6 +81,12 @@ Rails with Active Record:
 
 ```ruby
 gem 'kaal-rails'
+```
+
+Roda with any supported backend:
+
+```ruby
+gem 'kaal-roda'
 ```
 
 Sinatra with any supported backend:
@@ -174,6 +186,24 @@ class App < Sinatra::Base
 end
 ```
 
+Roda with memory:
+
+```ruby
+require 'roda'
+require 'kaal/roda'
+
+class App < Roda
+  plugin :kaal
+
+  kaal backend: Kaal::Backend::MemoryAdapter.new,
+       scheduler_config_path: 'config/scheduler.yml'
+
+  route do |r|
+    r.root { 'ok' }
+  end
+end
+```
+
 Or:
 
 ```bash
@@ -213,6 +243,13 @@ bin/rspec-e2e sqlite
 
 ```bash
 cd gems/kaal-sinatra
+bin/rspec-unit
+bin/rspec-e2e memory
+bin/rspec-e2e sqlite
+```
+
+```bash
+cd gems/kaal-roda
 bin/rspec-unit
 bin/rspec-e2e memory
 bin/rspec-e2e sqlite

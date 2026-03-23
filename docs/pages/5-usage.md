@@ -204,6 +204,71 @@ Kaal::Sinatra.register!(
 
 `kaal-sinatra` loads `config/scheduler.yml` relative to the Sinatra app root and only starts the scheduler if you opt in.
 
+### Roda
+
+Use `kaal-roda` with the backend style you want.
+
+Memory:
+
+```ruby
+require "roda"
+require "kaal/roda"
+
+class App < Roda
+  plugin :kaal
+
+  kaal backend: Kaal::Backend::MemoryAdapter.new,
+       scheduler_config_path: "config/scheduler.yml",
+       namespace: "my-app",
+       start_scheduler: false
+
+  route do |r|
+    r.root { "ok" }
+  end
+end
+```
+
+Redis:
+
+```ruby
+require "roda"
+require "redis"
+require "kaal/roda"
+
+class App < Roda
+  REDIS = Redis.new(url: ENV.fetch("REDIS_URL"))
+
+  plugin :kaal
+
+  kaal redis: REDIS,
+       scheduler_config_path: "config/scheduler.yml",
+       namespace: "my-app",
+       start_scheduler: false
+end
+```
+
+SQL:
+
+```ruby
+require "roda"
+require "sequel"
+require "kaal/roda"
+
+database = Sequel.connect(ENV.fetch("DATABASE_URL"))
+
+class App < Roda
+  plugin :kaal
+
+  kaal database: database,
+       adapter: "postgres",
+       scheduler_config_path: "config/scheduler.yml",
+       namespace: "my-app",
+       start_scheduler: false
+end
+```
+
+`kaal-roda` loads `config/scheduler.yml` relative to the Roda app root and only starts the scheduler if you opt in.
+
 ## CLI
 
 ```bash
@@ -235,6 +300,7 @@ ExecStartPre=/usr/bin/bash -lc 'bundle exec kaal status'
 - Use `kaal-sequel` for Sequel-backed SQL persistence in plain Ruby apps.
 - Use `kaal-activerecord` for Active Record-backed SQL persistence in plain Ruby apps.
 - Use `kaal-rails` for Rails apps; it pulls in `kaal-activerecord` and provides Rails-native integration.
+- Use `kaal-roda` for Roda apps; it provides explicit Roda boot and lifecycle wiring across memory, redis, and SQL backends.
 - Use `kaal-sinatra` for Sinatra apps; it provides explicit Sinatra boot and lifecycle wiring across memory, redis, and SQL backends.
 
 For plain Ruby jobs dispatched through `.perform(*args, **kwargs)`, Kaal considers the run successful unless the job raises. Return values are not inspected.
