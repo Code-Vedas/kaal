@@ -16,6 +16,7 @@ nav_order: 1
 [![Gem Version](https://img.shields.io/gem/v/kaal?style=flat-square&logo=rubygems&label=kaal)](https://rubygems.org/gems/kaal){:target="_blank"}
 [![Gem Version](https://img.shields.io/gem/v/kaal-sequel?style=flat-square&logo=rubygems&label=kaal-sequel)](https://rubygems.org/gems/kaal-sequel){:target="_blank"}
 [![Gem Version](https://img.shields.io/gem/v/kaal-activerecord?style=flat-square&logo=rubygems&label=kaal-activerecord)](https://rubygems.org/gems/kaal-activerecord){:target="_blank"}
+[![Gem Version](https://img.shields.io/gem/v/kaal-hanami?style=flat-square&logo=rubygems&label=kaal-hanami)](https://rubygems.org/gems/kaal-hanami){:target="_blank"}
 [![Gem Version](https://img.shields.io/gem/v/kaal-rails?style=flat-square&logo=rubygems&label=kaal-rails)](https://rubygems.org/gems/kaal-rails){:target="_blank"}
 [![Gem Version](https://img.shields.io/gem/v/kaal-roda?style=flat-square&logo=rubygems&label=kaal-roda)](https://rubygems.org/gems/kaal-roda){:target="_blank"}
 [![Gem Version](https://img.shields.io/gem/v/kaal-sinatra?style=flat-square&logo=rubygems&label=kaal-sinatra)](https://rubygems.org/gems/kaal-sinatra){:target="_blank"}
@@ -26,6 +27,7 @@ nav_order: 1
   - [`core/kaal/`](https://github.com/Code-Vedas/kaal/tree/main/core/kaal)
   - [`core/kaal-sequel/`](https://github.com/Code-Vedas/kaal/tree/main/core/kaal-sequel)
   - [`core/kaal-activerecord/`](https://github.com/Code-Vedas/kaal/tree/main/core/kaal-activerecord)
+  - [`gems/kaal-hanami/`](https://github.com/Code-Vedas/kaal/tree/main/gems/kaal-hanami)
   - [`gems/kaal-rails/`](https://github.com/Code-Vedas/kaal/tree/main/gems/kaal-rails)
   - [`gems/kaal-roda/`](https://github.com/Code-Vedas/kaal/tree/main/gems/kaal-roda)
   - [`gems/kaal-sinatra/`](https://github.com/Code-Vedas/kaal/tree/main/gems/kaal-sinatra)
@@ -51,6 +53,12 @@ Rails with Active Record:
 
 ```ruby
 gem 'kaal-rails'
+```
+
+Hanami with any supported backend:
+
+```ruby
+gem 'kaal-hanami'
 ```
 
 Roda with any supported backend:
@@ -83,7 +91,7 @@ bundle exec kaal init --backend=memory
 - **Multi-node safe**: Ensures single-dispatch execution across all app instances
 - **Split packages**: engine, datastore adapters, and framework integrations are shipped separately
 - **Backend adapters**: memory and Redis live in core; SQL persistence lives in `kaal-sequel` or `kaal-activerecord`
-- **Framework addons**: `kaal-rails` for Rails, `kaal-roda` for Roda, and `kaal-sinatra` for Sinatra
+- **Framework addons**: `kaal-hanami` for Hanami, `kaal-rails` for Rails, `kaal-roda` for Roda, and `kaal-sinatra` for Sinatra
 - **Registry & API**: Centralized job registration with deterministic idempotency keys
 - **Dispatch recovery**: Replays missed runs within a configurable lookback window
 - **Cron utilities**: Validate, lint, simplify, and humanize via `Kaal.valid?`, `Kaal.lint`, `Kaal.simplify`, and `Kaal.to_human`

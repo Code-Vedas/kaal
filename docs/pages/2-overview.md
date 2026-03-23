@@ -39,6 +39,8 @@ It exists to solve one problem cleanly: schedule recurring work across multiple 
   Active Record-backed SQL datastore adapter
 - `kaal-rails`
   Rails plugin that uses `kaal` plus `kaal-activerecord`
+- `kaal-hanami`
+  Hanami addon with explicit framework wiring for memory, redis, and SQL backends
 - `kaal-roda`
   Roda addon with explicit framework wiring for memory, redis, and SQL backends
 - `kaal-sinatra`

@@ -269,6 +269,76 @@ end
 
 `kaal-roda` loads `config/scheduler.yml` relative to the Roda app root and only starts the scheduler if you opt in.
 
+### Hanami
+
+Use `kaal-hanami` with the backend style you want.
+
+Memory:
+
+```ruby
+require "hanami"
+require "kaal/hanami"
+
+module MyApp
+  class App < Hanami::App
+    Kaal::Hanami.configure!(
+      self,
+      backend: Kaal::Backend::MemoryAdapter.new,
+      scheduler_config_path: "config/scheduler.yml",
+      namespace: "my-app",
+      start_scheduler: false
+    )
+  end
+end
+```
+
+Redis:
+
+```ruby
+require "hanami"
+require "redis"
+require "kaal/hanami"
+
+module MyApp
+  class App < Hanami::App
+    REDIS = Redis.new(url: ENV.fetch("REDIS_URL"))
+
+    Kaal::Hanami.configure!(
+      self,
+      redis: REDIS,
+      scheduler_config_path: "config/scheduler.yml",
+      namespace: "my-app",
+      start_scheduler: false
+    )
+  end
+end
+```
+
+SQL:
+
+```ruby
+require "hanami"
+require "sequel"
+require "kaal/hanami"
+
+database = Sequel.connect(ENV.fetch("DATABASE_URL"))
+
+module MyApp
+  class App < Hanami::App
+    Kaal::Hanami.configure!(
+      self,
+      database: database,
+      adapter: "postgres",
+      scheduler_config_path: "config/scheduler.yml",
+      namespace: "my-app",
+      start_scheduler: false
+    )
+  end
+end
+```
+
+`kaal-hanami` loads `config/scheduler.yml` relative to the Hanami app root and only starts the scheduler if you opt in.
+
 ## CLI
 
 ```bash
@@ -300,6 +370,7 @@ ExecStartPre=/usr/bin/bash -lc 'bundle exec kaal status'
 - Use `kaal-sequel` for Sequel-backed SQL persistence in plain Ruby apps.
 - Use `kaal-activerecord` for Active Record-backed SQL persistence in plain Ruby apps.
 - Use `kaal-rails` for Rails apps; it pulls in `kaal-activerecord` and provides Rails-native integration.
+- Use `kaal-hanami` for Hanami apps; it provides middleware-based Hanami boot and lifecycle wiring across memory, redis, and SQL backends.
 - Use `kaal-roda` for Roda apps; it provides explicit Roda boot and lifecycle wiring across memory, redis, and SQL backends.
 - Use `kaal-sinatra` for Sinatra apps; it provides explicit Sinatra boot and lifecycle wiring across memory, redis, and SQL backends.
 

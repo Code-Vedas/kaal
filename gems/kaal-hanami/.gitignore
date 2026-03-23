@@ -1,0 +1,11 @@
+/.bundle/
+/coverage/
+/doc/
+/log/*.log
+/pkg/
+/tmp/
+.DS_Store
+*.gem
+
+# rspec failure tracking
+.rspec_status
