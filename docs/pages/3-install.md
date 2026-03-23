@@ -126,6 +126,26 @@ Typical setup:
 
 For SQL persistence, create the Kaal Sequel tables through migrations.
 
+## Hanami
+
+```ruby
+gem "kaal-hanami"
+```
+
+Use `kaal-hanami` when you want a supported Hanami setup path across memory, redis, or SQL backends.
+
+Typical setup:
+
+- choose one backend path:
+  - `backend:` for memory or a custom backend object
+  - `redis:` for Redis-backed coordination
+  - `database:` for Sequel-backed SQL
+- provide `config/scheduler.yml`
+- wire the app with `Kaal::Hanami.configure!(self, ...)` inside your `Hanami::App` class
+- start the scheduler explicitly only when you want the web process to host it
+
+For SQL persistence, create the Kaal Sequel tables through migrations.
+
 ## Core backend choices
 
 - `memory`: no external store
