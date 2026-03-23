@@ -62,6 +62,9 @@ jobs:
             BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_edge.gemfile" bundle install
           fi
 
+          cd "${GITHUB_WORKSPACE}/gems/kaal-hanami"
+          bundle install
+
           cd "${GITHUB_WORKSPACE}/gems/kaal-roda"
           bundle install
 
@@ -118,6 +121,9 @@ jobs:
           if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
             BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_edge.gemfile" bundle install
           fi
+
+          cd "${GITHUB_WORKSPACE}/gems/kaal-hanami"
+          bundle install
 
           cd "${GITHUB_WORKSPACE}/gems/kaal-roda"
           bundle install
@@ -176,6 +182,9 @@ jobs:
             BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_edge.gemfile" bundle install
           fi
 
+          cd "${GITHUB_WORKSPACE}/gems/kaal-hanami"
+          bundle install
+
           cd "${GITHUB_WORKSPACE}/gems/kaal-roda"
           bundle install
 
@@ -192,7 +201,9 @@ jobs:
             ${{ github.workspace }}/core/kaal/coverage/.resultset.json
             ${{ github.workspace }}/core/kaal-sequel/coverage/.resultset.json
             ${{ github.workspace }}/core/kaal-activerecord/coverage/.resultset.json
+            ${{ github.workspace }}/gems/kaal-hanami/coverage/.resultset.json
             ${{ github.workspace }}/gems/kaal-rails/coverage/.resultset.json
+            ${{ github.workspace }}/gems/kaal-roda/coverage/.resultset.json
             ${{ github.workspace }}/gems/kaal-sinatra/coverage/.resultset.json
 
   test_e2e:
@@ -279,6 +290,9 @@ jobs:
           if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
             BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_edge.gemfile" bundle install
           fi
+
+          cd "${GITHUB_WORKSPACE}/gems/kaal-hanami"
+          bundle install
 
           cd "${GITHUB_WORKSPACE}/gems/kaal-roda"
           bundle install

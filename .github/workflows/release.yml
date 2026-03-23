@@ -124,10 +124,60 @@ jobs:
           gem build kaal-rails.gemspec
           gem push kaal-rails-*.gem
 
+  publish_kaal_hanami:
+    name: Publish gems/kaal-hanami
+    runs-on: ubuntu-latest
+    needs: [publish_kaal_rails]
+    permissions:
+      contents: write
+      id-token: write
+    environment: release
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+          working-directory: ${{ github.workspace }}/gems/kaal-hanami
+      - name: Configure RubyGems Credentials
+        uses: rubygems/configure-rubygems-credentials@a991f145d5e4a60c4b0a3ddb204f557dc1a4f985
+      - name: Build and push gem
+        working-directory: ${{ github.workspace }}/gems/kaal-hanami
+        run: |
+          gem build kaal-hanami.gemspec
+          gem push kaal-hanami-*.gem
+
+  publish_kaal_roda:
+    name: Publish gems/kaal-roda
+    runs-on: ubuntu-latest
+    needs: [publish_kaal_hanami]
+    permissions:
+      contents: write
+      id-token: write
+    environment: release
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+          working-directory: ${{ github.workspace }}/gems/kaal-roda
+      - name: Configure RubyGems Credentials
+        uses: rubygems/configure-rubygems-credentials@a991f145d5e4a60c4b0a3ddb204f557dc1a4f985
+      - name: Build and push gem
+        working-directory: ${{ github.workspace }}/gems/kaal-roda
+        run: |
+          gem build kaal-roda.gemspec
+          gem push kaal-roda-*.gem
+
   publish_kaal_sinatra:
     name: Publish gems/kaal-sinatra
     runs-on: ubuntu-latest
-    needs: [publish_kaal_rails]
+    needs: [publish_kaal_roda]
     permissions:
       contents: write
       id-token: write

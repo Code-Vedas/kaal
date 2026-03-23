@@ -18,6 +18,7 @@
 │   ├── kaal-sequel/        #   Sequel datastore adapter gem
 │   └── kaal-activerecord/  #   Active Record datastore adapter gem
 ├── gems/                   # Framework integration gems
+│   ├── kaal-hanami/        #   Hanami plugin gem
 │   ├── kaal-rails/         #   Rails plugin gem
 │   ├── kaal-roda/          #   Roda plugin gem
 │   └── kaal-sinatra/       #   Sinatra plugin gem
@@ -34,6 +35,8 @@
   Sequel-backed datastore adapter. Owns SQL persistence, SQL lock adapters, and SQL migrations/templates for Sequel-based installs.
 - `core/kaal-activerecord`
   Active Record-backed datastore adapter. Owns Active Record models, registries, SQL lock adapters, and migration templates.
+- `gems/kaal-hanami`
+  Hanami integration gem. Depends on `kaal` and `kaal-sequel`, and owns middleware-based boot wiring, backend auto-wiring, and the Hanami dummy app.
 - `gems/kaal-rails`
   Rails plugin gem. Depends on `kaal` and `kaal-activerecord`, and owns Railtie, generators, tasks, and the Rails dummy app.
 - `gems/kaal-roda`
@@ -59,6 +62,8 @@ Use the gem surface that matches your runtime:
   Plain Ruby with Active Record-backed SQL persistence.
 - `kaal-rails`
   Rails plugin with Active Record auto-wiring, generators, and rake tasks.
+- `kaal-hanami`
+  Hanami integration with memory, redis, or SQL backends.
 - `kaal-roda`
   Roda integration with memory, redis, or SQL backends.
 - `kaal-sinatra`
@@ -81,6 +86,12 @@ Rails with Active Record:
 
 ```ruby
 gem 'kaal-rails'
+```
+
+Hanami with any supported backend:
+
+```ruby
+gem 'kaal-hanami'
 ```
 
 Roda with any supported backend:
@@ -186,6 +197,23 @@ class App < Sinatra::Base
 end
 ```
 
+Hanami with memory:
+
+```ruby
+require 'hanami'
+require 'kaal/hanami'
+
+module MyApp
+  class App < Hanami::App
+    Kaal::Hanami.configure!(
+      self,
+      backend: Kaal::Backend::MemoryAdapter.new,
+      scheduler_config_path: 'config/scheduler.yml'
+    )
+  end
+end
+```
+
 Roda with memory:
 
 ```ruby
@@ -238,6 +266,13 @@ bin/rspec-e2e sqlite
 ```bash
 cd core/kaal-activerecord
 bin/rspec-unit
+bin/rspec-e2e sqlite
+```
+
+```bash
+cd gems/kaal-hanami
+bin/rspec-unit
+bin/rspec-e2e memory
 bin/rspec-e2e sqlite
 ```
 

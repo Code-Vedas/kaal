@@ -13,6 +13,7 @@ run_phase() {
   run_suite "kaal" "core/kaal"
   run_suite "kaal-activerecord" "core/kaal-activerecord"
   run_suite "kaal-sequel" "core/kaal-sequel"
+  run_suite "kaal-hanami" "gems/kaal-hanami"
   run_suite "kaal-rails" "gems/kaal-rails"
   run_suite "kaal-roda" "gems/kaal-roda"
   run_suite "kaal-sinatra" "gems/kaal-sinatra"

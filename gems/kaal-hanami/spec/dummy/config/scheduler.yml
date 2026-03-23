@@ -1,0 +1,6 @@
+defaults:
+  jobs:
+    - key: "hanami:heartbeat"
+      cron: "* * * * *"
+      job_class: "ExampleHeartbeatJob"
+      enabled: true
