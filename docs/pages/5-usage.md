@@ -71,14 +71,20 @@ Kaal.configure do |config|
 end
 ```
 
-For PostgreSQL or MySQL, use one of:
+For PostgreSQL or MySQL, replace the backend line inside `Kaal.configure` with one of:
 
 ```ruby
-config.backend = Kaal::Backend::PostgresAdapter.new(database)
+Kaal.configure do |config|
+  config.backend = Kaal::Backend::PostgresAdapter.new(database)
+  config.scheduler_config_path = "config/scheduler.yml"
+end
 ```
 
 ```ruby
-config.backend = Kaal::Backend::MySQLAdapter.new(database)
+Kaal.configure do |config|
+  config.backend = Kaal::Backend::MySQLAdapter.new(database)
+  config.scheduler_config_path = "config/scheduler.yml"
+end
 ```
 
 ### Plain Ruby with Active Record-backed SQL
@@ -98,14 +104,20 @@ Kaal.configure do |config|
 end
 ```
 
-For PostgreSQL or MySQL, use one of:
+For PostgreSQL or MySQL, replace the backend line inside `Kaal.configure` with one of:
 
 ```ruby
-config.backend = Kaal::ActiveRecord::PostgresAdapter.new
+Kaal.configure do |config|
+  config.backend = Kaal::ActiveRecord::PostgresAdapter.new
+  config.scheduler_config_path = "config/scheduler.yml"
+end
 ```
 
 ```ruby
-config.backend = Kaal::ActiveRecord::MySQLAdapter.new
+Kaal.configure do |config|
+  config.backend = Kaal::ActiveRecord::MySQLAdapter.new
+  config.scheduler_config_path = "config/scheduler.yml"
+end
 ```
 
 ### Rails
