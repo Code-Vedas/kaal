@@ -123,23 +123,16 @@ class MultiNodeCliCheck
   end
 
   def stop_nodes
-    child_pids.each do |pid|
-      begin
-        Process.kill('KILL', pid)
-      rescue Errno::ESRCH
-        next
-      end
-    end
+    terminate_nodes('TERM')
 
     child_pids.each do |pid|
       begin
-        Timeout.timeout(10) { Process.wait(pid) }
-      rescue Errno::ECHILD, Timeout::Error
-        begin
-          Process.kill('KILL', pid)
-        rescue Errno::ESRCH
-          nil
-        end
+        Timeout.timeout(5) { Process.wait(pid) }
+      rescue Errno::ECHILD
+        nil
+      rescue Timeout::Error
+        terminate_nodes('KILL')
+        wait_for_node(pid)
       end
     end
   ensure
@@ -334,6 +327,7 @@ class MultiNodeCliCheck
     connection_info = parse_database_url(database_url)
     database_name = connection_info.fetch(:database)
     admin_url = connection_info.fetch(:admin_url)
+    validate_database_name!(database_name)
 
     admin_database = Sequel.connect(admin_url)
 
@@ -342,8 +336,9 @@ class MultiNodeCliCheck
       admin_database.disconnect
       terminate_postgres_connections!(admin_url:, database_name:)
       admin_database = Sequel.connect(admin_url)
-      admin_database.run("DROP DATABASE IF EXISTS #{database_name}")
-      admin_database.run("CREATE DATABASE #{database_name}")
+      quoted_database_name = admin_database.quote_identifier(database_name)
+      admin_database.run("DROP DATABASE IF EXISTS #{quoted_database_name}")
+      admin_database.run("CREATE DATABASE #{quoted_database_name}")
     when 'mysql'
       admin_database.run("DROP DATABASE IF EXISTS `#{database_name}`")
       admin_database.run("CREATE DATABASE `#{database_name}`")
@@ -457,6 +452,12 @@ class MultiNodeCliCheck
     }
   end
 
+  def validate_database_name!(database_name)
+    return if database_name.match?(/\A[a-zA-Z0-9_]+\z/)
+
+    raise ArgumentError, "Unsupported database name: #{database_name.inspect}"
+  end
+
   def build_admin_database_url(uri)
     admin_database_name = backend == 'postgres' ? 'postgres' : nil
     path = admin_database_name ? "/#{admin_database_name}" : nil
@@ -469,6 +470,20 @@ class MultiNodeCliCheck
       path: path,
       query: uri.query
     ).to_s
+  end
+
+  def terminate_nodes(signal)
+    child_pids.each do |pid|
+      Process.kill(signal, pid)
+    rescue Errno::ESRCH
+      nil
+    end
+  end
+
+  def wait_for_node(pid)
+    Timeout.timeout(5) { Process.wait(pid) }
+  rescue Errno::ECHILD, Timeout::Error
+    nil
   end
 end
 

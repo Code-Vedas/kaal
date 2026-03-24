@@ -9,12 +9,13 @@ require 'redis'
 
 RSpec.describe Kaal, integration: :redis do
   it 'dispatches at most once per fire time under concurrent redis-backed ticks' do
+    redis = nil
+    clients = []
     key = 'contention:redis'
     namespace = KaalIntegrationSupport.namespace('contention-redis')
     base_time = Time.utc(2026, 1, 1, 0, 0, 30)
     fixed_times = KaalContentionSupport.repeated_fire_times(base_time, iterations: 3)
     redis = Redis.new(url: ENV.fetch('REDIS_URL'))
-    clients = []
 
     result = KaalContentionSupport.run_threaded_contention(
       fixed_times: fixed_times,

@@ -133,6 +133,8 @@ module KaalContentionSupport
   private_class_method :run_concurrent_ticks
 
   def with_stubbed_time_now(initial_time)
+    time_singleton = nil
+    original_now = nil
     current_time = initial_time
     time_singleton = Time.singleton_class
     original_now = Time.method(:now)
@@ -145,10 +147,10 @@ module KaalContentionSupport
   private_class_method :with_stubbed_time_now
 
   def reset_kaal_state(previous_dispatch_logging)
-    Kaal.configuration.enable_log_dispatch_registry = previous_dispatch_logging
     Kaal.reset_configuration!
     Kaal.reset_registry!
     Kaal.instance_variable_set(:@registration_service, nil)
+    Kaal.configuration.enable_log_dispatch_registry = previous_dispatch_logging
   end
   private_class_method :reset_kaal_state
 

@@ -8,13 +8,13 @@ require 'spec_helper'
 
 RSpec.describe Kaal, integration: :mysql do
   it 'dispatches at most once per fire time under concurrent mysql-backed ticks' do
+    connections = []
+    inspector = nil
     key = 'contention:mysql'
     namespace = KaalIntegrationSupport.namespace('contention-mysql')
     base_time = Time.utc(2026, 1, 1, 0, 0, 30)
     fixed_times = KaalContentionSupport.repeated_fire_times(base_time, iterations: 3)
     database_url = ENV.fetch('DATABASE_URL')
-    connections = []
-    inspector = nil
 
     KaalIntegrationSupport.reset_database!(database_url)
     inspector = Sequel.connect(database_url)
