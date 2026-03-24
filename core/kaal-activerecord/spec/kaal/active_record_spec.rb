@@ -47,7 +47,7 @@ RSpec.describe Kaal::ActiveRecord do
   end
 
   it 'has a version number and loads the railtie' do
-    expect(Kaal::ActiveRecord::VERSION).to eq('0.2.1')
+    expect(Kaal::ActiveRecord::VERSION).to eq('0.3.0')
     expect(Kaal::ActiveRecord::Railtie).to be < Rails::Railtie
     expect(Kaal::ActiveRecord::SQLiteAdapter).to eq(Kaal::ActiveRecord::DatabaseAdapter)
   end

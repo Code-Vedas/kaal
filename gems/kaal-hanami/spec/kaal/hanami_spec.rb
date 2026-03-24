@@ -29,7 +29,7 @@ RSpec.describe Kaal::Hanami do
   end
 
   it 'has a version number and exposes the middleware class' do
-    expect(described_class::VERSION).to eq('0.2.1')
+    expect(described_class::VERSION).to eq('0.3.0')
     expect(described_class::Middleware).to be_a(Class)
   end
 
