@@ -5,7 +5,7 @@
 [![Gem](https://img.shields.io/gem/v/kaal.svg?style=flat-square)](https://rubygems.org/gems/kaal)
 [![CI](https://github.com/Code-Vedas/kaal/actions/workflows/ci.yml/badge.svg)](https://github.com/Code-Vedas/kaal/actions/workflows/ci.yml)
 [![Maintainability](https://qlty.sh/gh/Code-Vedas/projects/kaal/maintainability.svg)](https://qlty.sh/gh/Code-Vedas/projects/kaal)
-[![Code Coverage](https://qlty.sh/gh/Code-Vedas/projects/kaal/coverage.svg)](https://qlty.sh/gh/Code-Vedas/projects/kaal/coverage.svg)
+[![Code Coverage](https://qlty.sh/gh/Code-Vedas/projects/kaal/coverage.svg)](https://qlty.sh/gh/Code-Vedas/projects/kaal/coverage)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
 
 Kaal coordinates recurring jobs across processes or nodes without changing how your app enqueues work. You choose the package surface that matches your runtime, define jobs in `config/scheduler.yml`, and run the scheduler in a dedicated process with `bundle exec kaal start`.

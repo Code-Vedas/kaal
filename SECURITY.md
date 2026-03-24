@@ -28,4 +28,4 @@ We will try to fix the vulnerability as soon as possible. We will release a new 
 
 ## Report abuse of the Code of Conduct
 
-If you believe someone is violating the Code of Conduct, we ask that you report it by emailing at <team@codevedas.com>
+If you believe someone is violating the Code of Conduct, we ask that you report it by emailing the team at <team@codevedas.com>

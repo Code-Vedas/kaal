@@ -71,10 +71,13 @@ Kaal.configure do |config|
 end
 ```
 
-For PostgreSQL or MySQL:
+For PostgreSQL or MySQL, use one of:
 
 ```ruby
 config.backend = Kaal::Backend::PostgresAdapter.new(database)
+```
+
+```ruby
 config.backend = Kaal::Backend::MySQLAdapter.new(database)
 ```
 
@@ -95,10 +98,13 @@ Kaal.configure do |config|
 end
 ```
 
-For PostgreSQL or MySQL:
+For PostgreSQL or MySQL, use one of:
 
 ```ruby
 config.backend = Kaal::ActiveRecord::PostgresAdapter.new
+```
+
+```ruby
 config.backend = Kaal::ActiveRecord::MySQLAdapter.new
 ```
 
