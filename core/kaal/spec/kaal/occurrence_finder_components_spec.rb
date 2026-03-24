@@ -177,6 +177,7 @@ RSpec.describe Kaal::OccurrenceFinder do
 
     it 'skips due work that was already dispatched when dispatch logging is enabled' do
       configuration.enable_log_dispatch_registry = true
+      Kaal.configuration.enable_log_dispatch_registry = true
       now = Time.utc(2026, 1, 1, 0, 0, 0)
 
       allow(coordinator).to receive(:already_dispatched?).with(entry.key, now).and_return(true)

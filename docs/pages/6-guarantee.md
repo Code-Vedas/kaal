@@ -30,10 +30,9 @@ Kaal's dispatch guarantee is based on the following runtime model:
 
 1. discover due occurrences for each registered scheduler entry
 2. check whether `(key, fire_time)` is already present in the dispatch registry
-3. attempt to claim the backend coordination lock for that occurrence
-4. invoke the dispatch callback only when the occurrence is not already logged and the claim succeeds
-5. record the dispatched occurrence in the active dispatch registry
-6. on restart, repeat the same checks during recovery before replaying missed occurrences
+3. attempt to claim the backend coordination lock for that occurrence and, when the claim succeeds, log a dispatch attempt for `(key, fire_time)` in the active dispatch registry before invoking the callback
+4. invoke the dispatch callback only when the occurrence is not already logged and the lock-claim/logging step succeeds
+5. on restart, repeat the same registry check, lock-claim, and dispatch-attempt logging steps during recovery before replaying missed occurrences
 
 The documented model covers:
 
