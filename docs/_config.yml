@@ -11,6 +11,7 @@ plugins:
   - kramdown
 mermaid:
   version: 10.1.0
+logo: /assets/images/logo.svg
 callouts:
   note:
     title: Note
@@ -29,3 +30,4 @@ aux_links:
 aux_links_new_tab: true
 nav_enabled: true
 heading_anchors: true
+enable_copy_code_button: true
