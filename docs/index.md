@@ -75,14 +75,41 @@ scheduler: bundle exec kaal start
 systemd:
 
 ```ini
+[Unit]
+Description=Kaal scheduler
+After=network.target
+
+[Service]
 ExecStart=/usr/bin/bash -lc 'bundle exec kaal start'
 ExecStartPre=/usr/bin/bash -lc 'bundle exec kaal status'
+
+[Install]
+WantedBy=multi-user.target
 ```
 
 Kubernetes:
 
 ```yaml
-command: ["bundle", "exec", "kaal", "start"]
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app-scheduler
+  labels:
+    app: my-app-scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-app-scheduler
+  template:
+    metadata:
+      labels:
+        app: my-app-scheduler
+    spec:
+      containers:
+        - name: scheduler
+          image: my-app:latest
+          command: ["bundle", "exec", "kaal", "start"]
 ```
 
 ## Links
