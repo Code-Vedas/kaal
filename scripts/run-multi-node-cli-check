@@ -10,6 +10,11 @@ if [ "${REPO_ROOT:-}" = "" ]; then
   REPO_ROOT=$(CDPATH= cd -- "${SCRIPT_DIR}/.." && pwd)
 fi
 
+if [ "$#" -ne 1 ]; then
+  echo "usage: $0 <redis|postgres|mysql>" >&2
+  exit 1
+fi
+
 backend="$1"
 
 cd "${REPO_ROOT}/core/kaal-sequel"

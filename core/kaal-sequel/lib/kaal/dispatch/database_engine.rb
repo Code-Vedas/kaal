@@ -65,7 +65,7 @@ module Kaal
 
       def cleanup(recovery_window: 86_400)
         cutoff_time = Time.now.utc - recovery_window
-        dataset.where { fire_time < cutoff_time }.delete
+        cleanup_dataset.where { fire_time < cutoff_time }.delete
       end
 
       def self.normalize_row(row, namespace: nil)
@@ -100,7 +100,20 @@ module Kaal
       end
 
       def query(filters)
-        dataset.where(filters).reverse_order(:fire_time).all.map { |row| self.class.normalize_row(row, namespace: @namespace) }
+        query_dataset(filters).reverse_order(:fire_time).all.map { |row| self.class.normalize_row(row, namespace: @namespace) }
+      end
+
+      def query_dataset(filters)
+        relation = dataset.where(filters)
+        return relation if @namespace.to_s.empty? || filters.key?(:key)
+
+        relation.where(::Sequel.lit('key LIKE ?', "#{@namespace}:%"))
+      end
+
+      def cleanup_dataset
+        return dataset if @namespace.to_s.empty?
+
+        dataset.where(::Sequel.lit('key LIKE ?', "#{@namespace}:%"))
       end
     end
   end

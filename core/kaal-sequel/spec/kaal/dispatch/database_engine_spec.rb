@@ -96,6 +96,23 @@ RSpec.describe Kaal::Dispatch::DatabaseEngine do
     expect(db[:kaal_dispatches].where(key: 'job:a', fire_time: fire_time).count).to eq(0)
   end
 
+  it 'scopes non-key queries and cleanup to the configured namespace' do
+    fire_time = Time.now.utc
+    cutoff_time = fire_time - 3600
+    namespaced_engine = described_class.new(database: db, namespace: 'ops')
+
+    db[:kaal_dispatches].insert(key: 'ops:job:a', fire_time: fire_time, dispatched_at: fire_time, node_id: 'node-1', status: 'failed')
+    db[:kaal_dispatches].insert(key: 'other:job:a', fire_time: fire_time, dispatched_at: fire_time, node_id: 'node-1', status: 'failed')
+    db[:kaal_dispatches].insert(key: 'ops:job:old', fire_time: cutoff_time, dispatched_at: cutoff_time, node_id: 'node-2', status: 'dispatched')
+    db[:kaal_dispatches].insert(key: 'other:job:old', fire_time: cutoff_time, dispatched_at: cutoff_time, node_id: 'node-2', status: 'dispatched')
+
+    expect(namespaced_engine.find_by_node('node-1')).to contain_exactly(hash_including(key: 'job:a'))
+    expect(namespaced_engine.find_by_status('failed')).to contain_exactly(hash_including(key: 'job:a'))
+    expect(namespaced_engine.cleanup(recovery_window: 60)).to eq(1)
+    expect(db[:kaal_dispatches].where(key: 'ops:job:old').count).to eq(0)
+    expect(db[:kaal_dispatches].where(key: 'other:job:old').count).to eq(1)
+  end
+
   it 'leaves dispatch keys unchanged when a namespaced row normalizer receives an unprefixed key' do
     fire_time = Time.now.utc
     row = {

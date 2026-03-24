@@ -44,13 +44,13 @@ module Kaal
 
       def cleanup(recovery_window: 86_400)
         cutoff_time = Time.now.utc - recovery_window
-        @model.where(fire_time: ...cutoff_time).delete_all
+        cleanup_scope.where(fire_time: ...cutoff_time).delete_all
       end
 
       private
 
       def query(filters)
-        @model.where(filters).order(fire_time: :desc).map { |record| normalize(record) }
+        query_scope(filters).order(fire_time: :desc).map { |record| normalize(record) }
       end
 
       def namespaced_key(key)
@@ -76,6 +76,19 @@ module Kaal
 
         prefix = "#{@namespace}:"
         key.start_with?(prefix) ? key.delete_prefix(prefix) : key
+      end
+
+      def query_scope(filters)
+        relation = @model.where(filters)
+        return relation if @namespace.to_s.empty? || filters.key?(:key)
+
+        relation.where('key LIKE ?', "#{@namespace}:%")
+      end
+
+      def cleanup_scope
+        return @model if @namespace.to_s.empty?
+
+        @model.where('key LIKE ?', "#{@namespace}:%")
       end
     end
   end
