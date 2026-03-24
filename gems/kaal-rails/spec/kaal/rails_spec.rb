@@ -26,7 +26,7 @@ RSpec.describe Kaal::Rails do
   end
 
   it 'has a version number and loads the railtie' do
-    expect(described_class::VERSION).to eq('0.2.1')
+    expect(described_class::VERSION).to eq('0.3.0')
     expect(described_class::Railtie).to be < Rails::Railtie
   end
 

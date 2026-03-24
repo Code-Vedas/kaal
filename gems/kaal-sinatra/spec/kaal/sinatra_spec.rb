@@ -29,7 +29,7 @@ RSpec.describe Kaal::Sinatra do
   end
 
   it 'has a version number and exposes the extension module' do
-    expect(described_class::VERSION).to eq('0.2.1')
+    expect(described_class::VERSION).to eq('0.3.0')
     expect(described_class::Extension).to be_a(Module)
   end
 

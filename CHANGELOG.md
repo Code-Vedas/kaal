@@ -1,5 +1,35 @@
 # CHANGELOG
 
+## [0.3.0](https://github.com/code-vedas/kaal/tree/v0.3.0) (2026-03-24)
+
+[Full Changelog](https://github.com/code-vedas/kaal/compare/v0.2.1...v0.3.0)
+
+### 🚀 Features
+
+- feat: add contention integration tests for various backends @niteshpurohit (#84)
+- feat: add Kaal integration for Hanami applications @niteshpurohit (#83)
+- feat: add Kaal integration for Roda applications @niteshpurohit (#82)
+- feat: add Kaal Sinatra integration and tests @niteshpurohit (#78)
+- feat: add time zone support for cron scheduling @niteshpurohit (#70)
+
+### 📝 Documentation
+
+- docs: update security and documentation for Kaal @niteshpurohit (#86)
+
+### 🧰 Maintenance
+
+- build(deps): bump rubygems/configure-rubygems-credentials from a991f145d5e4a60c4b0a3ddb204f557dc1a4f985 to c631c084989f8f5953cd1cdbfb04e4cf3dba10aa @[dependabot[bot]](https://github.com/apps/dependabot) (#85)
+- build(deps): bump rubygems/configure-rubygems-credentials from 84d1838d405cabde880feada9a63c0b49f659ebd to a991f145d5e4a60c4b0a3ddb204f557dc1a4f985 @[dependabot[bot]](https://github.com/apps/dependabot) (#79)
+- build(deps-dev): bump activesupport from 8.1.2 to 8.1.2.1 in /docs in the bundler group across 1 directory @[dependabot[bot]](https://github.com/apps/dependabot) (#80)
+- build(deps): bump activesupport from 8.1.2 to 8.1.2.1 in /danger in the bundler group across 1 directory @[dependabot[bot]](https://github.com/apps/dependabot) (#81)
+- build(deps): bump release-drafter/release-drafter from 6 to 7 @[dependabot[bot]](https://github.com/apps/dependabot) (#68)
+- refactor: split kaal into core, datastore adapters, and rails plugin @niteshpurohit (#75)
+- refactor: reorganize internal domains and align docs with runtime behavior @niteshpurohit (#74)
+
+### ⚙️ CI
+
+- ci: improve bundle installation process @niteshpurohit (#87)
+
 ## [0.2.1](https://github.com/code-vedas/kaal/tree/v0.2.1) (2026-03-12)
 
 [Full Changelog](https://github.com/code-vedas/kaal/compare/v0.2.0...v0.2.1)

@@ -6,7 +6,7 @@
 # LICENSE file in the root directory of this source tree.
 RSpec.describe Kaal::Sequel do
   it 'has a version number' do
-    expect(Kaal::Sequel::VERSION).to eq('0.2.1')
+    expect(Kaal::Sequel::VERSION).to eq('0.3.0')
   end
 
   it 'connects through the persistence wrapper and exposes migration templates' do

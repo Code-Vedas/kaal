@@ -46,7 +46,7 @@ RSpec.describe Kaal::CLI, integration: :memory do
       File.write(File.join(root, 'config', 'scheduler.yml'), "defaults:\n  jobs: []\n")
 
       status_output = KaalCliIntegrationSupport.run!('status', '--root', root)
-      expect(status_output).to include('Kaal v0.2.1', 'Registered jobs: 1', 'example:heartbeat')
+      expect(status_output).to include('Kaal v0.3.0', 'Registered jobs: 1', 'example:heartbeat')
 
       tick_output = KaalCliIntegrationSupport.run!('tick', '--root', root)
       expect(tick_output).to include('Kaal tick completed')

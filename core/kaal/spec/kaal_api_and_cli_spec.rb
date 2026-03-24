@@ -16,7 +16,7 @@ RSpec.describe Kaal do
   end
 
   it 'exposes version and configuration accessors' do
-    expect(Kaal::VERSION).to eq('0.2.1')
+    expect(Kaal::VERSION).to eq('0.3.0')
 
     described_class.tick_interval = 7
     described_class.window_lookback = 10
@@ -180,7 +180,7 @@ RSpec.describe Kaal do
       cli.tick
       cli.explain('@daily')
 
-      expect(shell_output.string).to include('Kaal v0.2.1', 'Registered jobs: 1', 'Kaal tick completed', 'Daily')
+      expect(shell_output.string).to include('Kaal v0.3.0', 'Registered jobs: 1', 'Kaal tick completed', 'Daily')
       expect { cli.invoke(:next, ['bad cron']) }.to raise_error(Thor::Error, /Invalid cron expression/)
     end
 
