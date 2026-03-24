@@ -5,56 +5,18 @@
 [![Gem](https://img.shields.io/gem/v/kaal.svg?style=flat-square)](https://rubygems.org/gems/kaal)
 [![CI](https://github.com/Code-Vedas/kaal/actions/workflows/ci.yml/badge.svg)](https://github.com/Code-Vedas/kaal/actions/workflows/ci.yml)
 [![Maintainability](https://qlty.sh/gh/Code-Vedas/projects/kaal/maintainability.svg)](https://qlty.sh/gh/Code-Vedas/projects/kaal)
-[![Code Coverage](https://qlty.sh/gh/Code-Vedas/projects/kaal/coverage.svg)](https://qlty.sh/gh/Code-Vedas/projects/kaal)
+[![Code Coverage](https://qlty.sh/gh/Code-Vedas/projects/kaal/coverage.svg)](https://qlty.sh/gh/Code-Vedas/projects/kaal/coverage)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
 
-## Project Structure
+Kaal coordinates recurring jobs across processes or nodes without changing how your app enqueues work. You choose the package surface that matches your runtime, define jobs in `config/scheduler.yml`, and run the scheduler in a dedicated process with `bundle exec kaal start`.
 
-```text
-/repo-root
-├── .github/
-├── core/                   # Core engine and datastore gems
-│   ├── kaal/.              #   Core engine gem
-│   ├── kaal-sequel/        #   Sequel datastore adapter gem
-│   └── kaal-activerecord/  #   Active Record datastore adapter gem
-├── gems/                   # Framework integration gems
-│   ├── kaal-hanami/        #   Hanami plugin gem
-│   ├── kaal-rails/         #   Rails plugin gem
-│   ├── kaal-roda/          #   Roda plugin gem
-│   └── kaal-sinatra/       #   Sinatra plugin gem
-├── docs/                   # Documentation source files
-├── danger/                 # Danger configuration and plugins
-└── README.md
-```
+For Redis, Postgres, and MySQL-backed deployments, Kaal guarantees at-most-once dispatch per `(key, fire_time)` under the documented crash-and-restart model. Use the provided `idempotency_key` in your job boundary when downstream effects must also be deduplicated.
 
-## Package Layout
+Project docs: <https://kaal.codevedas.com>
 
-- `core/kaal`
-  Core engine gem. Owns runtime coordination, registry contracts, CLI, memory backend, and redis backend.
-- `core/kaal-sequel`
-  Sequel-backed datastore adapter. Owns SQL persistence, SQL lock adapters, and SQL migrations/templates for Sequel-based installs.
-- `core/kaal-activerecord`
-  Active Record-backed datastore adapter. Owns Active Record models, registries, SQL lock adapters, and migration templates.
-- `gems/kaal-hanami`
-  Hanami integration gem. Depends on `kaal` and `kaal-sequel`, and owns middleware-based boot wiring, backend auto-wiring, and the Hanami dummy app.
-- `gems/kaal-rails`
-  Rails plugin gem. Depends on `kaal` and `kaal-activerecord`, and owns Railtie, generators, tasks, and the Rails dummy app.
-- `gems/kaal-roda`
-  Roda integration gem. Depends on `kaal` and `kaal-sequel`, and owns plugin registration, backend auto-wiring, and the Roda dummy app.
-- `gems/kaal-sinatra`
-  Sinatra integration gem. Supports memory, redis, and Sequel-backed SQL through explicit Sinatra boot wiring.
+## Package selection
 
-## What Kaal Does
-
-Kaal lets you register recurring jobs and coordinate dispatch across multiple processes or nodes.
-
-For Redis, Postgres, and MySQL-backed deployments, Kaal guarantees at-most-once dispatch per `(key, fire_time)` under the documented crash-and-restart model. The full guarantee, assumptions, and evidence are documented at <https://kaal.codevedas.com/dispatch-guarantee>.
-
-The engine is framework-agnostic. You choose the datastore and framework integration that fits your app.
-
-## Install Surfaces
-
-Use the gem surface that matches your runtime:
+Choose the gem surface that matches your app:
 
 - `kaal`
   Plain Ruby with in-process memory coordination or Redis coordination.
@@ -63,121 +25,151 @@ Use the gem surface that matches your runtime:
 - `kaal` + `kaal-activerecord`
   Plain Ruby with Active Record-backed SQL persistence.
 - `kaal-rails`
-  Rails plugin with Active Record auto-wiring, generators, and rake tasks.
+  Rails integration with Active Record-backed persistence, generators, and rake tasks.
 - `kaal-hanami`
-  Hanami integration with memory, redis, or SQL backends.
+  Hanami integration for memory, Redis, and Sequel-backed SQL.
 - `kaal-roda`
-  Roda integration with memory, redis, or SQL backends.
+  Roda integration for memory, Redis, and Sequel-backed SQL.
 - `kaal-sinatra`
-  Sinatra integration with memory, redis, or SQL backends.
+  Sinatra integration for memory, Redis, and Sequel-backed SQL.
 
-Plain Ruby with memory or Redis:
+## Monorepo layout
 
-```ruby
-gem 'kaal'
+```text
+/repo-root
+├── core/
+│   ├── kaal/              # Core engine gem, CLI, memory backend, redis backend
+│   ├── kaal-sequel/       # Sequel-backed SQL adapter gem
+│   └── kaal-activerecord/ # Active Record-backed SQL adapter gem
+├── gems/
+│   ├── kaal-hanami/       # Hanami integration gem
+│   ├── kaal-rails/        # Rails integration gem
+│   ├── kaal-roda/         # Roda integration gem
+│   └── kaal-sinatra/      # Sinatra integration gem
+├── docs/                  # Docs site source
+├── scripts/               # Repo-level dev and CI entrypoints
+└── README.md
 ```
 
-Plain Ruby with Sequel-backed SQL persistence:
+## Quick start
+
+Plain Ruby with the memory backend:
 
 ```ruby
-gem 'kaal'
-gem 'kaal-sequel'
+gem "kaal"
 ```
 
-Rails with Active Record:
+```bash
+bundle install
+bundle exec kaal init --backend=memory
+```
+
+`kaal init` creates:
+
+- `config/kaal.rb`
+- `config/scheduler.yml`
+
+Register a job in `config/scheduler.yml`:
+
+```yaml
+defaults:
+  jobs:
+    - key: "example:heartbeat"
+      cron: "*/5 * * * *"
+      job_class: "ExampleHeartbeatJob"
+      enabled: true
+      args:
+        - "{{fire_time.iso8601}}"
+      kwargs:
+        idempotency_key: "{{idempotency_key}}"
+```
+
+Start and inspect the scheduler:
+
+```bash
+bundle exec kaal start
+bundle exec kaal status
+bundle exec kaal tick
+bundle exec kaal explain "*/15 * * * *"
+bundle exec kaal next "0 9 * * 1" --count 3
+```
+
+`kaal init` only supports `memory` and `redis`. For SQL-backed setups, add the appropriate adapter gem and configure the backend yourself, or use the framework-specific install surface.
+
+## Installation paths
+
+### Plain Ruby with memory or Redis
 
 ```ruby
-gem 'kaal-rails'
+gem "kaal"
 ```
-
-Hanami with any supported backend:
-
-```ruby
-gem 'kaal-hanami'
-```
-
-Roda with any supported backend:
-
-```ruby
-gem 'kaal-roda'
-```
-
-Sinatra with any supported backend:
-
-```ruby
-gem 'kaal-sinatra'
-```
-
-Plain Ruby with Active Record-backed SQL persistence:
-
-```ruby
-gem 'kaal'
-gem 'kaal-activerecord'
-```
-
-## Usage Paths
 
 Memory:
 
-```ruby
-require 'kaal'
-
-Kaal.configure do |config|
-  config.backend = Kaal::Backend::MemoryAdapter.new
-  config.scheduler_config_path = 'config/scheduler.yml'
-end
+```bash
+bundle exec kaal init --backend=memory
 ```
 
 Redis:
 
-```ruby
-require 'kaal'
-require 'redis'
-
-redis = Redis.new(url: ENV.fetch('REDIS_URL'))
-
-Kaal.configure do |config|
-  config.backend = Kaal::Backend::RedisAdapter.new(redis)
-  config.scheduler_config_path = 'config/scheduler.yml'
-end
+```bash
+bundle exec kaal init --backend=redis
 ```
 
-Sequel:
+### Plain Ruby with Sequel-backed SQL
 
 ```ruby
-require 'kaal'
-require 'kaal/sequel'
-require 'sequel'
+gem "kaal"
+gem "kaal-sequel"
+```
 
-database = Sequel.connect(adapter: 'sqlite', database: 'db/kaal.sqlite3')
+Example:
+
+```ruby
+require "kaal"
+require "kaal/sequel"
+require "sequel"
+
+database = Sequel.connect(adapter: "sqlite", database: "db/kaal.sqlite3")
 
 Kaal.configure do |config|
   config.backend = Kaal::Backend::DatabaseAdapter.new(database)
-  config.scheduler_config_path = 'config/scheduler.yml'
+  config.scheduler_config_path = "config/scheduler.yml"
 end
 ```
 
-Active Record:
+Use `Kaal::Backend::PostgresAdapter` or `Kaal::Backend::MySQLAdapter` for PostgreSQL and MySQL.
+
+### Plain Ruby with Active Record-backed SQL
 
 ```ruby
-require 'kaal'
-require 'kaal/active_record'
+gem "kaal"
+gem "kaal-activerecord"
+```
+
+Example:
+
+```ruby
+require "kaal"
+require "kaal/active_record"
 
 Kaal::ActiveRecord::ConnectionSupport.configure!(
-  adapter: 'sqlite3',
-  database: 'db/kaal.sqlite3'
+  adapter: "sqlite3",
+  database: "db/kaal.sqlite3"
 )
 
 Kaal.configure do |config|
   config.backend = Kaal::ActiveRecord::DatabaseAdapter.new
-  config.scheduler_config_path = 'config/scheduler.yml'
+  config.scheduler_config_path = "config/scheduler.yml"
 end
 ```
 
-Rails:
+Use `Kaal::ActiveRecord::PostgresAdapter` or `Kaal::ActiveRecord::MySQLAdapter` for PostgreSQL and MySQL.
+
+### Rails
 
 ```ruby
-gem 'kaal-rails'
+gem "kaal-rails"
 ```
 
 ```bash
@@ -185,88 +177,177 @@ bundle exec rails generate kaal:install --backend=sqlite
 bundle exec rails db:migrate
 ```
 
-Sinatra with memory:
+For PostgreSQL or MySQL, swap `sqlite` for `postgres` or `mysql`.
+
+### Sinatra
 
 ```ruby
-require 'sinatra/base'
-require 'kaal/sinatra'
+gem "kaal-sinatra"
+```
+
+Memory example:
+
+```ruby
+require "sinatra/base"
+require "kaal/sinatra"
 
 class App < Sinatra::Base
   register Kaal::Sinatra::Extension
 
   kaal backend: Kaal::Backend::MemoryAdapter.new,
-       scheduler_config_path: 'config/scheduler.yml'
+       scheduler_config_path: "config/scheduler.yml",
+       start_scheduler: false
 end
 ```
 
-Hanami with memory:
+### Roda
 
 ```ruby
-require 'hanami'
-require 'kaal/hanami'
+gem "kaal-roda"
+```
+
+Memory example:
+
+```ruby
+require "roda"
+require "kaal/roda"
+
+class App < Roda
+  plugin :kaal
+
+  kaal backend: Kaal::Backend::MemoryAdapter.new,
+       scheduler_config_path: "config/scheduler.yml",
+       start_scheduler: false
+end
+```
+
+### Hanami
+
+```ruby
+gem "kaal-hanami"
+```
+
+Memory example:
+
+```ruby
+require "hanami"
+require "kaal/hanami"
 
 module MyApp
   class App < Hanami::App
     Kaal::Hanami.configure!(
       self,
       backend: Kaal::Backend::MemoryAdapter.new,
-      scheduler_config_path: 'config/scheduler.yml'
+      scheduler_config_path: "config/scheduler.yml",
+      start_scheduler: false
     )
   end
 end
 ```
 
-Roda with memory:
+## Operating Kaal
 
-```ruby
-require 'roda'
-require 'kaal/roda'
+Run the scheduler in a dedicated process when possible.
 
-class App < Roda
-  plugin :kaal
+Procfile:
 
-  kaal backend: Kaal::Backend::MemoryAdapter.new,
-       scheduler_config_path: 'config/scheduler.yml'
-
-  route do |r|
-    r.root { 'ok' }
-  end
-end
+```procfile
+web: bundle exec puma -C config/puma.rb
+scheduler: bundle exec kaal start
 ```
 
-Or:
+systemd:
 
-```bash
-bundle exec rails generate kaal:install --backend=postgres
-bundle exec rails db:migrate
+```ini
+[Unit]
+Description=Kaal scheduler
+After=network.target
+
+[Service]
+WorkingDirectory=/srv/my-app/current
+ExecStart=/usr/bin/bash -lc 'bundle exec kaal start'
+ExecStartPre=/usr/bin/bash -lc 'bundle exec kaal status'
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
 ```
 
-```bash
-bundle exec rails generate kaal:install --backend=mysql
-bundle exec rails db:migrate
+Kubernetes:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app-scheduler
+  labels:
+    app: my-app-scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-app-scheduler
+  template:
+    metadata:
+      labels:
+        app: my-app-scheduler
+    spec:
+      containers:
+        - name: scheduler
+          image: my-app:latest
+          command: ["bundle", "exec", "kaal", "start"]
 ```
 
-## Dispatch Guarantee
+Framework integrations can start the scheduler inside the web process, but that should be an intentional opt-in, not the default production model.
+
+## Guarantee and idempotency
 
 Kaal's scheduler-side guarantee is:
 
-- at-most-once dispatch per `(key, fire_time)` for Redis, Postgres, and MySQL
+- at-most-once dispatch per `(key, fire_time)` for Redis, Postgres, and MySQL-backed deployments
 - deterministic `idempotency_key` generation for the same `(key, fire_time)`
 
-This guarantee applies when:
+This guarantee depends on:
 
-- nodes share the same healthy backend
+- all nodes sharing the same backend
 - `enable_log_dispatch_registry = true`
 - `lease_ttl >= window_lookback + tick_interval`
-- nodes share the same namespace and scheduler definition set
+- all nodes sharing the same namespace and scheduler definition set
 
-Use the provided `idempotency_key` inside your jobs to make downstream effects effectively once as well.
+Kaal guarantees dispatch semantics, not exactly-once external side effects. Use `idempotency_key` at the job boundary when writing to external APIs, payment systems, queues, or notification systems.
 
-## Local Development
+## Troubleshooting
 
-Run checks from the relevant gem directory.
+- Bad backend configuration
+  Missing gems, invalid adapter setup, or an unset `REDIS_URL` / `DATABASE_URL` will prevent boot. Start by checking `config/kaal.rb` and the adapter-specific README.
+- Scheduler file loading issues
+  `bundle exec kaal status` and `bundle exec kaal start` load `config/kaal.rb` and then `config/scheduler.yml` relative to the configured root. Confirm both files exist and that `scheduler_config_path` matches your app layout.
+- Duplicate job definitions
+  Job keys must be unique across the loaded scheduler definition set. Duplicate keys will cause load-time conflicts and must be resolved in `config/scheduler.yml`.
+- Backend outages or reconnect issues
+  Redis and SQL-backed coordination depend on backend availability. A backend outage means ticks cannot coordinate safely; restore backend health before expecting normal dispatch behavior.
+- Guarantee assumptions not met
+  If duplicate dispatches appear, verify the shared backend, namespace, dispatch-log registry setting, and lease sizing before assuming a scheduler bug.
 
-Examples:
+## Development
+
+Repo-level entrypoints live under `scripts/`:
+
+```bash
+scripts/run-rubocop-all
+scripts/run-reek-all
+scripts/run-rspec-unit-all
+scripts/run-rspec-e2e-all
+scripts/run-multi-node-cli-all
+```
+
+Or run the full repo-level pass in one command:
+
+```bash
+scripts/run-all
+```
+
+You can also run checks from an individual package directory, for example:
 
 ```bash
 cd core/kaal
@@ -275,58 +356,12 @@ bin/rubocop
 bin/reek
 ```
 
-```bash
-cd core/kaal-sequel
-bin/rspec-unit
-bin/rspec-e2e sqlite
-```
+## Documentation and contributing
 
-```bash
-cd core/kaal-activerecord
-bin/rspec-unit
-bin/rspec-e2e sqlite
-```
-
-```bash
-cd gems/kaal-hanami
-bin/rspec-unit
-bin/rspec-e2e memory
-bin/rspec-e2e sqlite
-```
-
-```bash
-cd gems/kaal-sinatra
-bin/rspec-unit
-bin/rspec-e2e memory
-bin/rspec-e2e sqlite
-```
-
-```bash
-cd gems/kaal-roda
-bin/rspec-unit
-bin/rspec-e2e memory
-bin/rspec-e2e sqlite
-```
-
-## Documentation
-
-Project docs are published at:
-
-<https://kaal.codevedas.com>
-
-Key pages:
-
-- [Overview](https://kaal.codevedas.com/overview)
-- [Installation](https://kaal.codevedas.com/install)
-- [Configuration](https://kaal.codevedas.com/configuration)
-- [Usage](https://kaal.codevedas.com/usage)
-- [Dispatch Guarantee](https://kaal.codevedas.com/dispatch-guarantee)
-
-## Contributing
-
-- [CONTRIBUTING.md](./CONTRIBUTING.md)
-- [SECURITY.md](./SECURITY.md)
-- [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
+- Docs site: <https://kaal.codevedas.com>
+- Contributor guide: [CONTRIBUTING.md](./CONTRIBUTING.md)
+- Security policy: [SECURITY.md](./SECURITY.md)
+- Code of conduct: [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
 
 ## License
 

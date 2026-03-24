@@ -1,180 +1,205 @@
 # Contributing to Kaal
 
-Thank you for contributing to Kaal. This repository contains the gem, documentation site, and supporting project assets. Review this guide before opening a change.
+Thank you for contributing to Kaal. This repository is a Ruby monorepo with multiple gems, a docs site, and shared development scripts. Read this guide before opening a change.
 
-Feel free to contribute through various avenues such as suggestions, comments, bug reports, or pull requests. To do so, please open an issue or a pull request directly in the repository.
+You can contribute with issues, bug reports, feature requests, documentation updates, tests, or pull requests.
 
-## Community Engagement
+## Repository layout
 
-There are several ways to become an active part of our community:
+The main packages in this repository are:
 
-1. [Create an issue](https://github.com/Code-Vedas/kaal/issues/new/choose) in the repository.
-2. Join our mailing list by sending an email to [Join mailing list](mailto:mailing-list@codevedas.com).
-3. Participate in our Slack channel by sending an email to [Join slack](mailto:join-slack@codevedas.com).
-4. Apply for project membership by sending an email to [Join project](mailto:join-project@codevedas.com). Following an initial screening, an invitation will be extended to you. This membership allows you to create issues, pull requests, and more, directly in the repository without the need to fork it.
-5. If you wish to make a financial contribution, please follow GitHub's instructions for donating to the project.
+| Package             | Path                     | Purpose                                                       |
+| ------------------- | ------------------------ | ------------------------------------------------------------- |
+| `kaal`              | `core/kaal`              | Core scheduler engine, CLI, memory backend, and Redis backend |
+| `kaal-sequel`       | `core/kaal-sequel`       | Sequel-backed SQL adapter                                     |
+| `kaal-activerecord` | `core/kaal-activerecord` | Active Record-backed SQL adapter                              |
+| `kaal-hanami`       | `gems/kaal-hanami`       | Hanami integration                                            |
+| `kaal-rails`        | `gems/kaal-rails`        | Rails integration                                             |
+| `kaal-roda`         | `gems/kaal-roda`         | Roda integration                                              |
+| `kaal-sinatra`      | `gems/kaal-sinatra`      | Sinatra integration                                           |
+| Docs site           | `docs/`                  | Jekyll documentation site                                     |
 
-## Code and Documentation
+Repo-level helpers live under `scripts/`.
 
-We encourage contributions to both the codebase and documentation.
+## How to contribute
 
-This project comprises various modules/components, each housed in its dedicated folder/repository. For detailed information, please refer to the README.md file in each respective folder/repository.
+### Issues
 
-The table below provides an overview of all possible modules/components:
+Before opening an issue:
 
-| Module/Component | Description                | Related Language/Framework |
-| ---------------- | -------------------------- | -------------------------- |
-| kaal             | Distributed cron scheduler | Ruby                       |
+1. Check existing issues to avoid duplicates.
+2. Use the matching issue template if one exists.
+3. Include enough detail to reproduce the problem or evaluate the feature request.
 
-## Improve Documentation
+### Pull requests
 
-Contributions to the documentation, including this file, are highly welcomed.
+Before opening a pull request:
 
-Two ways to contribute to the documentation:
+1. Create a branch from `main`.
+2. Limit the change to a coherent unit of work.
+3. Update docs when behavior, commands, package selection, or operations change.
+4. Run the relevant checks locally.
+5. Fill out the PR template completely.
 
-1. Create an issue in the repository with the suggested changes using the appropriate template.
-2. Submit a pull request in the repository with the suggested changes, adhering to the specified template.
+Branch names should use a clear prefix such as `feature/<name>`, `bugfix/<name>`, `hotfix/<name>`, or `docs/<name>`.
 
-Both approaches are applicable to this file as well, following the outlined code of conduct.
+## Running checks
 
-## Improve Code
+Use the shared repo-level scripts from the repository root:
 
-Your contributions to the codebase are appreciated. Refer to the README.md file in each folder/repository for detailed information.
+```bash
+scripts/run-rubocop-all
+scripts/run-reek-all
+scripts/run-rspec-unit-all
+scripts/run-rspec-e2e-all
+scripts/run-multi-node-cli-all
+```
 
-Two ways to contribute to the code:
+Run either the phase-specific scripts you need:
 
-1. Open an issue in the repository with the suggested changes, using the appropriate template.
-2. Submit a pull request in the repository with the suggested changes, following the specified template.
+- `scripts/run-rubocop-all`
+  Runs RuboCop for every package.
+- `scripts/run-reek-all`
+  Runs Reek for every package.
+- `scripts/run-rspec-unit-all`
+  Runs unit specs for every package.
+- `scripts/run-rspec-e2e-all`
+  Runs end-to-end specs for every package and backend matrix.
+- `scripts/run-multi-node-cli-all`
+  Runs the shared multi-node CLI check for Redis, PostgreSQL, and MySQL.
 
-### Pull Request
+Or run the full monorepo check in one command:
 
-Before creating a pull request, ensure the following:
+```bash
+scripts/run-all
+```
 
-1. Download and install the code on your local machine.
-2. Set up the development environment and verify that it is functioning as expected.
-3. Create a branch for your changes, ensuring they work as intended. The branch name should follow the format `feature/<feature-name>`, `bugfix/<bug-name>`, `hotfix/<hotfix-name>`, etc.
-4. Run applicable test suites, confirming that all tests pass.
-5. Ensure the code adheres to coding standards and best practices.
-6. Provide thorough documentation for the changes made.
-7. When creating a PR, select the correct template and complete all details. If the template is unavailable, create an issue in the repository for template addition. Failure to complete the template may result in the PR being closed without action.
+`scripts/run-all` runs the main lint and test flow across the monorepo.
 
-### Issue
+You can also work from an individual package directory:
 
-Before creating an issue, perform the following:
+```bash
+cd core/kaal
+bundle install
+bin/rspec-unit
+bin/rubocop
+bin/reek
+```
 
-1. Invest time in finding a solution to the problem (if applicable).
-2. When creating an issue, select the correct template and complete all details. If the template is absent, create an issue in the repository to request its addition. Failure to complete the template may lead to the issue being closed without action.
+Framework and adapter packages expose similar `bin/rspec-unit`, `bin/rspec-e2e`, `bin/rubocop`, and `bin/reek` entrypoints.
 
-Both approaches are suitable for various changes, including bug fixes and new features, while adhering to the code of conduct.
-
-## Enhance Security
-
-Contributions to the security aspects of the project are highly appreciated. To report a security vulnerability, please follow the instructions outlined in the [SECURITY.md](SECURITY.md) file.
-
-## CLAs
-
-We require all contributors to sign a Contributor License Agreement (CLA) before accepting any contributions. This ensures that we can legally incorporate your contributions into the project.
-
-You will be prompted to sign a CLA when you open your first pull request. Please follow the instructions provided in the prompt to complete the process. Without a signed CLA, we will not be able to accept your contributions.
-
-There is no expiration date for CLAs. Once signed, your CLA will remain valid for all future contributions to this project.
+Run the smallest relevant set for your change, or use `scripts/run-all` when you want the full repo-level pass.
 
 ## Documentation
 
-This project uses [Jekyll](https://jekyllrb.com/) to generate documentation pages from markdown files located in the `docs/pages/` directory. The documentation is built and published automatically using GitHub Pages.
+Documentation contributions are welcome.
 
-### General instructions to run Jekyll locally
+The docs site is built with Jekyll from files under `docs/`.
 
-1. Ensure you have Ruby and Bundler installed on your machine.
-2. Navigate to the `docs/` directory in your terminal.
-3. Install the required gems by running:
+Run the docs site locally:
 
-   ```bash
-   bundle install
-   ```
+```bash
+cd docs
+bundle install
+bundle exec jekyll serve
+```
 
-4. Start the Jekyll server with:
+Build the docs site once:
 
-   ```bash
-   bundle exec jekyll serve
-   ```
+```bash
+cd docs
+bundle exec jekyll build
+```
 
-5. Open your web browser and go to `http://localhost:4000` to view the documentation.
+When code changes affect installation, package selection, runtime behavior, CLI commands, guarantees, or troubleshooting, update the relevant docs in the same pull request.
 
-### Updating docs
+## Security
 
-When changes are made to the codebase, please ensure that the documentation is updated accordingly. This includes updating any relevant markdown files in the `docs/pages/` directory or adding new files for new features or changes.
+To report a security vulnerability, follow the instructions in [SECURITY.md](SECURITY.md).
 
-## Release Process
+## CLA
 
-To release a new version of the `kaal` gem, follow these steps.
+All contributors must sign the Contributor License Agreement before contributions can be accepted.
 
-Pick the version number from draft release notes on the
-[releases page](https://github.com/Code-Vedas/kaal/releases).
+You will be prompted when opening your first pull request. Once signed, the CLA remains valid for future contributions to this repository.
 
-1. **Create a release branch**  
-   Branch off `main` to a new branch named `release/<version>`.
+## Release process
 
-   ```bash
-      git checkout main
-      git pull
-      git checkout -b release/<version>
-   ```
+This repository releases multiple gems from one monorepo. Treat a release as a coordinated version bump across the packages that ship together.
 
-2. **Update the version**
-   Update the version in `kaal.gemspec` to `<version>`.
+### Prepare the release branch
 
-3. **Update CHANGELOG**
-   Copy the draft release notes from the
-   [releases page](https://github.com/Code-Vedas/kaal/releases)
-   and paste them into `CHANGELOG.md` under a new `## <version> - YYYY-MM-DD` section.
+1. Pick the version from the draft release notes on the [releases page](https://github.com/Code-Vedas/kaal/releases).
+2. Create a release branch from `main`.
 
-4. **Docs sweep**
-   Update all relevant docs to reflect this version (version number, features, fixes, usage):
-   - Root `README.md` and `kaal/README.md`
-   - `CONTRIBUTING.md` (if contributor process changed)
+```bash
+git checkout main
+git pull
+git checkout -b release/<version>
+```
 
-5. **Verify release notes**
-   Ensure the notes accurately reflect all user-visible changes in this version.
+### Update versions and release notes
 
-6. **Pre-flight checks (must pass)**
-   Run lint and tests locally (CI will run them again):
+1. Update the version constants / gem metadata for each gem being released.
+2. Confirm cross-gem dependency pins stay aligned where one package depends on another package from this monorepo.
+3. Update [CHANGELOG.md](CHANGELOG.md) with a new section for `<version>` using the finalized release notes.
 
-   ```bash
-   bundle exec rubocop
-   bundle exec rspec
-   ```
+At minimum, review these package surfaces during release prep:
 
-   Fix any failures before proceeding.
+- `core/kaal`
+- `core/kaal-sequel`
+- `core/kaal-activerecord`
+- `gems/kaal-hanami`
+- `gems/kaal-rails`
+- `gems/kaal-roda`
+- `gems/kaal-sinatra`
 
-7. **Commit and push the release branch**
+### Docs sweep
 
-   ```bash
-   git add -A
-   git commit -m "release: prepare v<version>"
-   git push -u origin release/<version>
-   ```
+Update user-facing docs when needed:
 
-8. **Open a PR to `main`**
-   Create a pull request to merge `release/<version>` into `main`.
+- [README.md](README.md)
+- [CONTRIBUTING.md](CONTRIBUTING.md)
+- docs under `docs/`
+- package READMEs for any changed gem surfaces
 
-9. **Label the PR**
-   Tag the PR with `release`, `release/<version>`, and `skip-changelog`.
+### Pre-flight checks
 
-10. **Create a GitHub Release**
-    After the PR is approved and merged, create a new Release on the
-    [GitHub releases page](https://github.com/Code-Vedas/kaal/releases).
-    Use **tag name** `v<version>` and include the release notes (same as `CHANGELOG.md`).
+Run the shared scripts from the repo root:
 
-11. **Publish via GitHub Actions**
-    Once the Release is created, GitHub Actions will automatically build
-    and publish the gem to RubyGems.org.
+```bash
+scripts/run-rubocop-all
+scripts/run-reek-all
+scripts/run-rspec-unit-all
+scripts/run-rspec-e2e-all
+scripts/run-multi-node-cli-all
+```
 
-12. **Done 🎉**
-    Optionally verify the published version:
+Fix failures before opening the release PR.
 
-    ```bash
-    gem install kaal -v <version>
-    ```
+### Open the release PR
 
-    and sanity-check `bundle exec kaal status` in a fresh Ruby app.
+1. Commit the release changes.
+2. Push `release/<version>`.
+3. Open a pull request into `main`.
+4. Apply the release labels your workflow expects.
+
+Example:
+
+```bash
+git add -A
+git commit -m "release: prepare v<version>"
+git push -u origin release/<version>
+```
+
+### Publish
+
+After the release PR is approved and merged:
+
+1. Create the GitHub Release with tag `v<version>`.
+2. Use the same finalized release notes reflected in [CHANGELOG.md](CHANGELOG.md).
+3. Let the configured GitHub Actions workflow publish the gems.
+
+### Post-release sanity checks
+
+After publication, verify the expected gems and versions on RubyGems and sanity-check a fresh install path for at least the main user surfaces you changed.
