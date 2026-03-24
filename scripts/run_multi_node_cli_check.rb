@@ -14,6 +14,9 @@ class MultiNodeCliCheck
   DEFAULT_POSTGRES_URL = 'postgres://postgres:postgres@localhost:5432/kaal_test_auto'
   DEFAULT_MYSQL_URL = 'mysql2://root:rootROOT!1@127.0.0.1:3306/kaal_test_auto'
   DEFAULT_REDIS_URL = 'redis://127.0.0.1:6379/0'
+  VERIFY_TIMEOUT_SECONDS = 20
+  VERIFY_POLL_INTERVAL_SECONDS = 0.5
+  STABILITY_WINDOW_SECONDS = 2
 
   def initialize(backend)
     @backend = backend
@@ -107,8 +110,10 @@ class MultiNodeCliCheck
   end
 
   def verify_single_run!
+    deadline = Time.now.utc + VERIFY_TIMEOUT_SECONDS
+    wait_for_first_run(deadline)
     count = run_count
-    return if count == 1
+    return if count == 1 && stable_single_run?(deadline)
 
     raise "expected exactly one job run for #{backend}, got #{count} (#{diagnostics})"
   end
@@ -291,9 +296,9 @@ class MultiNodeCliCheck
   def database_url
     case backend
     when 'postgres'
-      ENV.fetch('KAAL_MULTI_NODE_POSTGRES_URL', DEFAULT_POSTGRES_URL)
+      normalize_database_url(ENV.fetch('KAAL_MULTI_NODE_POSTGRES_URL', DEFAULT_POSTGRES_URL))
     when 'mysql'
-      ENV.fetch('KAAL_MULTI_NODE_MYSQL_URL', DEFAULT_MYSQL_URL)
+      normalize_database_url(ENV.fetch('KAAL_MULTI_NODE_MYSQL_URL', DEFAULT_MYSQL_URL))
     else
       raise "No database URL for #{backend}"
     end
@@ -443,7 +448,7 @@ class MultiNodeCliCheck
   end
 
   def parse_database_url(url)
-    uri = URI.parse(url)
+    uri = URI.parse(normalize_database_url(url))
     database_name = uri.path.delete_prefix('/')
 
     {
@@ -459,8 +464,7 @@ class MultiNodeCliCheck
   end
 
   def build_admin_database_url(uri)
-    admin_database_name = backend == 'postgres' ? 'postgres' : nil
-    path = admin_database_name ? "/#{admin_database_name}" : nil
+    path = backend == 'postgres' ? '/postgres' : '/'
 
     URI::Generic.build(
       scheme: uri.scheme,
@@ -470,6 +474,30 @@ class MultiNodeCliCheck
       path: path,
       query: uri.query
     ).to_s
+  end
+
+  def normalize_database_url(url)
+    url.gsub('\\!', '!')
+  end
+
+  def wait_for_first_run(deadline)
+    loop do
+      count = run_count
+      return count if count >= 1 || Time.now.utc >= deadline
+
+      sleep(VERIFY_POLL_INTERVAL_SECONDS)
+    end
+  end
+
+  def stable_single_run?(deadline)
+    stability_deadline = [deadline, Time.now.utc + STABILITY_WINDOW_SECONDS].min
+
+    loop do
+      return false unless run_count == 1
+      return true if Time.now.utc >= stability_deadline
+
+      sleep(VERIFY_POLL_INTERVAL_SECONDS)
+    end
   end
 
   def terminate_nodes(signal)
