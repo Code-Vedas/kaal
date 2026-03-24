@@ -11,27 +11,74 @@ permalink: /contribute
 
 1. Fork the repository.
 2. Clone your fork and create a branch.
-3. Make your changes.
-4. Run the local checks:
+3. Install dependencies for the packages you are working on.
+4. Make your changes.
+5. Run the relevant checks.
+6. Push and open a pull request.
 
-   ```bash
-   bundle install
-   cd kaal
-   bundle exec rspec
-   bin/rubocop
-   bin/reek
-   ```
+## Monorepo structure
 
-5. Push and open a pull request.
+- `core/kaal`
+  Core engine, runtime, CLI, memory backend, and Redis backend.
+- `core/kaal-sequel`
+  Sequel-backed SQL adapter.
+- `core/kaal-activerecord`
+  Active Record-backed SQL adapter.
+- `gems/kaal-hanami`
+  Hanami integration.
+- `gems/kaal-rails`
+  Rails integration.
+- `gems/kaal-roda`
+  Roda integration.
+- `gems/kaal-sinatra`
+  Sinatra integration.
+- `docs/`
+  Docs site source.
+- `scripts/`
+  Repo-level helpers for common checks.
 
-## Code structure
+## Common repo-level checks
 
-- `Kaal::Core` for scheduling and coordination logic
-- `Kaal::Config` for configuration and validation
-- `Kaal::Runtime` for runtime lifecycle helpers
-- `Kaal::SchedulerFile` for scheduler file loading
-- `Kaal::Backend` for adapters and backend-facing helpers
-- `Kaal::Definitions` for definition persistence and registration
-- `Kaal::Utils` for pure helpers
+Run these from the repo root:
+
+```bash
+scripts/run-rubocop-all
+scripts/run-reek-all
+scripts/run-rspec-unit-all
+scripts/run-rspec-e2e-all
+scripts/run-multi-node-cli-all
+```
+
+Or run the full monorepo check flow in one command:
+
+```bash
+scripts/run-all
+```
+
+Use the narrower scripts when you only need one phase. Use `scripts/run-all` when you want the full monorepo check flow.
+
+## Package-level checks
+
+You can also work from an individual package directory:
+
+```bash
+cd core/kaal
+bundle install
+bin/rspec-unit
+bin/rubocop
+bin/reek
+```
+
+Framework and adapter packages expose similar `bin/rspec-unit`, `bin/rspec-e2e`, `bin/rubocop`, and `bin/reek` entrypoints.
+
+## What to contribute
+
+Useful contributions include:
+
+- scheduler/runtime improvements
+- SQL or Redis adapter fixes
+- framework integration improvements
+- docs and examples
+- test coverage and CI hardening
 
 You do not need framework-specific experience to contribute. Plain Ruby, SQL, Redis, documentation, and test improvements are all useful.

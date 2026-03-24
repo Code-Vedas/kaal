@@ -8,27 +8,30 @@ permalink: /usage
 
 For the exact multi-node claim, assumptions, and evidence, see [At-Most-Once Dispatch Guarantee](/dispatch-guarantee).
 
-Register recurring jobs in Ruby:
+## Register recurring jobs
 
-```ruby
-Kaal.register(
-  key: "reports:weekly_summary",
-  cron: "0 9 * * 1",
-  enqueue: ->(fire_time:, idempotency_key:) {
-    WeeklySummaryJob.perform(fire_time: fire_time, idempotency_key: idempotency_key)
-  }
-)
+Define jobs in `config/scheduler.yml`:
+
+```yaml
+defaults:
+  jobs:
+    - key: "reports:weekly_summary"
+      cron: "0 9 * * 1"
+      job_class: "WeeklySummaryJob"
+      enabled: true
+      kwargs:
+        idempotency_key: "{{idempotency_key}}"
 ```
 
-The engine API stays the same across datastore adapters. What changes is the configured backend.
+Kaal loads the scheduler file at boot and dispatches the configured work on each eligible tick.
 
-For Redis, Postgres, and MySQL, the same `(key, fire_time)` also yields the same deterministic `idempotency_key`, which is intended to be used by job code for downstream dedupe.
+For Redis, Postgres, and MySQL-backed deployments, the same `(key, fire_time)` yields the same deterministic `idempotency_key`. Use that key at the job boundary when downstream systems also need dedupe.
 
-## Usage Paths
+## Configure the backend
+
+The registration model stays the same across adapters. What changes is the configured backend.
 
 ### Plain Ruby with memory
-
-Use `kaal` only:
 
 ```ruby
 require "kaal"
@@ -41,22 +44,19 @@ end
 
 ### Plain Ruby with Redis
 
-Use `kaal` only:
-
 ```ruby
 require "kaal"
 require "redis"
 
+redis = Redis.new(url: ENV.fetch("REDIS_URL"))
+
 Kaal.configure do |config|
-  redis = Redis.new(url: ENV.fetch("REDIS_URL"))
   config.backend = Kaal::Backend::RedisAdapter.new(redis)
   config.scheduler_config_path = "config/scheduler.yml"
 end
 ```
 
-### Plain Ruby with Sequel SQL
-
-Use `kaal` plus `kaal-sequel`:
+### Plain Ruby with Sequel-backed SQL
 
 ```ruby
 require "kaal"
@@ -71,16 +71,23 @@ Kaal.configure do |config|
 end
 ```
 
-Swap the adapter class when using PostgreSQL or MySQL:
+For PostgreSQL or MySQL, replace the backend line inside `Kaal.configure` with one of:
 
 ```ruby
-config.backend = Kaal::Backend::PostgresAdapter.new(database)
-config.backend = Kaal::Backend::MySQLAdapter.new(database)
+Kaal.configure do |config|
+  config.backend = Kaal::Backend::PostgresAdapter.new(database)
+  config.scheduler_config_path = "config/scheduler.yml"
+end
 ```
 
-### Plain Ruby with Active Record SQL
+```ruby
+Kaal.configure do |config|
+  config.backend = Kaal::Backend::MySQLAdapter.new(database)
+  config.scheduler_config_path = "config/scheduler.yml"
+end
+```
 
-Use `kaal` plus `kaal-activerecord`:
+### Plain Ruby with Active Record-backed SQL
 
 ```ruby
 require "kaal"
@@ -97,16 +104,23 @@ Kaal.configure do |config|
 end
 ```
 
-For PostgreSQL or MySQL:
+For PostgreSQL or MySQL, replace the backend line inside `Kaal.configure` with one of:
 
 ```ruby
-config.backend = Kaal::ActiveRecord::PostgresAdapter.new
-config.backend = Kaal::ActiveRecord::MySQLAdapter.new
+Kaal.configure do |config|
+  config.backend = Kaal::ActiveRecord::PostgresAdapter.new
+  config.scheduler_config_path = "config/scheduler.yml"
+end
+```
+
+```ruby
+Kaal.configure do |config|
+  config.backend = Kaal::ActiveRecord::MySQLAdapter.new
+  config.scheduler_config_path = "config/scheduler.yml"
+end
 ```
 
 ### Rails
-
-Use `kaal-rails`:
 
 ```ruby
 gem "kaal-rails"
@@ -117,21 +131,9 @@ bundle exec rails generate kaal:install --backend=sqlite
 bundle exec rails db:migrate
 ```
 
-```bash
-bundle exec rails generate kaal:install --backend=postgres
-bundle exec rails db:migrate
-```
-
-```bash
-bundle exec rails generate kaal:install --backend=mysql
-bundle exec rails db:migrate
-```
-
-In Rails, the backend is auto-selected from the configured database adapter unless you explicitly override it.
+Rails auto-selects the Active Record-backed adapter from the configured database unless you override `Kaal.configuration.backend` yourself.
 
 ### Sinatra
-
-Use `kaal-sinatra` with the backend style you want.
 
 Memory:
 
@@ -157,11 +159,11 @@ require "redis"
 require "kaal/sinatra"
 
 class App < Sinatra::Base
-  redis = Redis.new(url: ENV.fetch("REDIS_URL"))
+  REDIS = Redis.new(url: ENV.fetch("REDIS_URL"))
 
   register Kaal::Sinatra::Extension
 
-  kaal redis: redis,
+  kaal redis: REDIS,
        scheduler_config_path: "config/scheduler.yml",
        namespace: "my-app",
        start_scheduler: false
@@ -188,29 +190,7 @@ class App < Sinatra::Base
 end
 ```
 
-For classic Sinatra apps, use explicit registration:
-
-```ruby
-require "sinatra"
-require "sequel"
-require "kaal/sinatra"
-
-database = Sequel.connect(ENV.fetch("DATABASE_URL"))
-
-Kaal::Sinatra.register!(
-  settings,
-  database: database,
-  scheduler_config_path: "config/scheduler.yml",
-  namespace: "my-app",
-  start_scheduler: false
-)
-```
-
-`kaal-sinatra` loads `config/scheduler.yml` relative to the Sinatra app root and only starts the scheduler if you opt in.
-
 ### Roda
-
-Use `kaal-roda` with the backend style you want.
 
 Memory:
 
@@ -225,10 +205,6 @@ class App < Roda
        scheduler_config_path: "config/scheduler.yml",
        namespace: "my-app",
        start_scheduler: false
-
-  route do |r|
-    r.root { "ok" }
-  end
 end
 ```
 
@@ -271,11 +247,7 @@ class App < Roda
 end
 ```
 
-`kaal-roda` loads `config/scheduler.yml` relative to the Roda app root and only starts the scheduler if you opt in.
-
 ### Hanami
-
-Use `kaal-hanami` with the backend style you want.
 
 Memory:
 
@@ -341,12 +313,13 @@ module MyApp
 end
 ```
 
-`kaal-hanami` loads `config/scheduler.yml` relative to the Hanami app root and only starts the scheduler if you opt in.
-
 ## CLI
+
+Available plain-Ruby CLI commands:
 
 ```bash
 bundle exec kaal init --backend=memory
+bundle exec kaal init --backend=redis
 bundle exec kaal start
 bundle exec kaal status
 bundle exec kaal tick
@@ -354,28 +327,72 @@ bundle exec kaal explain "*/15 * * * *"
 bundle exec kaal next "0 9 * * 1" --count 3
 ```
 
-## Production Runtime
+`kaal init` does not provision SQL adapter setups. For SQL-backed installs, configure the adapter gem yourself or use the framework-specific install surface.
 
-Use a dedicated scheduler process:
+## Production runtime
+
+Use a dedicated scheduler process when possible.
+
+Procfile:
 
 ```procfile
 web: bundle exec puma -C config/puma.rb
 scheduler: bundle exec kaal start
 ```
 
+systemd:
+
 ```ini
+[Unit]
+Description=Kaal scheduler
+After=network.target
+
+[Service]
+WorkingDirectory=/srv/my-app/current
 ExecStart=/usr/bin/bash -lc 'bundle exec kaal start'
 ExecStartPre=/usr/bin/bash -lc 'bundle exec kaal status'
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
 ```
 
-## Adapter Notes
+Kubernetes:
 
-- Use `kaal` by itself for memory or redis-backed scheduling.
-- Use `kaal-sequel` for Sequel-backed SQL persistence in plain Ruby apps.
-- Use `kaal-activerecord` for Active Record-backed SQL persistence in plain Ruby apps.
-- Use `kaal-rails` for Rails apps; it pulls in `kaal-activerecord` and provides Rails-native integration.
-- Use `kaal-hanami` for Hanami apps; it provides middleware-based Hanami boot and lifecycle wiring across memory, redis, and SQL backends.
-- Use `kaal-roda` for Roda apps; it provides explicit Roda boot and lifecycle wiring across memory, redis, and SQL backends.
-- Use `kaal-sinatra` for Sinatra apps; it provides explicit Sinatra boot and lifecycle wiring across memory, redis, and SQL backends.
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app-scheduler
+  labels:
+    app: my-app-scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-app-scheduler
+  template:
+    metadata:
+      labels:
+        app: my-app-scheduler
+    spec:
+      containers:
+        - name: scheduler
+          image: my-app:latest
+          command: ["bundle", "exec", "kaal", "start"]
+```
 
-For plain Ruby jobs dispatched through `.perform(*args, **kwargs)`, Kaal considers the run successful unless the job raises. Return values are not inspected.
+Framework integrations can co-locate the scheduler inside the web process, but that should be an explicit decision, not the default deployment model.
+
+## Operational checks
+
+- `bundle exec kaal status`
+  Show current runtime settings and registered jobs.
+- `bundle exec kaal tick`
+  Run a single scheduler tick for smoke-checking a configured environment.
+- `bundle exec kaal explain "CRON"`
+  Humanize a cron expression.
+- `bundle exec kaal next "CRON" --count N`
+  Print upcoming fire times.
+
+For plain Ruby jobs dispatched through `.perform(*args, **kwargs)`, Kaal considers the run successful unless the job raises.
