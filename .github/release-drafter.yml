@@ -88,6 +88,7 @@ categories:
   - title: 🔖 Releases
     labels:
       - release
+      - skip-changelog
   - title: 🧰 Maintenance
     labels:
       - chore
