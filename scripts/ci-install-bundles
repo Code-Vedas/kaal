@@ -5,6 +5,9 @@ set -eu
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "${SCRIPT_DIR}/.." && pwd)
 CI_RUBY_VERSION="${CI_RUBY_VERSION:-$(ruby -e 'print RUBY_VERSION.split(".").first(2).join(".")')}"
+BUNDLE_PATH="${BUNDLE_PATH:-${REPO_ROOT}/vendor/bundle}"
+
+export BUNDLE_PATH
 
 install_bundle() {
   bundle_dir="$1"

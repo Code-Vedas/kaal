@@ -2,7 +2,7 @@ name: Shared CI
 permissions:
   contents: read
 env:
-  BUNDLE_PATH: vendor/bundle
+  BUNDLE_PATH: ${{ github.workspace }}/vendor/bundle
   BUNDLE_JOBS: "4"
   BUNDLE_RETRY: "3"
 
