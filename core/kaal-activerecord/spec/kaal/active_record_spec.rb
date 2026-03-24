@@ -218,6 +218,21 @@ RSpec.describe Kaal::ActiveRecord do
     expect(registry.cleanup(recovery_window: 0)).to eq(1)
   end
 
+  it 'stores namespaced dispatch identities without leaking namespace through the public API' do
+    model = class_double(described_class::DispatchRecord)
+    fire_time = Time.utc(2026, 1, 1, 0, 0, 0)
+    dispatched_at = Time.utc(2026, 1, 1, 0, 1, 0)
+    record = build_dispatch_record(key: 'ops:job:a', fire_time:, dispatched_at:)
+
+    allow(model).to receive(:find_or_initialize_by).with(key: 'ops:job:a', fire_time:).and_return(record)
+    allow(model).to receive(:find_by).with(key: 'ops:job:a', fire_time:).and_return(record)
+
+    registry = described_class::DispatchRegistry.new(connection: nil, model:, namespace: 'ops')
+
+    expect(registry.log_dispatch('job:a', fire_time, 'node-1')).to include(key: 'job:a', node_id: 'node-1')
+    expect(registry.find_dispatch('job:a', fire_time)).to include(key: 'job:a')
+  end
+
   it 'wraps sqlite lock adapter failures' do
     lock_model = class_double(Kaal::ActiveRecord::LockRecord).as_stubbed_const
     relation = instance_double(ActiveRecord::Relation, delete_all: 0)

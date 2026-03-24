@@ -13,16 +13,17 @@ module Kaal
     class DatabaseAdapter < Kaal::Backend::Adapter
       include Kaal::Backend::DispatchLogging
 
-      def initialize(connection = nil, lock_model: LockRecord, dispatch_registry: nil, definition_registry: nil)
+      def initialize(connection = nil, lock_model: LockRecord, dispatch_registry: nil, definition_registry: nil, namespace: nil)
         super()
         ConnectionSupport.configure!(connection)
         @lock_model = lock_model
         @dispatch_registry = dispatch_registry
         @definition_registry = definition_registry
+        @namespace = namespace
       end
 
       def dispatch_registry
-        @dispatch_registry ||= DispatchRegistry.new
+        @dispatch_registry ||= DispatchRegistry.new(namespace: resolved_namespace)
       end
 
       def definition_registry
@@ -58,6 +59,12 @@ module Kaal
 
       def cleanup_expired_locks
         @lock_model.where(expires_at: ...Time.now.utc).delete_all
+      end
+
+      private
+
+      def resolved_namespace
+        @namespace || Kaal.configuration.namespace
       end
     end
 

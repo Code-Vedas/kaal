@@ -15,15 +15,16 @@ module Kaal
       SIGNED_64_MAX = 9_223_372_036_854_775_807
       UNSIGNED_64_RANGE = 18_446_744_073_709_551_616
 
-      def initialize(connection = nil, dispatch_registry: nil, definition_registry: nil)
+      def initialize(connection = nil, dispatch_registry: nil, definition_registry: nil, namespace: nil)
         super()
         ConnectionSupport.configure!(connection)
         @dispatch_registry = dispatch_registry
         @definition_registry = definition_registry
+        @namespace = namespace
       end
 
       def dispatch_registry
-        @dispatch_registry ||= DispatchRegistry.new
+        @dispatch_registry ||= DispatchRegistry.new(namespace: resolved_namespace)
       end
 
       def definition_registry
@@ -56,6 +57,10 @@ module Kaal
           BaseRecord.send(:sanitize_sql_array, [sql, value])
         )
         result.first.values.first
+      end
+
+      def resolved_namespace
+        @namespace || Kaal.configuration.namespace
       end
     end
   end

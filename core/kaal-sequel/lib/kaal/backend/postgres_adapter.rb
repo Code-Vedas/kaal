@@ -19,13 +19,14 @@ module Kaal
       SIGNED_64_MAX = 9_223_372_036_854_775_807
       UNSIGNED_64_RANGE = 18_446_744_073_709_551_616
 
-      def initialize(database)
+      def initialize(database, namespace: nil)
         super()
         @database = Kaal::Persistence::Database.new(database)
+        @namespace = namespace
       end
 
       def dispatch_registry
-        @dispatch_registry ||= Kaal::Dispatch::DatabaseEngine.new(database: @database.connection)
+        @dispatch_registry ||= Kaal::Dispatch::DatabaseEngine.new(database: @database.connection, namespace: resolved_namespace)
       end
 
       def definition_registry
@@ -56,6 +57,10 @@ module Kaal
       def scalar(sql, *binds)
         row = @database.connection.fetch(sql, *binds).first
         row.values.first
+      end
+
+      def resolved_namespace
+        @namespace || Kaal.configuration.namespace
       end
     end
   end

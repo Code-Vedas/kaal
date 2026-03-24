@@ -13,6 +13,7 @@ RSpec.describe Kaal, integration: :pg do
     inspector = nil
     key = 'contention:pg'
     namespace = KaalIntegrationSupport.namespace('contention-pg')
+    stored_key = "#{namespace}:#{key}"
     base_time = Time.utc(2026, 1, 1, 0, 0, 30)
     fixed_times = KaalContentionSupport.repeated_fire_times(base_time, iterations: 3)
     skip 'DATABASE_URL not set' if ENV['DATABASE_URL'].to_s.empty?
@@ -36,10 +37,10 @@ RSpec.describe Kaal, integration: :pg do
 
     KaalContentionSupport.assert_single_dispatch_per_iteration!(result)
 
-    expect(inspector[:kaal_dispatches].where(key: key).count).to eq(3)
+    expect(inspector[:kaal_dispatches].where(key: stored_key).count).to eq(3)
     result.fetch(:iterations).each do |iteration|
       fire_time = iteration.fetch(:expected_fire_time)
-      expect(inspector[:kaal_dispatches].where(key: key, fire_time: fire_time).count).to eq(1)
+      expect(inspector[:kaal_dispatches].where(key: stored_key, fire_time: fire_time).count).to eq(1)
     end
   ensure
     connections.each(&:disconnect)

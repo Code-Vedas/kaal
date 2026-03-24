@@ -14,8 +14,10 @@ module KaalContentionSupport
   def run_threaded_contention(fixed_times:, key:, namespace:, backend_factory:, node_count: 3, cron: '* * * * *')
     collector = CallCollector.new
     previous_dispatch_logging = Kaal.configuration.enable_log_dispatch_registry
+    previous_namespace = Kaal.configuration.namespace
 
     Kaal.configuration.enable_log_dispatch_registry = true
+    Kaal.configuration.namespace = namespace
 
     with_stubbed_time_now(fixed_times.fetch(0)) do |set_time|
       nodes = build_nodes(
@@ -35,7 +37,7 @@ module KaalContentionSupport
       }
     end
   ensure
-    reset_kaal_state(previous_dispatch_logging)
+    reset_kaal_state(previous_dispatch_logging, previous_namespace)
   end
 
   def fire_time_for(current_time)
@@ -147,11 +149,12 @@ module KaalContentionSupport
   end
   private_class_method :with_stubbed_time_now
 
-  def reset_kaal_state(previous_dispatch_logging)
+  def reset_kaal_state(previous_dispatch_logging, previous_namespace)
     Kaal.reset_configuration!
     Kaal.reset_registry!
     Kaal.instance_variable_set(:@registration_service, nil)
     Kaal.configuration.enable_log_dispatch_registry = previous_dispatch_logging
+    Kaal.configuration.namespace = previous_namespace
   end
   private_class_method :reset_kaal_state
 

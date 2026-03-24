@@ -85,6 +85,17 @@ RSpec.describe Kaal::Dispatch::DatabaseEngine do
     expect(engine.cleanup(recovery_window: 60)).to eq(1)
   end
 
+  it 'stores namespaced dispatch identities without leaking namespace through the public API' do
+    fire_time = Time.now.utc
+    namespaced_engine = described_class.new(database: db, namespace: 'ops')
+
+    namespaced_engine.log_dispatch('job:a', fire_time, 'node-1')
+
+    expect(namespaced_engine.find_dispatch('job:a', fire_time)).to include(key: 'job:a', node_id: 'node-1')
+    expect(db[:kaal_dispatches].where(key: 'ops:job:a', fire_time: fire_time).count).to eq(1)
+    expect(db[:kaal_dispatches].where(key: 'job:a', fire_time: fire_time).count).to eq(0)
+  end
+
   it 'falls back to update-or-insert when insert_conflict is unavailable' do
     wrapper_dataset = build_dataset_without_insert_conflict(db[:kaal_dispatches])
     wrapped_engine = described_class.new(database: db)

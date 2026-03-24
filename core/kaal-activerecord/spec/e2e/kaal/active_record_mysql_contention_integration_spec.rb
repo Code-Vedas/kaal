@@ -10,6 +10,7 @@ RSpec.describe Kaal::ActiveRecord, integration: :mysql do
   it 'dispatches at most once per fire time under concurrent mysql-backed ticks' do
     key = 'contention:activerecord-mysql'
     namespace = KaalIntegrationSupport.namespace('contention-activerecord-mysql')
+    stored_key = "#{namespace}:#{key}"
     base_time = Time.utc(2026, 1, 1, 0, 0, 30)
     fixed_times = KaalContentionSupport.repeated_fire_times(base_time, iterations: 3)
     skip 'DATABASE_URL not set' if ENV['DATABASE_URL'].to_s.empty?
@@ -29,10 +30,10 @@ RSpec.describe Kaal::ActiveRecord, integration: :mysql do
 
     KaalContentionSupport.assert_single_dispatch_per_iteration!(result)
 
-    expect(Kaal::ActiveRecord::DispatchRecord.where(key: key).count).to eq(3)
+    expect(Kaal::ActiveRecord::DispatchRecord.where(key: stored_key).count).to eq(3)
     result.fetch(:iterations).each do |iteration|
       fire_time = iteration.fetch(:expected_fire_time)
-      expect(Kaal::ActiveRecord::DispatchRecord.where(key: key, fire_time: fire_time).count).to eq(1)
+      expect(Kaal::ActiveRecord::DispatchRecord.where(key: stored_key, fire_time: fire_time).count).to eq(1)
     end
   end
 end

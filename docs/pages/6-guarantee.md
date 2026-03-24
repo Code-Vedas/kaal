@@ -48,7 +48,7 @@ It does not claim arbitrary network partition or split-brain storage guarantees.
 Kaal backs this guarantee with three concrete evidence signals in the repository:
 
 - coordinator regression coverage that proves repeated normal ticks skip an already-dispatched `(key, fire_time)`
-- threaded contention specs across memory, Redis, and SQL-backed adapters
+- threaded contention specs for Redis and SQL-backed adapters
 - multi-node CLI checks in CI for Redis, Postgres, and MySQL using two live `kaal start` processes against the same backend
 
 Together, these checks validate the guarantee at the coordinator level, the adapter level, and the real process-orchestration level.

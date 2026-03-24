@@ -16,13 +16,14 @@ module Kaal
     class DatabaseAdapter < Adapter
       include DispatchLogging
 
-      def initialize(database)
+      def initialize(database, namespace: nil)
         super()
         @database = Kaal::Persistence::Database.new(database)
+        @namespace = namespace
       end
 
       def dispatch_registry
-        @dispatch_registry ||= Kaal::Dispatch::DatabaseEngine.new(database: @database.connection)
+        @dispatch_registry ||= Kaal::Dispatch::DatabaseEngine.new(database: @database.connection, namespace: resolved_namespace)
       end
 
       def definition_registry
@@ -64,6 +65,10 @@ module Kaal
 
       def dataset
         @database.locks_dataset
+      end
+
+      def resolved_namespace
+        @namespace || Kaal.configuration.namespace
       end
     end
 
