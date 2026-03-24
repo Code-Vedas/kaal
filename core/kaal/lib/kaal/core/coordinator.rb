@@ -220,6 +220,7 @@ module Kaal
 
       logger = @configuration.logger
       cron_key = entry.key
+      return if @configuration.enable_log_dispatch_registry && already_dispatched?(cron_key, fire_time)
 
       # Generate a unique backend coordination key for this fire time
       lock_key = generate_lock_key(cron_key, fire_time)

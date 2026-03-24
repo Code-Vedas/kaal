@@ -83,16 +83,17 @@ bundle exec kaal init --backend=memory
 - [Installation & Setup](./install) for package selection and installation.
 - [Configuration Options](./configuration) for runtime configuration.
 - [Usage & Examples](./usage) for registration, runtime, and process layout.
+- [At-Most-Once Dispatch Guarantee](./dispatch-guarantee) for the exact scheduler-side guarantee, assumptions, and evidence.
 - [FAQ / Troubleshooting](./faq) for common questions and fixes.
 
 ## Features
 
 - **Scheduler-agnostic**: Works with any job system (`ActiveJob`, `Sidekiq`, `Resque`, etc.)
-- **Multi-node safe**: Ensures single-dispatch execution across all app instances
+- **Documented dispatch guarantee**: At-most-once dispatch per `(key, fire_time)` under the documented crash-and-restart model
 - **Split packages**: engine, datastore adapters, and framework integrations are shipped separately
 - **Backend adapters**: memory and Redis live in core; SQL persistence lives in `kaal-sequel` or `kaal-activerecord`
 - **Framework addons**: `kaal-hanami` for Hanami, `kaal-rails` for Rails, `kaal-roda` for Roda, and `kaal-sinatra` for Sinatra
-- **Registry & API**: Centralized job registration with deterministic idempotency keys
+- **Registry & API**: Centralized job registration with deterministic idempotency keys for downstream dedupe
 - **Dispatch recovery**: Replays missed runs within a configurable lookback window
 - **Cron utilities**: Validate, lint, simplify, and humanize via `Kaal.valid?`, `Kaal.lint`, `Kaal.simplify`, and `Kaal.to_human`
 - **i18n keys**: Fully localizable weekdays, months, and time phrases (`kaal.*`)

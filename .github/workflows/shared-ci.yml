@@ -301,3 +301,6 @@ jobs:
           bundle install
       - name: Run e2e tests
         run: scripts/run-rspec-e2e-all
+      - name: Run multi-node CLI checks
+        if: matrix.ruby_version == '3.4'
+        run: scripts/run-multi-node-cli-all

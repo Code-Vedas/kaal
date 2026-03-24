@@ -1,12 +1,14 @@
 ---
 title: Dispatch Log & Querying History
-nav_order: 6
+nav_order: 7
 permalink: /dispatch-log
 ---
 
 # Dispatch Log & Querying History
 
 When `enable_log_dispatch_registry = true`, Kaal records dispatch attempts in the active dispatch registry.
+
+This registry is part of Kaal's documented at-most-once dispatch model. See [At-Most-Once Dispatch Guarantee](/dispatch-guarantee).
 
 ```ruby
 Kaal.configure do |config|

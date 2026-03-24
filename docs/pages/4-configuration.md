@@ -26,6 +26,8 @@ Kaal.configure do |config|
 end
 ```
 
+For the documented at-most-once dispatch guarantee, enable the dispatch log registry and keep `lease_ttl >= window_lookback + tick_interval`. See [At-Most-Once Dispatch Guarantee](/dispatch-guarantee).
+
 ## Sequel adapter example
 
 ```ruby
@@ -280,7 +282,7 @@ end
 | `time_zone`                    | `nil`                    | Scheduler interpretation zone; defaults to UTC |
 | `scheduler_config_path`        | `"config/scheduler.yml"` | Scheduler file path                            |
 | `enable_dispatch_recovery`     | `true`                   | Replay missed runs on startup                  |
-| `enable_log_dispatch_registry` | `false`                  | Persist dispatch audit records                 |
+| `enable_log_dispatch_registry` | `false`                  | Persist dispatch records used by the documented at-most-once guarantee |
 
 ## Time Zone Rules
 

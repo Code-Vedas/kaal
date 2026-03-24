@@ -175,6 +175,20 @@ RSpec.describe Kaal::OccurrenceFinder do
       expect(coordinator).to have_received(:dispatch_work).with(entry, now)
     end
 
+    it 'skips due work that was already dispatched when dispatch logging is enabled' do
+      configuration.enable_log_dispatch_registry = true
+      now = Time.utc(2026, 1, 1, 0, 0, 0)
+
+      allow(coordinator).to receive(:already_dispatched?).with(entry.key, now).and_return(true)
+      allow(coordinator).to receive(:acquire_lock)
+      allow(coordinator).to receive(:dispatch_work)
+
+      coordinator.send(:dispatch_if_due, entry, now, now)
+
+      expect(coordinator).not_to have_received(:acquire_lock)
+      expect(coordinator).not_to have_received(:dispatch_work)
+    end
+
     it 'logs failed lock acquisition and dispatch exceptions' do
       allow(coordinator).to receive(:acquire_lock).and_return(false)
       now = Time.utc(2026, 1, 1, 0, 0, 0)
