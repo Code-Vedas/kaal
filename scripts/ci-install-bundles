@@ -1,0 +1,43 @@
+#!/bin/sh
+
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+REPO_ROOT=$(CDPATH= cd -- "${SCRIPT_DIR}/.." && pwd)
+CI_RUBY_VERSION="${CI_RUBY_VERSION:-$(ruby -e 'print RUBY_VERSION.split(".").first(2).join(".")')}"
+
+install_bundle() {
+  bundle_dir="$1"
+  gemfile_path="${2:-}"
+
+  cd "${REPO_ROOT}/${bundle_dir}"
+
+  if [ "${gemfile_path}" = "" ]; then
+    bundle check || bundle install
+    return 0
+  fi
+
+  absolute_gemfile="${REPO_ROOT}/${bundle_dir}/${gemfile_path}"
+  BUNDLE_GEMFILE="${absolute_gemfile}" bundle check || BUNDLE_GEMFILE="${absolute_gemfile}" bundle install
+}
+
+install_bundle "core/kaal"
+install_bundle "core/kaal-sequel"
+
+install_bundle "core/kaal-activerecord" "gemfiles/rails_7_2.gemfile"
+install_bundle "core/kaal-activerecord" "gemfiles/rails_8_0.gemfile"
+install_bundle "core/kaal-activerecord" "gemfiles/rails_8_1.gemfile"
+if [ "${CI_RUBY_VERSION}" != "3.2" ]; then
+  install_bundle "core/kaal-activerecord" "gemfiles/rails_edge.gemfile"
+fi
+
+install_bundle "gems/kaal-rails" "gemfiles/rails_7_2.gemfile"
+install_bundle "gems/kaal-rails" "gemfiles/rails_8_0.gemfile"
+install_bundle "gems/kaal-rails" "gemfiles/rails_8_1.gemfile"
+if [ "${CI_RUBY_VERSION}" != "3.2" ]; then
+  install_bundle "gems/kaal-rails" "gemfiles/rails_edge.gemfile"
+fi
+
+install_bundle "gems/kaal-hanami"
+install_bundle "gems/kaal-roda"
+install_bundle "gems/kaal-sinatra"
