@@ -54,9 +54,7 @@ module Kaal
       end
 
       def namespaced_key(key)
-        return key if @namespace.to_s.empty?
-
-        "#{@namespace}:#{key}"
+        "#{namespace_prefix}#{key}"
       end
 
       def normalize(record)
@@ -72,23 +70,28 @@ module Kaal
       end
 
       def strip_namespace(key)
-        return key if @namespace.to_s.empty?
-
-        prefix = "#{@namespace}:"
-        key.start_with?(prefix) ? key.delete_prefix(prefix) : key
+        key.delete_prefix(namespace_prefix)
       end
 
       def query_scope(filters)
         relation = @model.where(filters)
-        return relation if @namespace.to_s.empty? || filters.key?(:key)
+        return relation if filters.key?(:key)
 
-        relation.where('key LIKE ?', "#{@namespace}:%")
+        namespace_scope(relation)
       end
 
       def cleanup_scope
-        return @model if @namespace.to_s.empty?
+        namespace_scope(@model)
+      end
 
-        @model.where('key LIKE ?', "#{@namespace}:%")
+      def namespace_scope(relation)
+        return relation if namespace_prefix.empty?
+
+        relation.where('key LIKE ?', "#{namespace_prefix}%")
+      end
+
+      def namespace_prefix
+        @namespace.to_s.empty? ? '' : "#{@namespace}:"
       end
     end
   end
