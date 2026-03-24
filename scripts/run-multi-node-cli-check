@@ -1,0 +1,21 @@
+#!/bin/sh
+
+set -eu
+
+if [ "${SCRIPT_DIR:-}" = "" ]; then
+  SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+fi
+
+if [ "${REPO_ROOT:-}" = "" ]; then
+  REPO_ROOT=$(CDPATH= cd -- "${SCRIPT_DIR}/.." && pwd)
+fi
+
+if [ "$#" -ne 1 ]; then
+  echo "usage: $0 <redis|postgres|mysql>" >&2
+  exit 1
+fi
+
+backend="$1"
+
+cd "${REPO_ROOT}/core/kaal-sequel"
+bundle exec ruby "${REPO_ROOT}/scripts/run_multi_node_cli_check.rb" "${backend}"

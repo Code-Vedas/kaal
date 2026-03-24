@@ -12,9 +12,9 @@
 
 ```text
 /repo-root
-├── .github/               
+├── .github/
 ├── core/                   # Core engine and datastore gems
-│   ├── kaal/.              #   Core engine gem 
+│   ├── kaal/.              #   Core engine gem
 │   ├── kaal-sequel/        #   Sequel datastore adapter gem
 │   └── kaal-activerecord/  #   Active Record datastore adapter gem
 ├── gems/                   # Framework integration gems
@@ -46,7 +46,9 @@
 
 ## What Kaal Does
 
-Kaal lets you register recurring jobs and coordinate dispatch across multiple processes or nodes without duplicate execution for a given cron fire time.
+Kaal lets you register recurring jobs and coordinate dispatch across multiple processes or nodes.
+
+For Redis, Postgres, and MySQL-backed deployments, Kaal guarantees at-most-once dispatch per `(key, fire_time)` under the documented crash-and-restart model. The full guarantee, assumptions, and evidence are documented at <https://kaal.codevedas.com/dispatch-guarantee>.
 
 The engine is framework-agnostic. You choose the datastore and framework integration that fits your app.
 
@@ -244,6 +246,22 @@ bundle exec rails generate kaal:install --backend=mysql
 bundle exec rails db:migrate
 ```
 
+## Dispatch Guarantee
+
+Kaal's scheduler-side guarantee is:
+
+- at-most-once dispatch per `(key, fire_time)` for Redis, Postgres, and MySQL
+- deterministic `idempotency_key` generation for the same `(key, fire_time)`
+
+This guarantee applies when:
+
+- nodes share the same healthy backend
+- `enable_log_dispatch_registry = true`
+- `lease_ttl >= window_lookback + tick_interval`
+- nodes share the same namespace and scheduler definition set
+
+Use the provided `idempotency_key` inside your jobs to make downstream effects effectively once as well.
+
 ## Local Development
 
 Run checks from the relevant gem directory.
@@ -302,6 +320,7 @@ Key pages:
 - [Installation](https://kaal.codevedas.com/install)
 - [Configuration](https://kaal.codevedas.com/configuration)
 - [Usage](https://kaal.codevedas.com/usage)
+- [Dispatch Guarantee](https://kaal.codevedas.com/dispatch-guarantee)
 
 ## Contributing
 

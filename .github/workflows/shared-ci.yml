@@ -23,9 +23,9 @@ jobs:
       fail-fast: false
       matrix:
         ruby_version:
-          - '3.2'
-          - '3.4'
-          - '4.0'
+          - "3.2"
+          - "3.4"
+          - "4.0"
     steps:
       - uses: actions/checkout@v6
       - name: Install apt packages
@@ -83,9 +83,9 @@ jobs:
       fail-fast: false
       matrix:
         ruby_version:
-          - '3.2'
-          - '3.4'
-          - '4.0'
+          - "3.2"
+          - "3.4"
+          - "4.0"
     steps:
       - uses: actions/checkout@v6
       - name: Install apt packages
@@ -143,9 +143,9 @@ jobs:
       fail-fast: false
       matrix:
         ruby_version:
-          - '3.2'
-          - '3.4'
-          - '4.0'
+          - "3.2"
+          - "3.4"
+          - "4.0"
     steps:
       - uses: actions/checkout@v6
       - name: Install apt packages
@@ -216,9 +216,9 @@ jobs:
       fail-fast: false
       matrix:
         ruby_version:
-          - '3.2'
-          - '3.4'
-          - '4.0'
+          - "3.2"
+          - "3.4"
+          - "4.0"
     env:
       RAILS_ENV: test
       REDIS_URL: redis://127.0.0.1:6379/0
@@ -301,3 +301,6 @@ jobs:
           bundle install
       - name: Run e2e tests
         run: scripts/run-rspec-e2e-all
+      - name: Run multi-node CLI checks
+        if: matrix.ruby_version == '3.4'
+        run: scripts/run-multi-node-cli-all

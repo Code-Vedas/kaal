@@ -6,20 +6,18 @@ nav_order: 1
 
 # Kaal
 
-> Kaal is a distributed cron scheduler for Ruby that safely executes scheduled tasks across multiple nodes.
-
-
 > Until V1, Kaal is in early development and should not be used in production environments. We welcome contributions and feedback to help shape the future of Kaal!
 
+Kaal is a distributed cron scheduler for Ruby that safely executes scheduled tasks across multiple nodes.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
-[![Gem Version](https://img.shields.io/gem/v/kaal?style=flat-square&logo=rubygems&label=kaal)](https://rubygems.org/gems/kaal){:target="_blank"}
-[![Gem Version](https://img.shields.io/gem/v/kaal-sequel?style=flat-square&logo=rubygems&label=kaal-sequel)](https://rubygems.org/gems/kaal-sequel){:target="_blank"}
-[![Gem Version](https://img.shields.io/gem/v/kaal-activerecord?style=flat-square&logo=rubygems&label=kaal-activerecord)](https://rubygems.org/gems/kaal-activerecord){:target="_blank"}
-[![Gem Version](https://img.shields.io/gem/v/kaal-hanami?style=flat-square&logo=rubygems&label=kaal-hanami)](https://rubygems.org/gems/kaal-hanami){:target="_blank"}
-[![Gem Version](https://img.shields.io/gem/v/kaal-rails?style=flat-square&logo=rubygems&label=kaal-rails)](https://rubygems.org/gems/kaal-rails){:target="_blank"}
-[![Gem Version](https://img.shields.io/gem/v/kaal-roda?style=flat-square&logo=rubygems&label=kaal-roda)](https://rubygems.org/gems/kaal-roda){:target="_blank"}
-[![Gem Version](https://img.shields.io/gem/v/kaal-sinatra?style=flat-square&logo=rubygems&label=kaal-sinatra)](https://rubygems.org/gems/kaal-sinatra){:target="_blank"}
+<a href="https://rubygems.org/gems/kaal" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/gem/v/kaal?style=flat-square&logo=rubygems&label=kaal" alt="Gem Version" /></a>
+<a href="https://rubygems.org/gems/kaal-sequel" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/gem/v/kaal-sequel?style=flat-square&logo=rubygems&label=kaal-sequel" alt="Gem Version" /></a>
+<a href="https://rubygems.org/gems/kaal-activerecord" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/gem/v/kaal-activerecord?style=flat-square&logo=rubygems&label=kaal-activerecord" alt="Gem Version" /></a>
+<a href="https://rubygems.org/gems/kaal-hanami" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/gem/v/kaal-hanami?style=flat-square&logo=rubygems&label=kaal-hanami" alt="Gem Version" /></a>
+<a href="https://rubygems.org/gems/kaal-rails" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/gem/v/kaal-rails?style=flat-square&logo=rubygems&label=kaal-rails" alt="Gem Version" /></a>
+<a href="https://rubygems.org/gems/kaal-roda" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/gem/v/kaal-roda?style=flat-square&logo=rubygems&label=kaal-roda" alt="Gem Version" /></a>
+<a href="https://rubygems.org/gems/kaal-sinatra" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/gem/v/kaal-sinatra?style=flat-square&logo=rubygems&label=kaal-sinatra" alt="Gem Version" /></a>
 [![Code Coverage](https://qlty.sh/gh/Code-Vedas/projects/kaal/coverage.svg)](https://qlty.sh/gh/Code-Vedas/projects/kaal)
 [![Maintainability](https://qlty.sh/gh/Code-Vedas/projects/kaal/maintainability.svg)](https://qlty.sh/gh/Code-Vedas/projects/kaal)
 
@@ -83,16 +81,17 @@ bundle exec kaal init --backend=memory
 - [Installation & Setup](./install) for package selection and installation.
 - [Configuration Options](./configuration) for runtime configuration.
 - [Usage & Examples](./usage) for registration, runtime, and process layout.
+- [At-Most-Once Dispatch Guarantee](./dispatch-guarantee) for the exact scheduler-side guarantee, assumptions, and evidence.
 - [FAQ / Troubleshooting](./faq) for common questions and fixes.
 
 ## Features
 
 - **Scheduler-agnostic**: Works with any job system (`ActiveJob`, `Sidekiq`, `Resque`, etc.)
-- **Multi-node safe**: Ensures single-dispatch execution across all app instances
+- **Documented dispatch guarantee**: At-most-once dispatch per `(key, fire_time)` under the documented crash-and-restart model
 - **Split packages**: engine, datastore adapters, and framework integrations are shipped separately
 - **Backend adapters**: memory and Redis live in core; SQL persistence lives in `kaal-sequel` or `kaal-activerecord`
 - **Framework addons**: `kaal-hanami` for Hanami, `kaal-rails` for Rails, `kaal-roda` for Roda, and `kaal-sinatra` for Sinatra
-- **Registry & API**: Centralized job registration with deterministic idempotency keys
+- **Registry & API**: Centralized job registration with deterministic idempotency keys for downstream dedupe
 - **Dispatch recovery**: Replays missed runs within a configurable lookback window
 - **Cron utilities**: Validate, lint, simplify, and humanize via `Kaal.valid?`, `Kaal.lint`, `Kaal.simplify`, and `Kaal.to_human`
 - **i18n keys**: Fully localizable weekdays, months, and time phrases (`kaal.*`)

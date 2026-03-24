@@ -218,6 +218,62 @@ RSpec.describe Kaal::ActiveRecord do
     expect(registry.cleanup(recovery_window: 0)).to eq(1)
   end
 
+  it 'stores namespaced dispatch identities without leaking namespace through the public API' do
+    model = class_double(described_class::DispatchRecord)
+    fire_time = Time.utc(2026, 1, 1, 0, 0, 0)
+    dispatched_at = Time.utc(2026, 1, 1, 0, 1, 0)
+    record = build_dispatch_record(key: 'ops:job:a', fire_time:, dispatched_at:)
+
+    allow(model).to receive(:find_or_initialize_by).with(key: 'ops:job:a', fire_time:).and_return(record)
+    allow(model).to receive(:find_by).with(key: 'ops:job:a', fire_time:).and_return(record)
+
+    registry = described_class::DispatchRegistry.new(connection: nil, model:, namespace: 'ops')
+
+    expect(registry.log_dispatch('job:a', fire_time, 'node-1')).to include(key: 'job:a', node_id: 'node-1')
+    expect(registry.find_dispatch('job:a', fire_time)).to include(key: 'job:a')
+  end
+
+  it 'scopes non-key queries and cleanup to the configured namespace' do
+    model = class_double(described_class::DispatchRecord)
+    fire_time = Time.utc(2026, 1, 1, 0, 0, 0)
+    dispatched_at = Time.utc(2026, 1, 1, 0, 1, 0)
+    namespaced_record = build_dispatch_record(key: 'ops:job:a', fire_time:, dispatched_at:, node_id: 'node-1', status: 'failed')
+    relation = instance_double(ActiveRecord::Relation)
+    node_scope = instance_double(ActiveRecord::Relation)
+    status_scope = instance_double(ActiveRecord::Relation)
+    cleanup_scope = instance_double(ActiveRecord::Relation)
+    cleanup_relation = instance_double(ActiveRecord::Relation, delete_all: 1)
+
+    allow(model).to receive(:where).and_return(relation)
+    allow(model).to receive(:where).with(node_id: 'node-1').and_return(relation)
+    allow(model).to receive(:where).with(status: 'failed').and_return(relation)
+    allow(model).to receive(:where).with('key LIKE ?', 'ops:%').and_return(cleanup_scope)
+    allow(relation).to receive(:where).with('key LIKE ?', 'ops:%').and_return(node_scope, status_scope, cleanup_scope)
+    allow(cleanup_scope).to receive(:where).and_return(cleanup_relation)
+    allow(node_scope).to receive(:order).with(fire_time: :desc).and_return([namespaced_record])
+    allow(status_scope).to receive(:order).with(fire_time: :desc).and_return([namespaced_record])
+    allow(cleanup_scope).to receive(:where).with(fire_time: kind_of(Range)).and_return(cleanup_relation)
+
+    registry = described_class::DispatchRegistry.new(connection: nil, model:, namespace: 'ops')
+
+    expect(registry.method(:find_by_node).call('node-1')).to contain_exactly(hash_including(key: 'job:a'))
+    expect(registry.method(:find_by_status).call('failed')).to contain_exactly(hash_including(key: 'job:a'))
+    expect(registry.cleanup(recovery_window: 0)).to eq(1)
+  end
+
+  it 'leaves dispatch keys unchanged when a namespaced registry reads an unprefixed record' do
+    model = class_double(described_class::DispatchRecord)
+    fire_time = Time.utc(2026, 1, 1, 0, 0, 0)
+    dispatched_at = Time.utc(2026, 1, 1, 0, 1, 0)
+    record = build_dispatch_record(key: 'job:a', fire_time:, dispatched_at:)
+
+    allow(model).to receive(:find_by).with(key: 'ops:job:a', fire_time:).and_return(record)
+
+    registry = described_class::DispatchRegistry.new(connection: nil, model:, namespace: 'ops')
+
+    expect(registry.find_dispatch('job:a', fire_time)).to include(key: 'job:a')
+  end
+
   it 'wraps sqlite lock adapter failures' do
     lock_model = class_double(Kaal::ActiveRecord::LockRecord).as_stubbed_const
     relation = instance_double(ActiveRecord::Relation, delete_all: 0)

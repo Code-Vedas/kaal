@@ -27,6 +27,50 @@ RSpec.describe Kaal::Dispatch::DatabaseEngine do
     db.add_index :kaal_dispatches, :fire_time
   end
 
+  def build_dataset_without_insert_conflict(dataset)
+    Class.new do
+      define_method(:initialize) do |inner_dataset|
+        @dataset = inner_dataset
+      end
+
+      define_method(:respond_to_missing?) do |method_name, include_private = false|
+        return false if method_name == :insert_conflict
+
+        @dataset.respond_to?(method_name, include_private) || super(method_name, include_private)
+      end
+
+      define_method(:method_missing) do |method_name, *args, &block|
+        return super(method_name, *args, &block) if method_name == :insert_conflict
+
+        @dataset.public_send(method_name, *args, &block)
+      end
+    end.new(dataset)
+  end
+
+  def build_unique_violation_dataset_without_insert_conflict(dataset)
+    Class.new do
+      define_method(:initialize) do |inner_dataset|
+        @dataset = inner_dataset
+      end
+
+      define_method(:respond_to_missing?) do |method_name, include_private = false|
+        return false if method_name == :insert_conflict
+
+        @dataset.respond_to?(method_name, include_private) || super(method_name, include_private)
+      end
+
+      define_method(:insert) do |_attributes|
+        raise Sequel::UniqueConstraintViolation, 'duplicate dispatch'
+      end
+
+      define_method(:method_missing) do |method_name, *args, &block|
+        return super(method_name, *args, &block) if method_name == :insert_conflict
+
+        @dataset.public_send(method_name, *args, &block)
+      end
+    end.new(dataset)
+  end
+
   it 'logs, queries, and cleans dispatches' do
     fire_time = Time.now.utc
     older_time = Time.utc(2025, 1, 1, 0, 0, 0)
@@ -41,24 +85,49 @@ RSpec.describe Kaal::Dispatch::DatabaseEngine do
     expect(engine.cleanup(recovery_window: 60)).to eq(1)
   end
 
+  it 'stores namespaced dispatch identities without leaking namespace through the public API' do
+    fire_time = Time.now.utc
+    namespaced_engine = described_class.new(database: db, namespace: 'ops')
+
+    namespaced_engine.log_dispatch('job:a', fire_time, 'node-1')
+
+    expect(namespaced_engine.find_dispatch('job:a', fire_time)).to include(key: 'job:a', node_id: 'node-1')
+    expect(db[:kaal_dispatches].where(key: 'ops:job:a', fire_time: fire_time).count).to eq(1)
+    expect(db[:kaal_dispatches].where(key: 'job:a', fire_time: fire_time).count).to eq(0)
+  end
+
+  it 'scopes non-key queries and cleanup to the configured namespace' do
+    fire_time = Time.now.utc
+    cutoff_time = fire_time - 3600
+    namespaced_engine = described_class.new(database: db, namespace: 'ops')
+
+    db[:kaal_dispatches].insert(key: 'ops:job:a', fire_time: fire_time, dispatched_at: fire_time, node_id: 'node-1', status: 'failed')
+    db[:kaal_dispatches].insert(key: 'other:job:a', fire_time: fire_time, dispatched_at: fire_time, node_id: 'node-1', status: 'failed')
+    db[:kaal_dispatches].insert(key: 'ops:job:old', fire_time: cutoff_time, dispatched_at: cutoff_time, node_id: 'node-2', status: 'dispatched')
+    db[:kaal_dispatches].insert(key: 'other:job:old', fire_time: cutoff_time, dispatched_at: cutoff_time, node_id: 'node-2', status: 'dispatched')
+
+    expect(namespaced_engine.find_by_node('node-1')).to contain_exactly(hash_including(key: 'job:a'))
+    expect(namespaced_engine.find_by_status('failed')).to contain_exactly(hash_including(key: 'job:a'))
+    expect(namespaced_engine.cleanup(recovery_window: 60)).to eq(1)
+    expect(db[:kaal_dispatches].where(key: 'ops:job:old').count).to eq(0)
+    expect(db[:kaal_dispatches].where(key: 'other:job:old').count).to eq(1)
+  end
+
+  it 'leaves dispatch keys unchanged when a namespaced row normalizer receives an unprefixed key' do
+    fire_time = Time.now.utc
+    row = {
+      key: 'job:a',
+      fire_time: fire_time,
+      dispatched_at: fire_time,
+      node_id: 'node-1',
+      status: 'dispatched'
+    }
+
+    expect(described_class.normalize_row(row, namespace: 'ops')).to include(key: 'job:a')
+  end
+
   it 'falls back to update-or-insert when insert_conflict is unavailable' do
-    wrapper_dataset = Class.new do
-      def initialize(dataset)
-        @dataset = dataset
-      end
-
-      def respond_to_missing?(method_name, include_private = false)
-        return false if method_name == :insert_conflict
-
-        @dataset.respond_to?(method_name, include_private) || super
-      end
-
-      def method_missing(method_name, ...)
-        return super if method_name == :insert_conflict
-
-        @dataset.public_send(method_name, ...)
-      end
-    end.new(db[:kaal_dispatches])
+    wrapper_dataset = build_dataset_without_insert_conflict(db[:kaal_dispatches])
     wrapped_engine = described_class.new(database: db)
     wrapped_engine.instance_variable_set(
       :@database,
@@ -73,23 +142,7 @@ RSpec.describe Kaal::Dispatch::DatabaseEngine do
   end
 
   it 'updates an existing dispatch when insert_conflict is unavailable' do
-    wrapper_dataset = Class.new do
-      def initialize(dataset)
-        @dataset = dataset
-      end
-
-      def respond_to_missing?(method_name, include_private = false)
-        return false if method_name == :insert_conflict
-
-        @dataset.respond_to?(method_name, include_private) || super
-      end
-
-      def method_missing(method_name, ...)
-        return super if method_name == :insert_conflict
-
-        @dataset.public_send(method_name, ...)
-      end
-    end.new(db[:kaal_dispatches])
+    wrapper_dataset = build_dataset_without_insert_conflict(db[:kaal_dispatches])
     wrapped_engine = described_class.new(database: db)
     wrapped_engine.instance_variable_set(
       :@database,
@@ -111,27 +164,7 @@ RSpec.describe Kaal::Dispatch::DatabaseEngine do
   end
 
   it 'rescues unique violations and updates the existing dispatch when insert_conflict is unavailable' do
-    wrapper_dataset = Class.new do
-      def initialize(dataset)
-        @dataset = dataset
-      end
-
-      def respond_to_missing?(method_name, include_private = false)
-        return false if method_name == :insert_conflict
-
-        @dataset.respond_to?(method_name, include_private) || super
-      end
-
-      def insert(_attributes)
-        raise Sequel::UniqueConstraintViolation, 'duplicate dispatch'
-      end
-
-      def method_missing(method_name, ...)
-        return super if method_name == :insert_conflict
-
-        @dataset.public_send(method_name, ...)
-      end
-    end.new(db[:kaal_dispatches])
+    wrapper_dataset = build_unique_violation_dataset_without_insert_conflict(db[:kaal_dispatches])
 
     wrapped_engine = described_class.new(database: db)
     wrapped_engine.instance_variable_set(

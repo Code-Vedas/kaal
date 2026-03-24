@@ -6,6 +6,8 @@ permalink: /usage
 
 # Usage
 
+For the exact multi-node claim, assumptions, and evidence, see [At-Most-Once Dispatch Guarantee](/dispatch-guarantee).
+
 Register recurring jobs in Ruby:
 
 ```ruby
@@ -19,6 +21,8 @@ Kaal.register(
 ```
 
 The engine API stays the same across datastore adapters. What changes is the configured backend.
+
+For Redis, Postgres, and MySQL, the same `(key, fire_time)` also yields the same deterministic `idempotency_key`, which is intended to be used by job code for downstream dedupe.
 
 ## Usage Paths
 

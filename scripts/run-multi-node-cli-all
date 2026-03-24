@@ -1,0 +1,10 @@
+#!/bin/sh
+
+if [ "${SCRIPT_DIR:-}" = "" ]; then
+  SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+fi
+. "${SCRIPT_DIR}/run-common"
+
+run_cmd "kaal-sequel-multi-node-cli-redis" scripts/run-multi-node-cli-check redis
+run_cmd "kaal-sequel-multi-node-cli-postgres" scripts/run-multi-node-cli-check postgres
+run_cmd "kaal-sequel-multi-node-cli-mysql" scripts/run-multi-node-cli-check mysql

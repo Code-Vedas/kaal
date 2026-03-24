@@ -7,6 +7,7 @@
 require 'cgi'
 require 'uri'
 require 'yaml'
+require_relative '../../../kaal/spec/support/contention_support'
 
 module KaalIntegrationSupport
   module_function
