@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    kaal (0.2.1)
+    kaal (0.3.0)
       fugit (~> 1.8)
       i18n (~> 1.14)
       thor (~> 1.3)
