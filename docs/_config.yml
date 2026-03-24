@@ -1,4 +1,4 @@
-title: Kaal Documentation
+title: Kaal
 description: >-
   Kaal is a distributed cron scheduler for Ruby that safely executes scheduled tasks across multiple nodes.
 baseurl: ""
