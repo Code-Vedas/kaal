@@ -271,17 +271,17 @@ end
 
 ## Key Options
 
-| Setting                        | Default                  | Meaning                                        |
-| ------------------------------ | ------------------------ | ---------------------------------------------- |
-| `backend`                      | `nil`                    | Coordination or datastore backend              |
-| `tick_interval`                | `5`                      | Seconds between scheduler ticks                |
-| `window_lookback`              | `120`                    | Recovery window for missed runs                |
-| `window_lookahead`             | `0`                      | Optional future lookahead                      |
-| `lease_ttl`                    | `125`                    | Lock TTL for TTL-based adapters                |
-| `namespace`                    | `"kaal"`                 | Prefix for coordination keys                   |
-| `time_zone`                    | `nil`                    | Scheduler interpretation zone; defaults to UTC |
-| `scheduler_config_path`        | `"config/scheduler.yml"` | Scheduler file path                            |
-| `enable_dispatch_recovery`     | `true`                   | Replay missed runs on startup                  |
+| Setting                        | Default                  | Meaning                                                                |
+| ------------------------------ | ------------------------ | ---------------------------------------------------------------------- |
+| `backend`                      | `nil`                    | Coordination or datastore backend                                      |
+| `tick_interval`                | `5`                      | Seconds between scheduler ticks                                        |
+| `window_lookback`              | `120`                    | Recovery window for missed runs                                        |
+| `window_lookahead`             | `0`                      | Optional future lookahead                                              |
+| `lease_ttl`                    | `125`                    | Lock TTL for TTL-based adapters                                        |
+| `namespace`                    | `"kaal"`                 | Prefix for coordination keys                                           |
+| `time_zone`                    | `nil`                    | Scheduler interpretation zone; defaults to UTC                         |
+| `scheduler_config_path`        | `"config/scheduler.yml"` | Scheduler file path                                                    |
+| `enable_dispatch_recovery`     | `true`                   | Replay missed runs on startup                                          |
 | `enable_log_dispatch_registry` | `false`                  | Persist dispatch records used by the documented at-most-once guarantee |
 
 ## Time Zone Rules

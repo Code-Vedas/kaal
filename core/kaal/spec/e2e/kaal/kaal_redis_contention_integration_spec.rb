@@ -42,7 +42,7 @@ RSpec.describe Kaal, integration: :redis do
     end
   ensure
     redis&.scan_each(match: "#{namespace}:*") { |redis_key| redis.del(redis_key) }
-    clients.each(&:close)
+    clients&.each(&:close)
     redis&.close
   end
 end

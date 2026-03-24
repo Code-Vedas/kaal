@@ -6,20 +6,18 @@ nav_order: 1
 
 # Kaal
 
-> Kaal is a distributed cron scheduler for Ruby that safely executes scheduled tasks across multiple nodes.
-
-
 > Until V1, Kaal is in early development and should not be used in production environments. We welcome contributions and feedback to help shape the future of Kaal!
 
+Kaal is a distributed cron scheduler for Ruby that safely executes scheduled tasks across multiple nodes.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
-[![Gem Version](https://img.shields.io/gem/v/kaal?style=flat-square&logo=rubygems&label=kaal)](https://rubygems.org/gems/kaal){:target="_blank"}
-[![Gem Version](https://img.shields.io/gem/v/kaal-sequel?style=flat-square&logo=rubygems&label=kaal-sequel)](https://rubygems.org/gems/kaal-sequel){:target="_blank"}
-[![Gem Version](https://img.shields.io/gem/v/kaal-activerecord?style=flat-square&logo=rubygems&label=kaal-activerecord)](https://rubygems.org/gems/kaal-activerecord){:target="_blank"}
-[![Gem Version](https://img.shields.io/gem/v/kaal-hanami?style=flat-square&logo=rubygems&label=kaal-hanami)](https://rubygems.org/gems/kaal-hanami){:target="_blank"}
-[![Gem Version](https://img.shields.io/gem/v/kaal-rails?style=flat-square&logo=rubygems&label=kaal-rails)](https://rubygems.org/gems/kaal-rails){:target="_blank"}
-[![Gem Version](https://img.shields.io/gem/v/kaal-roda?style=flat-square&logo=rubygems&label=kaal-roda)](https://rubygems.org/gems/kaal-roda){:target="_blank"}
-[![Gem Version](https://img.shields.io/gem/v/kaal-sinatra?style=flat-square&logo=rubygems&label=kaal-sinatra)](https://rubygems.org/gems/kaal-sinatra){:target="_blank"}
+[![Gem Version](https://img.shields.io/gem/v/kaal?style=flat-square&logo=rubygems&label=kaal)](https://rubygems.org/gems/kaal){:target="\_blank"}
+[![Gem Version](https://img.shields.io/gem/v/kaal-sequel?style=flat-square&logo=rubygems&label=kaal-sequel)](https://rubygems.org/gems/kaal-sequel){:target="\_blank"}
+[![Gem Version](https://img.shields.io/gem/v/kaal-activerecord?style=flat-square&logo=rubygems&label=kaal-activerecord)](https://rubygems.org/gems/kaal-activerecord){:target="\_blank"}
+[![Gem Version](https://img.shields.io/gem/v/kaal-hanami?style=flat-square&logo=rubygems&label=kaal-hanami)](https://rubygems.org/gems/kaal-hanami){:target="\_blank"}
+[![Gem Version](https://img.shields.io/gem/v/kaal-rails?style=flat-square&logo=rubygems&label=kaal-rails)](https://rubygems.org/gems/kaal-rails){:target="\_blank"}
+[![Gem Version](https://img.shields.io/gem/v/kaal-roda?style=flat-square&logo=rubygems&label=kaal-roda)](https://rubygems.org/gems/kaal-roda){:target="\_blank"}
+[![Gem Version](https://img.shields.io/gem/v/kaal-sinatra?style=flat-square&logo=rubygems&label=kaal-sinatra)](https://rubygems.org/gems/kaal-sinatra){:target="\_blank"}
 [![Code Coverage](https://qlty.sh/gh/Code-Vedas/projects/kaal/coverage.svg)](https://qlty.sh/gh/Code-Vedas/projects/kaal)
 [![Maintainability](https://qlty.sh/gh/Code-Vedas/projects/kaal/maintainability.svg)](https://qlty.sh/gh/Code-Vedas/projects/kaal)
 

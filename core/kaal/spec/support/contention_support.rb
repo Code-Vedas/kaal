@@ -95,6 +95,7 @@ module KaalContentionSupport
     configuration.window_lookback = 65
     configuration.window_lookahead = 0
     configuration.lease_ttl = 120
+    configuration.enable_log_dispatch_registry = true
     configuration.enable_dispatch_recovery = false
     configuration.recovery_startup_jitter = 0
     configuration

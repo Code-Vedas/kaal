@@ -12,9 +12,9 @@
 
 ```text
 /repo-root
-├── .github/               
+├── .github/
 ├── core/                   # Core engine and datastore gems
-│   ├── kaal/.              #   Core engine gem 
+│   ├── kaal/.              #   Core engine gem
 │   ├── kaal-sequel/        #   Sequel datastore adapter gem
 │   └── kaal-activerecord/  #   Active Record datastore adapter gem
 ├── gems/                   # Framework integration gems

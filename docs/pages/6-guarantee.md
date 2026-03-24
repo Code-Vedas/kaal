@@ -46,7 +46,7 @@ It does not claim arbitrary network partition or split-brain storage guarantees.
 
 ## Evidence
 
-Kaal backs this guarantee with two evidence layers in the repository:
+Kaal backs this guarantee with three concrete evidence signals in the repository:
 
 - coordinator regression coverage that proves repeated normal ticks skip an already-dispatched `(key, fire_time)`
 - threaded contention specs across memory, Redis, and SQL-backed adapters
