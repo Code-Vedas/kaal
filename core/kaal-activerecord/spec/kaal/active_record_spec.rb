@@ -233,6 +233,19 @@ RSpec.describe Kaal::ActiveRecord do
     expect(registry.find_dispatch('job:a', fire_time)).to include(key: 'job:a')
   end
 
+  it 'leaves dispatch keys unchanged when a namespaced registry reads an unprefixed record' do
+    model = class_double(described_class::DispatchRecord)
+    fire_time = Time.utc(2026, 1, 1, 0, 0, 0)
+    dispatched_at = Time.utc(2026, 1, 1, 0, 1, 0)
+    record = build_dispatch_record(key: 'job:a', fire_time:, dispatched_at:)
+
+    allow(model).to receive(:find_by).with(key: 'ops:job:a', fire_time:).and_return(record)
+
+    registry = described_class::DispatchRegistry.new(connection: nil, model:, namespace: 'ops')
+
+    expect(registry.find_dispatch('job:a', fire_time)).to include(key: 'job:a')
+  end
+
   it 'wraps sqlite lock adapter failures' do
     lock_model = class_double(Kaal::ActiveRecord::LockRecord).as_stubbed_const
     relation = instance_double(ActiveRecord::Relation, delete_all: 0)

@@ -96,6 +96,19 @@ RSpec.describe Kaal::Dispatch::DatabaseEngine do
     expect(db[:kaal_dispatches].where(key: 'job:a', fire_time: fire_time).count).to eq(0)
   end
 
+  it 'leaves dispatch keys unchanged when a namespaced row normalizer receives an unprefixed key' do
+    fire_time = Time.now.utc
+    row = {
+      key: 'job:a',
+      fire_time: fire_time,
+      dispatched_at: fire_time,
+      node_id: 'node-1',
+      status: 'dispatched'
+    }
+
+    expect(described_class.normalize_row(row, namespace: 'ops')).to include(key: 'job:a')
+  end
+
   it 'falls back to update-or-insert when insert_conflict is unavailable' do
     wrapper_dataset = build_dataset_without_insert_conflict(db[:kaal_dispatches])
     wrapped_engine = described_class.new(database: db)
