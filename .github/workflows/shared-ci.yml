@@ -1,6 +1,10 @@
 name: Shared CI
 permissions:
   contents: read
+env:
+  BUNDLE_PATH: ${{ github.workspace }}/vendor/bundle
+  BUNDLE_JOBS: "4"
+  BUNDLE_RETRY: "3"
 
 on:
   workflow_call:
@@ -38,38 +42,17 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby_version }}
           bundler-cache: false
+      - name: Restore bundle cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.BUNDLE_PATH }}
+          key: ${{ runner.os }}-ruby-${{ matrix.ruby_version }}-bundle-${{ hashFiles('core/**/Gemfile.lock', 'core/**/gemfiles/*.gemfile.lock', 'gems/**/Gemfile.lock', 'gems/**/gemfiles/*.gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-ruby-${{ matrix.ruby_version }}-bundle-
       - name: Install bundles
-        run: |
-          cd "${GITHUB_WORKSPACE}/core/kaal"
-          bundle install
-
-          cd "${GITHUB_WORKSPACE}/core/kaal-sequel"
-          bundle install
-
-          cd "${GITHUB_WORKSPACE}/core/kaal-activerecord"
-          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_7_2.gemfile" bundle install
-          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_8_0.gemfile" bundle install
-          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_8_1.gemfile" bundle install
-          if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
-            BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_edge.gemfile" bundle install
-          fi
-
-          cd "${GITHUB_WORKSPACE}/gems/kaal-rails"
-          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_7_2.gemfile" bundle install
-          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_8_0.gemfile" bundle install
-          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_8_1.gemfile" bundle install
-          if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
-            BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_edge.gemfile" bundle install
-          fi
-
-          cd "${GITHUB_WORKSPACE}/gems/kaal-hanami"
-          bundle install
-
-          cd "${GITHUB_WORKSPACE}/gems/kaal-roda"
-          bundle install
-
-          cd "${GITHUB_WORKSPACE}/gems/kaal-sinatra"
-          bundle install
+        run: scripts/ci-install-bundles
+        env:
+          CI_RUBY_VERSION: ${{ matrix.ruby_version }}
       - name: Run RuboCop
         run: scripts/run-rubocop-all
 
@@ -98,38 +81,17 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby_version }}
           bundler-cache: false
+      - name: Restore bundle cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.BUNDLE_PATH }}
+          key: ${{ runner.os }}-ruby-${{ matrix.ruby_version }}-bundle-${{ hashFiles('core/**/Gemfile.lock', 'core/**/gemfiles/*.gemfile.lock', 'gems/**/Gemfile.lock', 'gems/**/gemfiles/*.gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-ruby-${{ matrix.ruby_version }}-bundle-
       - name: Install bundles
-        run: |
-          cd "${GITHUB_WORKSPACE}/core/kaal"
-          bundle install
-
-          cd "${GITHUB_WORKSPACE}/core/kaal-sequel"
-          bundle install
-
-          cd "${GITHUB_WORKSPACE}/core/kaal-activerecord"
-          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_7_2.gemfile" bundle install
-          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_8_0.gemfile" bundle install
-          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_8_1.gemfile" bundle install
-          if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
-            BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_edge.gemfile" bundle install
-          fi
-
-          cd "${GITHUB_WORKSPACE}/gems/kaal-rails"
-          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_7_2.gemfile" bundle install
-          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_8_0.gemfile" bundle install
-          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_8_1.gemfile" bundle install
-          if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
-            BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_edge.gemfile" bundle install
-          fi
-
-          cd "${GITHUB_WORKSPACE}/gems/kaal-hanami"
-          bundle install
-
-          cd "${GITHUB_WORKSPACE}/gems/kaal-roda"
-          bundle install
-
-          cd "${GITHUB_WORKSPACE}/gems/kaal-sinatra"
-          bundle install
+        run: scripts/ci-install-bundles
+        env:
+          CI_RUBY_VERSION: ${{ matrix.ruby_version }}
       - name: Run Reek
         run: scripts/run-reek-all
 
@@ -158,38 +120,17 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby_version }}
           bundler-cache: false
+      - name: Restore bundle cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.BUNDLE_PATH }}
+          key: ${{ runner.os }}-ruby-${{ matrix.ruby_version }}-bundle-${{ hashFiles('core/**/Gemfile.lock', 'core/**/gemfiles/*.gemfile.lock', 'gems/**/Gemfile.lock', 'gems/**/gemfiles/*.gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-ruby-${{ matrix.ruby_version }}-bundle-
       - name: Install bundles
-        run: |
-          cd "${GITHUB_WORKSPACE}/core/kaal"
-          bundle install
-
-          cd "${GITHUB_WORKSPACE}/core/kaal-sequel"
-          bundle install
-
-          cd "${GITHUB_WORKSPACE}/core/kaal-activerecord"
-          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_7_2.gemfile" bundle install
-          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_8_0.gemfile" bundle install
-          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_8_1.gemfile" bundle install
-          if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
-            BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_edge.gemfile" bundle install
-          fi
-
-          cd "${GITHUB_WORKSPACE}/gems/kaal-rails"
-          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_7_2.gemfile" bundle install
-          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_8_0.gemfile" bundle install
-          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_8_1.gemfile" bundle install
-          if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
-            BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_edge.gemfile" bundle install
-          fi
-
-          cd "${GITHUB_WORKSPACE}/gems/kaal-hanami"
-          bundle install
-
-          cd "${GITHUB_WORKSPACE}/gems/kaal-roda"
-          bundle install
-
-          cd "${GITHUB_WORKSPACE}/gems/kaal-sinatra"
-          bundle install
+        run: scripts/ci-install-bundles
+        env:
+          CI_RUBY_VERSION: ${{ matrix.ruby_version }}
       - name: Run unit tests
         run: scripts/run-rspec-unit-all
       - name: Publish coverage to Qlty
@@ -267,38 +208,17 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby_version }}
           bundler-cache: false
+      - name: Restore bundle cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.BUNDLE_PATH }}
+          key: ${{ runner.os }}-ruby-${{ matrix.ruby_version }}-bundle-${{ hashFiles('core/**/Gemfile.lock', 'core/**/gemfiles/*.gemfile.lock', 'gems/**/Gemfile.lock', 'gems/**/gemfiles/*.gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-ruby-${{ matrix.ruby_version }}-bundle-
       - name: Install bundles
-        run: |
-          cd "${GITHUB_WORKSPACE}/core/kaal"
-          bundle install
-
-          cd "${GITHUB_WORKSPACE}/core/kaal-sequel"
-          bundle install
-
-          cd "${GITHUB_WORKSPACE}/core/kaal-activerecord"
-          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_7_2.gemfile" bundle install
-          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_8_0.gemfile" bundle install
-          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_8_1.gemfile" bundle install
-          if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
-            BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/core/kaal-activerecord/gemfiles/rails_edge.gemfile" bundle install
-          fi
-
-          cd "${GITHUB_WORKSPACE}/gems/kaal-rails"
-          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_7_2.gemfile" bundle install
-          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_8_0.gemfile" bundle install
-          BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_8_1.gemfile" bundle install
-          if [ "${{ matrix.ruby_version }}" != "3.2" ]; then
-            BUNDLE_GEMFILE="${GITHUB_WORKSPACE}/gems/kaal-rails/gemfiles/rails_edge.gemfile" bundle install
-          fi
-
-          cd "${GITHUB_WORKSPACE}/gems/kaal-hanami"
-          bundle install
-
-          cd "${GITHUB_WORKSPACE}/gems/kaal-roda"
-          bundle install
-
-          cd "${GITHUB_WORKSPACE}/gems/kaal-sinatra"
-          bundle install
+        run: scripts/ci-install-bundles
+        env:
+          CI_RUBY_VERSION: ${{ matrix.ruby_version }}
       - name: Run e2e tests
         run: scripts/run-rspec-e2e-all
       - name: Run multi-node CLI checks
