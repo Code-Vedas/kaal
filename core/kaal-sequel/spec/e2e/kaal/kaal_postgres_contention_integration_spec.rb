@@ -7,8 +7,9 @@
 require 'spec_helper'
 
 RSpec.describe Kaal, integration: :pg do
+  let(:connections) { [] }
+
   it 'dispatches at most once per fire time under concurrent postgres-backed ticks' do
-    connections = []
     inspector = nil
     key = 'contention:pg'
     namespace = KaalIntegrationSupport.namespace('contention-pg')

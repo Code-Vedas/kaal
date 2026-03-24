@@ -7,8 +7,9 @@
 require 'spec_helper'
 
 RSpec.describe Kaal, integration: :mysql do
+  let(:connections) { [] }
+
   it 'dispatches at most once per fire time under concurrent mysql-backed ticks' do
-    connections = []
     inspector = nil
     key = 'contention:mysql'
     namespace = KaalIntegrationSupport.namespace('contention-mysql')
