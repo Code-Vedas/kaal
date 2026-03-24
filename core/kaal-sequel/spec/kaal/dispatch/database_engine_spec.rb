@@ -27,6 +27,50 @@ RSpec.describe Kaal::Dispatch::DatabaseEngine do
     db.add_index :kaal_dispatches, :fire_time
   end
 
+  def build_dataset_without_insert_conflict(dataset)
+    Class.new do
+      define_method(:initialize) do |inner_dataset|
+        @dataset = inner_dataset
+      end
+
+      define_method(:respond_to_missing?) do |method_name, include_private = false|
+        return false if method_name == :insert_conflict
+
+        @dataset.respond_to?(method_name, include_private) || super(method_name, include_private)
+      end
+
+      define_method(:method_missing) do |method_name, *args, &block|
+        return super(method_name, *args, &block) if method_name == :insert_conflict
+
+        @dataset.public_send(method_name, *args, &block)
+      end
+    end.new(dataset)
+  end
+
+  def build_unique_violation_dataset_without_insert_conflict(dataset)
+    Class.new do
+      define_method(:initialize) do |inner_dataset|
+        @dataset = inner_dataset
+      end
+
+      define_method(:respond_to_missing?) do |method_name, include_private = false|
+        return false if method_name == :insert_conflict
+
+        @dataset.respond_to?(method_name, include_private) || super(method_name, include_private)
+      end
+
+      define_method(:insert) do |_attributes|
+        raise Sequel::UniqueConstraintViolation, 'duplicate dispatch'
+      end
+
+      define_method(:method_missing) do |method_name, *args, &block|
+        return super(method_name, *args, &block) if method_name == :insert_conflict
+
+        @dataset.public_send(method_name, *args, &block)
+      end
+    end.new(dataset)
+  end
+
   it 'logs, queries, and cleans dispatches' do
     fire_time = Time.now.utc
     older_time = Time.utc(2025, 1, 1, 0, 0, 0)
@@ -42,23 +86,7 @@ RSpec.describe Kaal::Dispatch::DatabaseEngine do
   end
 
   it 'falls back to update-or-insert when insert_conflict is unavailable' do
-    wrapper_dataset = Class.new do
-      def initialize(dataset)
-        @dataset = dataset
-      end
-
-      def respond_to_missing?(method_name, include_private = false)
-        return false if method_name == :insert_conflict
-
-        @dataset.respond_to?(method_name, include_private) || super
-      end
-
-      def method_missing(method_name, ...)
-        return super if method_name == :insert_conflict
-
-        @dataset.public_send(method_name, ...)
-      end
-    end.new(db[:kaal_dispatches])
+    wrapper_dataset = build_dataset_without_insert_conflict(db[:kaal_dispatches])
     wrapped_engine = described_class.new(database: db)
     wrapped_engine.instance_variable_set(
       :@database,
@@ -73,23 +101,7 @@ RSpec.describe Kaal::Dispatch::DatabaseEngine do
   end
 
   it 'updates an existing dispatch when insert_conflict is unavailable' do
-    wrapper_dataset = Class.new do
-      def initialize(dataset)
-        @dataset = dataset
-      end
-
-      def respond_to_missing?(method_name, include_private = false)
-        return false if method_name == :insert_conflict
-
-        @dataset.respond_to?(method_name, include_private) || super
-      end
-
-      def method_missing(method_name, ...)
-        return super if method_name == :insert_conflict
-
-        @dataset.public_send(method_name, ...)
-      end
-    end.new(db[:kaal_dispatches])
+    wrapper_dataset = build_dataset_without_insert_conflict(db[:kaal_dispatches])
     wrapped_engine = described_class.new(database: db)
     wrapped_engine.instance_variable_set(
       :@database,
@@ -111,27 +123,7 @@ RSpec.describe Kaal::Dispatch::DatabaseEngine do
   end
 
   it 'rescues unique violations and updates the existing dispatch when insert_conflict is unavailable' do
-    wrapper_dataset = Class.new do
-      def initialize(dataset)
-        @dataset = dataset
-      end
-
-      def respond_to_missing?(method_name, include_private = false)
-        return false if method_name == :insert_conflict
-
-        @dataset.respond_to?(method_name, include_private) || super
-      end
-
-      def insert(_attributes)
-        raise Sequel::UniqueConstraintViolation, 'duplicate dispatch'
-      end
-
-      def method_missing(method_name, ...)
-        return super if method_name == :insert_conflict
-
-        @dataset.public_send(method_name, ...)
-      end
-    end.new(db[:kaal_dispatches])
+    wrapper_dataset = build_unique_violation_dataset_without_insert_conflict(db[:kaal_dispatches])
 
     wrapped_engine = described_class.new(database: db)
     wrapped_engine.instance_variable_set(

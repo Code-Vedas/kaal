@@ -12,6 +12,7 @@ RSpec.describe Kaal::ActiveRecord, integration: :pg do
     namespace = KaalIntegrationSupport.namespace('contention-activerecord-pg')
     base_time = Time.utc(2026, 1, 1, 0, 0, 30)
     fixed_times = KaalContentionSupport.repeated_fire_times(base_time, iterations: 3)
+    skip 'DATABASE_URL not set' if ENV['DATABASE_URL'].to_s.empty?
     database_url = ENV.fetch('DATABASE_URL')
 
     KaalActiveRecordSupport.reset_database!(database_url)
