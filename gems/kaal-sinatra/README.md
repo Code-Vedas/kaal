@@ -5,7 +5,6 @@ Sinatra integration gem for Kaal.
 `kaal-sinatra` depends on:
 
 - `kaal`
-- `kaal-sequel`
 - `sinatra`
 
 It owns the Sinatra integration surface:
@@ -24,7 +23,7 @@ gem 'redis'   # for redis
 gem 'sqlite3' # or pg / mysql2 for SQL
 ```
 
-If you use SQL persistence, create the Kaal tables using Sequel migrations. `kaal-sequel` exposes templates for:
+If you use SQL persistence, create the Kaal tables using Sequel migrations. `kaal` exposes the Sequel migration templates for:
 
 - SQLite: `kaal_dispatches`, `kaal_locks`, `kaal_definitions`
 - PostgreSQL: `kaal_dispatches`, `kaal_definitions`

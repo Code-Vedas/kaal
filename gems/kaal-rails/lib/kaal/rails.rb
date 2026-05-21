@@ -6,7 +6,6 @@
 # LICENSE file in the root directory of this source tree.
 require 'pathname'
 require 'kaal'
-require 'kaal/active_record'
 require 'kaal/rails/version'
 require 'kaal/rails/installer'
 require 'kaal/rails/railtie'
@@ -33,11 +32,11 @@ module Kaal
       def build_backend(backend_name = detect_backend_name)
         case backend_name.to_s
         when 'sqlite'
-          Kaal::ActiveRecord::DatabaseAdapter.new
+          Kaal::Backend::SQLite.new
         when 'postgres'
-          Kaal::ActiveRecord::PostgresAdapter.new
+          Kaal::Backend::Postgres.new
         when 'mysql'
-          Kaal::ActiveRecord::MySQLAdapter.new
+          Kaal::Backend::MySQL.new
         end
       end
 

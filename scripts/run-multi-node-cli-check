@@ -17,5 +17,5 @@ fi
 
 backend="$1"
 
-cd "${REPO_ROOT}/core/kaal-sequel"
+cd "${REPO_ROOT}/gems/kaal"
 bundle exec ruby "${REPO_ROOT}/scripts/run_multi_node_cli_check.rb" "${backend}"

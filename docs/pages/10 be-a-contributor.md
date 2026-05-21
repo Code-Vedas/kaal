@@ -18,12 +18,8 @@ permalink: /contribute
 
 ## Monorepo structure
 
-- `core/kaal`
-  Core engine, runtime, CLI, memory backend, and Redis backend.
-- `core/kaal-sequel`
-  Sequel-backed SQL adapter.
-- `core/kaal-activerecord`
-  Active Record-backed SQL adapter.
+- `gems/kaal`
+  Core engine, runtime, CLI, memory backend, Redis backend, and SQL backend surfaces.
 - `gems/kaal-hanami`
   Hanami integration.
 - `gems/kaal-rails`
@@ -62,7 +58,7 @@ Use the narrower scripts when you only need one phase. Use `scripts/run-all` whe
 You can also work from an individual package directory:
 
 ```bash
-cd core/kaal
+cd gems/kaal
 bundle install
 bin/rspec-unit
 bin/rubocop

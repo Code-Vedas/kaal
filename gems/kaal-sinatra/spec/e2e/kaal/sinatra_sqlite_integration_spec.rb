@@ -15,7 +15,7 @@ RSpec.describe Kaal::Sinatra, integration: :sqlite do
       database_path = KaalSinatraDummyAppSupport.database_path(app_root)
       database = Sequel.sqlite(database_path)
 
-      expect(lines).to eq(['200', 'Kaal::Backend::DatabaseAdapter', 'true'])
+      expect(lines).to eq(['200', 'Kaal::Backend::SQLite', 'true'])
       expect(database[:kaal_definitions].count).to eq(1)
       expect(database[:kaal_dispatches].count).to eq(2)
       expect(database[:kaal_locks].count).to eq(2)
@@ -30,7 +30,7 @@ RSpec.describe Kaal::Sinatra, integration: :sqlite do
       database_path = KaalSinatraDummyAppSupport.database_path(app_root)
       database = Sequel.sqlite(database_path)
 
-      expect(lines).to eq(['200', 'Kaal::Backend::DatabaseAdapter', 'true'])
+      expect(lines).to eq(['200', 'Kaal::Backend::SQLite', 'true'])
       expect(database[:kaal_definitions].count).to eq(1)
       expect(database[:kaal_dispatches].count).to eq(2)
       expect(database[:kaal_locks].count).to eq(2)
