@@ -10,9 +10,7 @@ The main packages in this repository are:
 
 | Package             | Path                     | Purpose                                                       |
 | ------------------- | ------------------------ | ------------------------------------------------------------- |
-| `kaal`              | `core/kaal`              | Core scheduler engine, CLI, memory backend, and Redis backend |
-| `kaal-sequel`       | `core/kaal-sequel`       | Sequel-backed SQL adapter                                     |
-| `kaal-activerecord` | `core/kaal-activerecord` | Active Record-backed SQL adapter                              |
+| `kaal`              | `gems/kaal`              | Core scheduler engine, CLI, memory backend, Redis backend, and optional SQL backends |
 | `kaal-hanami`       | `gems/kaal-hanami`       | Hanami integration                                            |
 | `kaal-rails`        | `gems/kaal-rails`        | Rails integration                                             |
 | `kaal-roda`         | `gems/kaal-roda`         | Roda integration                                              |
@@ -79,14 +77,14 @@ scripts/run-all
 You can also work from an individual package directory:
 
 ```bash
-cd core/kaal
+cd gems/kaal
 bundle install
 bin/rspec-unit
 bin/rubocop
 bin/reek
 ```
 
-Framework and adapter packages expose similar `bin/rspec-unit`, `bin/rspec-e2e`, `bin/rubocop`, and `bin/reek` entrypoints.
+Framework packages expose similar `bin/rspec-unit`, `bin/rspec-e2e`, `bin/rubocop`, and `bin/reek` entrypoints.
 
 Run the smallest relevant set for your change, or use `scripts/run-all` when you want the full repo-level pass.
 
@@ -146,9 +144,7 @@ git checkout -b release/<version>
 
 At minimum, review these package surfaces during release prep:
 
-- `core/kaal`
-- `core/kaal-sequel`
-- `core/kaal-activerecord`
+- `gems/kaal`
 - `gems/kaal-hanami`
 - `gems/kaal-rails`
 - `gems/kaal-roda`

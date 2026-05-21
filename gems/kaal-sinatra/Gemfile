@@ -9,8 +9,7 @@ source 'https://rubygems.org'
 gemspec
 
 group :development, :test do
-  gem 'kaal', path: '../../core/kaal'
-  gem 'kaal-sequel', path: '../../core/kaal-sequel'
+  gem 'kaal', path: '../kaal'
   gem 'mysql2'
   gem 'pg', '~> 1.1'
   gem 'rack-test'
@@ -22,7 +21,7 @@ group :development, :test do
   gem 'rubocop-rspec'
   gem 'sequel', '~> 5.0'
   gem 'sinatra'
-  gem 'sqlite3'
+  gem 'sqlite3', '>= 2.1'
 end
 
 group :test do

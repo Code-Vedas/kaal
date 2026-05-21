@@ -60,13 +60,12 @@ end
 
 ```ruby
 require "kaal"
-require "kaal/sequel"
 require "sequel"
 
 database = Sequel.connect(adapter: "sqlite", database: "db/kaal.sqlite3")
 
 Kaal.configure do |config|
-  config.backend = Kaal::Backend::DatabaseAdapter.new(database)
+  config.backend = Kaal::Backend::SQLite.new(database: database)
   config.scheduler_config_path = "config/scheduler.yml"
 end
 ```
@@ -75,14 +74,14 @@ For PostgreSQL or MySQL, replace the backend line inside `Kaal.configure` with o
 
 ```ruby
 Kaal.configure do |config|
-  config.backend = Kaal::Backend::PostgresAdapter.new(database)
+  config.backend = Kaal::Backend::Postgres.new(database: database)
   config.scheduler_config_path = "config/scheduler.yml"
 end
 ```
 
 ```ruby
 Kaal.configure do |config|
-  config.backend = Kaal::Backend::MySQLAdapter.new(database)
+  config.backend = Kaal::Backend::MySQL.new(database: database)
   config.scheduler_config_path = "config/scheduler.yml"
 end
 ```
@@ -91,15 +90,14 @@ end
 
 ```ruby
 require "kaal"
-require "kaal/active_record"
-
-Kaal::ActiveRecord::ConnectionSupport.configure!(
-  adapter: "sqlite3",
-  database: "db/kaal.sqlite3"
-)
 
 Kaal.configure do |config|
-  config.backend = Kaal::ActiveRecord::DatabaseAdapter.new
+  config.backend = Kaal::Backend::SQLite.new(
+    connection: {
+      adapter: "sqlite3",
+      database: "db/kaal.sqlite3"
+    }
+  )
   config.scheduler_config_path = "config/scheduler.yml"
 end
 ```
@@ -108,14 +106,14 @@ For PostgreSQL or MySQL, replace the backend line inside `Kaal.configure` with o
 
 ```ruby
 Kaal.configure do |config|
-  config.backend = Kaal::ActiveRecord::PostgresAdapter.new
+  config.backend = Kaal::Backend::Postgres.new(connection: ENV.fetch("DATABASE_URL"))
   config.scheduler_config_path = "config/scheduler.yml"
 end
 ```
 
 ```ruby
 Kaal.configure do |config|
-  config.backend = Kaal::ActiveRecord::MySQLAdapter.new
+  config.backend = Kaal::Backend::MySQL.new(connection: ENV.fetch("DATABASE_URL"))
   config.scheduler_config_path = "config/scheduler.yml"
 end
 ```
@@ -131,7 +129,7 @@ bundle exec rails generate kaal:install --backend=sqlite
 bundle exec rails db:migrate
 ```
 
-Rails auto-selects the Active Record-backed adapter from the configured database unless you override `Kaal.configuration.backend` yourself.
+Rails auto-selects the matching `Kaal::Backend::*` class from the configured database unless you override `Kaal.configuration.backend` yourself.
 
 ### Sinatra
 

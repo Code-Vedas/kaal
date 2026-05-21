@@ -1,12 +1,5 @@
 PATH
-  remote: ../../core/kaal-sequel
-  specs:
-    kaal-sequel (0.3.0)
-      kaal (= 0.3.0)
-      sequel (~> 5.0)
-
-PATH
-  remote: ../../core/kaal
+  remote: ../kaal
   specs:
     kaal (0.3.0)
       fugit (~> 1.8)
@@ -19,7 +12,6 @@ PATH
   specs:
     kaal-roda (0.3.0)
       kaal (= 0.3.0)
-      kaal-sequel (= 0.3.0)
       rack (>= 2.2)
       roda (>= 3.0, < 5.0)
 
@@ -167,16 +159,16 @@ GEM
       terminal-table
     simplecov-html (0.13.2)
     simplecov_json_formatter (0.1.4)
-    sqlite3 (2.9.2-aarch64-linux-gnu)
-    sqlite3 (2.9.2-aarch64-linux-musl)
-    sqlite3 (2.9.2-arm-linux-gnu)
-    sqlite3 (2.9.2-arm-linux-musl)
-    sqlite3 (2.9.2-arm64-darwin)
-    sqlite3 (2.9.2-x86-linux-gnu)
-    sqlite3 (2.9.2-x86-linux-musl)
-    sqlite3 (2.9.2-x86_64-darwin)
-    sqlite3 (2.9.2-x86_64-linux-gnu)
-    sqlite3 (2.9.2-x86_64-linux-musl)
+    sqlite3 (2.9.4-aarch64-linux-gnu)
+    sqlite3 (2.9.4-aarch64-linux-musl)
+    sqlite3 (2.9.4-arm-linux-gnu)
+    sqlite3 (2.9.4-arm-linux-musl)
+    sqlite3 (2.9.4-arm64-darwin)
+    sqlite3 (2.9.4-x86-linux-gnu)
+    sqlite3 (2.9.4-x86-linux-musl)
+    sqlite3 (2.9.4-x86_64-darwin)
+    sqlite3 (2.9.4-x86_64-linux-gnu)
+    sqlite3 (2.9.4-x86_64-linux-musl)
     terminal-table (4.0.0)
       unicode-display_width (>= 1.1.1, < 4)
     thor (1.5.0)
@@ -205,7 +197,6 @@ PLATFORMS
 DEPENDENCIES
   kaal!
   kaal-roda!
-  kaal-sequel!
   mysql2
   pg (~> 1.1)
   rack-test
@@ -221,7 +212,7 @@ DEPENDENCIES
   sequel (~> 5.0)
   simplecov
   simplecov-console
-  sqlite3
+  sqlite3 (>= 2.1)
 
 BUNDLED WITH
    2.7.2

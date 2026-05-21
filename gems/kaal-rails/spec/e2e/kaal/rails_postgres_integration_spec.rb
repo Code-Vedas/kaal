@@ -38,15 +38,15 @@ RSpec.describe Kaal::Rails, integration: :pg do
           "Kaal.register(key: 'postgres:heartbeat', cron: '* * * * *', enqueue: ->(**) { ExampleHeartbeatJob.perform })",
           'Kaal.tick!',
           'puts Kaal.configuration.backend.class.name',
-          'puts Kaal::ActiveRecord::DefinitionRecord.count',
-          'puts Kaal::ActiveRecord::DispatchRecord.count',
+          'puts Kaal::Internal::ActiveRecord::DefinitionRecord.count',
+          'puts Kaal::Internal::ActiveRecord::DispatchRecord.count',
           "puts [ActiveRecord::Base.connection.data_source_exists?('kaal_definitions'),",
           "      ActiveRecord::Base.connection.data_source_exists?('kaal_dispatches')].join(',')"
         ].join("\n")
       )
       lines = output.lines.map(&:strip)
 
-      expect(lines[0]).to eq('Kaal::ActiveRecord::PostgresAdapter')
+      expect(lines[0]).to eq('Kaal::Backend::Postgres')
       expect(lines[1].to_i).to be >= 1
       expect(lines[2].to_i).to be >= 1
       expect(lines[3]).to eq('true,true')

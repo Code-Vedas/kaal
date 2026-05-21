@@ -31,7 +31,6 @@ Gem::Specification.new do |spec|
     Dir['{bin,lib}/**/*', 'LICENSE', 'Rakefile', 'README.md']
   end
   spec.add_dependency 'kaal', "= #{version}"
-  spec.add_dependency 'kaal-sequel', "= #{version}"
   spec.add_dependency 'rack', '>= 2.2'
   spec.add_dependency 'sinatra', '>= 3.0', '< 5.0'
   spec.required_ruby_version = '>= 3.2'

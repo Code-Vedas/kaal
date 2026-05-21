@@ -1,6 +1,6 @@
 # Kaal
 
-> Distributed cron scheduling for Ruby, split into a core engine plus datastore and framework integration gems.
+> Distributed cron scheduling for Ruby, centered on one core gem plus framework integration gems.
 
 [![Gem](https://img.shields.io/gem/v/kaal.svg?style=flat-square)](https://rubygems.org/gems/kaal)
 [![CI](https://github.com/Code-Vedas/kaal/actions/workflows/ci.yml/badge.svg)](https://github.com/Code-Vedas/kaal/actions/workflows/ci.yml)
@@ -19,11 +19,7 @@ Project docs: <https://kaal.codevedas.com>
 Choose the gem surface that matches your app:
 
 - `kaal`
-  Plain Ruby with in-process memory coordination or Redis coordination.
-- `kaal` + `kaal-sequel`
-  Plain Ruby with Sequel-backed SQL persistence.
-- `kaal` + `kaal-activerecord`
-  Plain Ruby with Active Record-backed SQL persistence.
+  Plain Ruby with memory, Redis, Sequel-backed SQL, or Active Record-backed SQL.
 - `kaal-rails`
   Rails integration with Active Record-backed persistence, generators, and rake tasks.
 - `kaal-hanami`
@@ -38,9 +34,7 @@ Choose the gem surface that matches your app:
 ```text
 /repo-root
 ├── core/
-│   ├── kaal/              # Core engine gem, CLI, memory backend, redis backend
-│   ├── kaal-sequel/       # Sequel-backed SQL adapter gem
-│   └── kaal-activerecord/ # Active Record-backed SQL adapter gem
+│   └── kaal/              # Core engine gem, CLI, memory backend, redis backend, and SQL backends
 ├── gems/
 │   ├── kaal-hanami/       # Hanami integration gem
 │   ├── kaal-rails/        # Rails integration gem
@@ -94,7 +88,7 @@ bundle exec kaal explain "*/15 * * * *"
 bundle exec kaal next "0 9 * * 1" --count 3
 ```
 
-`kaal init` only supports `memory` and `redis`. For SQL-backed setups, add the appropriate adapter gem and configure the backend yourself, or use the framework-specific install surface.
+`kaal init` only supports `memory` and `redis`. For SQL-backed setups, add the database libraries your app uses and configure the backend yourself, or use the framework-specific install surface.
 
 ## Installation paths
 
@@ -120,51 +114,49 @@ bundle exec kaal init --backend=redis
 
 ```ruby
 gem "kaal"
-gem "kaal-sequel"
+gem "sequel"
 ```
 
 Example:
 
 ```ruby
 require "kaal"
-require "kaal/sequel"
 require "sequel"
 
 database = Sequel.connect(adapter: "sqlite", database: "db/kaal.sqlite3")
 
 Kaal.configure do |config|
-  config.backend = Kaal::Backend::DatabaseAdapter.new(database)
+  config.backend = Kaal::Backend::SQLite.new(database: database)
   config.scheduler_config_path = "config/scheduler.yml"
 end
 ```
 
-Use `Kaal::Backend::PostgresAdapter` or `Kaal::Backend::MySQLAdapter` for PostgreSQL and MySQL.
+Use `Kaal::Backend::Postgres.new(database: database)` or `Kaal::Backend::MySQL.new(database: database)` for PostgreSQL and MySQL.
 
 ### Plain Ruby with Active Record-backed SQL
 
 ```ruby
 gem "kaal"
-gem "kaal-activerecord"
+gem "activerecord"
 ```
 
 Example:
 
 ```ruby
 require "kaal"
-require "kaal/active_record"
-
-Kaal::ActiveRecord::ConnectionSupport.configure!(
-  adapter: "sqlite3",
-  database: "db/kaal.sqlite3"
-)
 
 Kaal.configure do |config|
-  config.backend = Kaal::ActiveRecord::DatabaseAdapter.new
+  config.backend = Kaal::Backend::SQLite.new(
+    connection: {
+      adapter: "sqlite3",
+      database: "db/kaal.sqlite3"
+    }
+  )
   config.scheduler_config_path = "config/scheduler.yml"
 end
 ```
 
-Use `Kaal::ActiveRecord::PostgresAdapter` or `Kaal::ActiveRecord::MySQLAdapter` for PostgreSQL and MySQL.
+Use `Kaal::Backend::Postgres.new(connection: ENV.fetch("DATABASE_URL"))` or `Kaal::Backend::MySQL.new(connection: ENV.fetch("DATABASE_URL"))` for PostgreSQL and MySQL.
 
 ### Rails
 
@@ -350,7 +342,7 @@ scripts/run-all
 You can also run checks from an individual package directory, for example:
 
 ```bash
-cd core/kaal
+cd gems/kaal
 bin/rspec-unit
 bin/rubocop
 bin/reek

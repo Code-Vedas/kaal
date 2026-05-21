@@ -25,36 +25,30 @@ Kaal does not require a specific job system. Your callback can enqueue Active Jo
 ## Why Kaal
 
 - plain Ruby runtime with no framework requirement
-- package boundaries split between engine, datastore adapters, and framework integrations
+- package boundaries split between the core engine and framework integrations
 - memory and Redis support in the core gem
-- Sequel and Active Record SQL adapter paths
+- Sequel and Active Record SQL paths inside the core gem
 - CLI tools for setup and operations
 - documented at-most-once dispatch guarantee for supported shared backends
 
 ## Package roles
 
 - `kaal`
-  Core engine, runtime coordination, CLI, memory backend, and Redis backend.
-- `kaal-sequel`
-  Sequel-backed SQL datastore adapter for plain Ruby or framework integrations built on Sequel.
-- `kaal-activerecord`
-  Active Record-backed SQL datastore adapter for plain Ruby and Rails-backed installs.
+  Core engine, runtime coordination, CLI, memory backend, Redis backend, and optional SQL backend surfaces.
 - `kaal-rails`
-  Rails integration that builds on `kaal` and `kaal-activerecord`.
+  Rails integration that builds on `kaal`.
 - `kaal-hanami`
-  Hanami integration that builds on `kaal` and `kaal-sequel`.
+  Hanami integration that builds on `kaal`.
 - `kaal-roda`
-  Roda integration that builds on `kaal` and `kaal-sequel`.
+  Roda integration that builds on `kaal`.
 - `kaal-sinatra`
-  Sinatra integration that builds on `kaal` and `kaal-sequel`.
+  Sinatra integration that builds on `kaal`.
 
 ## Where it fits
 
 Pick the package surface that matches your application:
 
-- plain Ruby + memory or Redis: `kaal`
-- plain Ruby + Sequel SQL: `kaal` and `kaal-sequel`
-- plain Ruby + Active Record SQL: `kaal` and `kaal-activerecord`
+- plain Ruby + memory, Redis, Sequel SQL, or Active Record SQL: `kaal`
 - Rails: `kaal-rails`
 - Hanami: `kaal-hanami`
 - Roda: `kaal-roda`

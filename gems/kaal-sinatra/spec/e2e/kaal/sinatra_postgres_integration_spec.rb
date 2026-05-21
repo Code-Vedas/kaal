@@ -21,7 +21,7 @@ RSpec.describe Kaal::Sinatra, integration: :pg do
     ) do |app_root, env, lines|
       database = Sequel.connect(env.fetch('DATABASE_URL'))
 
-      expect(lines).to eq(['200', 'Kaal::Backend::PostgresAdapter', 'true'])
+      expect(lines).to eq(['200', 'Kaal::Backend::Postgres', 'true'])
       expect(database[:kaal_definitions].count).to eq(1)
       expect(database[:kaal_dispatches].count).to eq(2)
       expect(database.tables).not_to include(:kaal_locks)
@@ -42,7 +42,7 @@ RSpec.describe Kaal::Sinatra, integration: :pg do
     ) do |app_root, env, lines|
       database = Sequel.connect(env.fetch('DATABASE_URL'))
 
-      expect(lines).to eq(['200', 'Kaal::Backend::PostgresAdapter', 'true'])
+      expect(lines).to eq(['200', 'Kaal::Backend::Postgres', 'true'])
       expect(database[:kaal_definitions].count).to eq(1)
       expect(database[:kaal_dispatches].count).to eq(2)
       expect(database.tables).not_to include(:kaal_locks)

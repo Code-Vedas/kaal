@@ -1,9 +1,7 @@
 {
   "folders": [
     { "name": "docs", "path": "docs" },
-    { "name": "kaal", "path": "core/kaal" },
-    { "name": "kaal-activerecord", "path": "core/kaal-activerecord" },
-    { "name": "kaal-sequel", "path": "core/kaal-sequel" },
+    { "name": "kaal", "path": "gems/kaal" },
     { "name": "kaal-hanami", "path": "gems/kaal-hanami" },
     { "name": "kaal-rails", "path": "gems/kaal-rails" },
     { "name": "kaal-roda", "path": "gems/kaal-roda" },

@@ -1,13 +1,5 @@
 PATH
-  remote: ../../../core/kaal-activerecord
-  specs:
-    kaal-activerecord (0.3.0)
-      kaal (= 0.3.0)
-      rails (>= 7.1, < 9.0)
-      rails-i18n (>= 7.0)
-
-PATH
-  remote: ../../../core/kaal
+  remote: ../../kaal
   specs:
     kaal (0.3.0)
       fugit (~> 1.8)
@@ -20,7 +12,6 @@ PATH
   specs:
     kaal-rails (0.3.0)
       kaal (= 0.3.0)
-      kaal-activerecord (= 0.3.0)
       rails (>= 7.1, < 9.0)
       rails-i18n (>= 7.0)
 
@@ -409,7 +400,6 @@ PLATFORMS
 DEPENDENCIES
   fakeredis
   kaal!
-  kaal-activerecord!
   kaal-rails!
   mysql2
   pg (~> 1.1)
@@ -428,7 +418,7 @@ DEPENDENCIES
   ruby-lsp-rspec
   simplecov
   simplecov-console
-  sqlite3
+  sqlite3 (>= 2.1)
 
 BUNDLED WITH
    2.7.2

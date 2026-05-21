@@ -139,9 +139,7 @@ jobs:
         with:
           token: ${{ secrets.QLTY_COVERAGE_TOKEN }}
           files: |
-            ${{ github.workspace }}/core/kaal/coverage/.resultset.json
-            ${{ github.workspace }}/core/kaal-sequel/coverage/.resultset.json
-            ${{ github.workspace }}/core/kaal-activerecord/coverage/.resultset.json
+            ${{ github.workspace }}/gems/kaal/coverage/.resultset.json
             ${{ github.workspace }}/gems/kaal-hanami/coverage/.resultset.json
             ${{ github.workspace }}/gems/kaal-rails/coverage/.resultset.json
             ${{ github.workspace }}/gems/kaal-roda/coverage/.resultset.json
