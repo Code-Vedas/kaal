@@ -32,7 +32,6 @@ Gem::Specification.new do |spec|
   end
   spec.add_dependency 'hanami', '>= 2.0', '< 3.0'
   spec.add_dependency 'kaal', "= #{version}"
-  spec.add_dependency 'kaal-sequel', "= #{version}"
   spec.add_dependency 'rack', '>= 2.2'
   spec.required_ruby_version = '>= 3.2'
 end

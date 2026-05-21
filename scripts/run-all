@@ -10,9 +10,7 @@ run_phase() {
 
   echo "Running ${phase_name} for all gems"
   . "${SCRIPT_DIR}/${runner}"
-  run_suite "kaal" "core/kaal"
-  run_suite "kaal-activerecord" "core/kaal-activerecord"
-  run_suite "kaal-sequel" "core/kaal-sequel"
+  run_suite "kaal" "gems/kaal"
   run_suite "kaal-hanami" "gems/kaal-hanami"
   run_suite "kaal-rails" "gems/kaal-rails"
   run_suite "kaal-roda" "gems/kaal-roda"

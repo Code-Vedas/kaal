@@ -5,7 +5,6 @@ Rails plugin gem for Kaal.
 `kaal-rails` depends on:
 
 - `kaal`
-- `kaal-activerecord`
 
 It owns the Rails integration surface:
 
@@ -45,7 +44,7 @@ bundle exec rails db:migrate
 ## What It Provides
 
 - Rails-native setup on top of the Kaal engine
-- Active Record-backed persistence through `kaal-activerecord`
+- Active Record-backed persistence through the core `kaal` gem
 - migration templates for the Kaal tables required by the selected backend
 - automatic backend selection from the Rails database adapter unless the app sets `Kaal.configuration.backend` itself
 
@@ -61,9 +60,9 @@ end
 
 If you do nothing, `kaal-rails` will auto-wire:
 
-- SQLite to `Kaal::ActiveRecord::DatabaseAdapter`
-- PostgreSQL to `Kaal::ActiveRecord::PostgresAdapter`
-- MySQL to `Kaal::ActiveRecord::MySQLAdapter`
+- SQLite to `Kaal::Backend::SQLite`
+- PostgreSQL to `Kaal::Backend::Postgres`
+- MySQL to `Kaal::Backend::MySQL`
 
 Available Rails surfaces:
 

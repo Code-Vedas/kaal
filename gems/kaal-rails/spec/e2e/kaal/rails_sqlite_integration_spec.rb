@@ -38,9 +38,9 @@ RSpec.describe Kaal::Rails, integration: :sqlite do
           "Kaal.register(key: 'sqlite:heartbeat', cron: '* * * * *', enqueue: ->(**) { ExampleHeartbeatJob.perform })",
           'Kaal.tick!',
           'puts Kaal.configuration.backend.class.name',
-          'puts Kaal::ActiveRecord::DefinitionRecord.count',
-          'puts Kaal::ActiveRecord::DispatchRecord.count',
-          'puts Kaal::ActiveRecord::LockRecord.count',
+          'puts Kaal::Internal::ActiveRecord::DefinitionRecord.count',
+          'puts Kaal::Internal::ActiveRecord::DispatchRecord.count',
+          'puts Kaal::Internal::ActiveRecord::LockRecord.count',
           "puts [ActiveRecord::Base.connection.data_source_exists?('kaal_definitions'),",
           "      ActiveRecord::Base.connection.data_source_exists?('kaal_dispatches'),",
           "      ActiveRecord::Base.connection.data_source_exists?('kaal_locks')].join(',')"
@@ -48,7 +48,7 @@ RSpec.describe Kaal::Rails, integration: :sqlite do
       )
       lines = output.lines.map(&:strip)
 
-      expect(lines[0]).to eq('Kaal::ActiveRecord::DatabaseAdapter')
+      expect(lines[0]).to eq('Kaal::Backend::SQLite')
       expect(lines[1].to_i).to be >= 1
       expect(lines[2].to_i).to be >= 1
       expect(lines[3].to_i).to be >= 1

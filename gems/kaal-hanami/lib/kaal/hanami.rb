@@ -5,7 +5,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 require 'pathname'
-require 'kaal/sequel'
+require 'kaal'
 require 'hanami'
 require 'kaal/hanami/version'
 require 'kaal/hanami/middleware'
@@ -111,11 +111,11 @@ module Kaal
       def build_backend(backend_name, database)
         case backend_name
         when 'sqlite'
-          Kaal::Backend::DatabaseAdapter.new(database)
+          Kaal::Backend::SQLite.new(database:)
         when 'postgres'
-          Kaal::Backend::PostgresAdapter.new(database)
+          Kaal::Backend::Postgres.new(database:)
         when 'mysql'
-          Kaal::Backend::MySQLAdapter.new(database)
+          Kaal::Backend::MySQL.new(database:)
         end
       end
 

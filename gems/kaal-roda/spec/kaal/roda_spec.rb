@@ -35,13 +35,13 @@ RSpec.describe Kaal::Roda do
 
     database = Sequel.sqlite
 
-    expect(described_class.configure_backend!(database:, adapter: 'sqlite')).to be_a(Kaal::Backend::DatabaseAdapter)
+    expect(described_class.configure_backend!(database:, adapter: 'sqlite')).to be_a(Kaal::Backend::SQLite)
 
     Kaal.reset_configuration!
-    expect(described_class.configure_backend!(database:, adapter: 'postgres')).to be_a(Kaal::Backend::PostgresAdapter)
+    expect(described_class.configure_backend!(database:, adapter: 'postgres')).to be_a(Kaal::Backend::Postgres)
 
     Kaal.reset_configuration!
-    expect(described_class.configure_backend!(database:, adapter: 'mysql')).to be_a(Kaal::Backend::MySQLAdapter)
+    expect(described_class.configure_backend!(database:, adapter: 'mysql')).to be_a(Kaal::Backend::MySQL)
 
     Kaal.reset_configuration!
     expect { described_class.configure_backend!(database:, adapter: 'oracle') }.to raise_error(ArgumentError, /Unsupported Roda datastore backend/)
@@ -76,7 +76,7 @@ RSpec.describe Kaal::Roda do
     database = Sequel.sqlite
     backend = described_class.configure_backend!(database:)
 
-    expect(backend).to be_a(Kaal::Backend::DatabaseAdapter)
+    expect(backend).to be_a(Kaal::Backend::SQLite)
     expect(Kaal.configuration.backend).to eq(backend)
   ensure
     database&.disconnect
@@ -146,7 +146,7 @@ RSpec.describe Kaal::Roda do
 
       expect(Kaal.configuration.namespace).to eq('roda-spec')
       expect(Kaal.configuration.scheduler_config_path).to eq('config/scheduler.yml')
-      expect(Kaal.configuration.backend).to be_a(Kaal::Backend::DatabaseAdapter)
+      expect(Kaal.configuration.backend).to be_a(Kaal::Backend::SQLite)
       expect(Kaal.registered?(key: 'roda:test')).to be(true)
       expect(Kaal.running?).to be(false)
     ensure

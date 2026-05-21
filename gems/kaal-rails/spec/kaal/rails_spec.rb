@@ -40,9 +40,9 @@ RSpec.describe Kaal::Rails do
     expect(described_class.detect_backend_name(db_config.new('Oracle'))).to be_nil
     expect(described_class.detect_backend_name(nil)).to be_nil
 
-    expect(described_class.build_backend('sqlite')).to be_a(Kaal::ActiveRecord::DatabaseAdapter)
-    expect(described_class.build_backend('postgres')).to be_a(Kaal::ActiveRecord::PostgresAdapter)
-    expect(described_class.build_backend('mysql')).to be_a(Kaal::ActiveRecord::MySQLAdapter)
+    expect(described_class.build_backend('sqlite')).to be_a(Kaal::Backend::SQLite)
+    expect(described_class.build_backend('postgres')).to be_a(Kaal::Backend::Postgres)
+    expect(described_class.build_backend('mysql')).to be_a(Kaal::Backend::MySQL)
     expect(described_class.build_backend('unknown')).to be_nil
   end
 
@@ -54,8 +54,8 @@ RSpec.describe Kaal::Rails do
 
   it 'auto-wires the Active Record backend and preserves explicit overrides' do
     Kaal.configuration.backend = nil
-    expect(described_class.configure_backend!).to be_a(Kaal::ActiveRecord::DatabaseAdapter)
-    expect(Kaal.configuration.backend).to be_a(Kaal::ActiveRecord::DatabaseAdapter)
+    expect(described_class.configure_backend!).to be_a(Kaal::Backend::SQLite)
+    expect(Kaal.configuration.backend).to be_a(Kaal::Backend::SQLite)
 
     Kaal.configuration.backend = nil
     expect(described_class.configure_backend!(backend: nil)).to be_nil

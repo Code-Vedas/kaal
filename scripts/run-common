@@ -133,7 +133,7 @@ suite_gemfiles() {
   suite_dir="$1"
 
   case "${suite_dir}" in
-    core/kaal-activerecord|gems/kaal-rails)
+    gems/kaal-rails)
       printf '%s\n' "gemfiles/rails_7_2.gemfile"
       printf '%s\n' "gemfiles/rails_8_0.gemfile"
       printf '%s\n' "gemfiles/rails_8_1.gemfile"

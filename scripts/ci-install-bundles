@@ -24,15 +24,7 @@ install_bundle() {
   BUNDLE_GEMFILE="${absolute_gemfile}" bundle check || BUNDLE_GEMFILE="${absolute_gemfile}" bundle install
 }
 
-install_bundle "core/kaal"
-install_bundle "core/kaal-sequel"
-
-install_bundle "core/kaal-activerecord" "gemfiles/rails_7_2.gemfile"
-install_bundle "core/kaal-activerecord" "gemfiles/rails_8_0.gemfile"
-install_bundle "core/kaal-activerecord" "gemfiles/rails_8_1.gemfile"
-if [ "${CI_RUBY_VERSION}" != "3.2" ]; then
-  install_bundle "core/kaal-activerecord" "gemfiles/rails_edge.gemfile"
-fi
+install_bundle "gems/kaal"
 
 install_bundle "gems/kaal-rails" "gemfiles/rails_7_2.gemfile"
 install_bundle "gems/kaal-rails" "gemfiles/rails_8_0.gemfile"

@@ -41,10 +41,10 @@ Use this path when you want:
 
 ```ruby
 gem "kaal"
-gem "kaal-sequel"
+gem "sequel"
 ```
 
-Use `kaal-sequel` when you want SQL persistence outside Rails and your app already uses Sequel or can provide a Sequel connection.
+Use this when you want SQL persistence outside Rails and your app already uses Sequel or can provide a Sequel connection.
 
 Typical choices:
 
@@ -56,13 +56,12 @@ Example:
 
 ```ruby
 require "kaal"
-require "kaal/sequel"
 require "sequel"
 
 database = Sequel.connect(adapter: "sqlite", database: "db/kaal.sqlite3")
 
 Kaal.configure do |config|
-  config.backend = Kaal::Backend::DatabaseAdapter.new(database)
+  config.backend = Kaal::Backend::SQLite.new(database: database)
   config.scheduler_config_path = "config/scheduler.yml"
 end
 ```
@@ -73,24 +72,23 @@ You are responsible for creating the Kaal tables through the Sequel adapter path
 
 ```ruby
 gem "kaal"
-gem "kaal-activerecord"
+gem "activerecord"
 ```
 
-Use `kaal-activerecord` when you want Active Record-backed SQL persistence outside Rails.
+Use this when you want Active Record-backed SQL persistence outside Rails.
 
 Example:
 
 ```ruby
 require "kaal"
-require "kaal/active_record"
-
-Kaal::ActiveRecord::ConnectionSupport.configure!(
-  adapter: "sqlite3",
-  database: "db/kaal.sqlite3"
-)
 
 Kaal.configure do |config|
-  config.backend = Kaal::ActiveRecord::DatabaseAdapter.new
+  config.backend = Kaal::Backend::SQLite.new(
+    connection: {
+      adapter: "sqlite3",
+      database: "db/kaal.sqlite3"
+    }
+  )
   config.scheduler_config_path = "config/scheduler.yml"
 end
 ```

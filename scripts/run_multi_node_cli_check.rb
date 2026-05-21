@@ -21,7 +21,7 @@ class MultiNodeCliCheck
   def initialize(backend)
     @backend = backend
     @repo_root = File.expand_path('..', __dir__)
-    @bundle_root = File.join(@repo_root, 'core', 'kaal-sequel')
+    @bundle_root = File.join(@repo_root, 'core', 'kaal')
     @project_root = File.join(@repo_root, 'tmp', 'multi_node_cli', backend)
     @log_dir = File.join(@project_root, 'logs')
     @namespace = "kaal-multi-node-cli-#{backend}-#{Process.pid}-#{Time.now.to_i}"
@@ -182,7 +182,7 @@ class MultiNodeCliCheck
 
   def config_rb
     <<~RUBY
-      require 'kaal/sequel'
+      require 'kaal'
       require 'redis'
       require_relative '../lib/multi_node_recording_job'
 
@@ -195,10 +195,10 @@ class MultiNodeCliCheck
         Kaal::Backend::RedisAdapter.new(redis, namespace: namespace)
       when 'postgres'
         database = Sequel.connect(ENV.fetch('KAAL_MULTI_NODE_DATABASE_URL'))
-        Kaal::Backend::PostgresAdapter.new(database)
+        Kaal::Backend::Postgres.new(database: database)
       when 'mysql'
         database = Sequel.connect(ENV.fetch('KAAL_MULTI_NODE_DATABASE_URL'))
-        Kaal::Backend::MySQLAdapter.new(database)
+        Kaal::Backend::MySQL.new(database: database)
       else
         raise "Unsupported backend: \#{backend_name}"
       end

@@ -6,6 +6,7 @@
 # LICENSE file in the root directory of this source tree.
 require 'fileutils'
 require 'pathname'
+require 'kaal/internal/active_record/migration_templates'
 
 module Kaal
   module Rails
@@ -40,15 +41,14 @@ module Kaal
 
       def install_migrations
         migrations_dir = root.join('db', 'migrate')
-        base_time = time_source.call
         FileUtils.mkdir_p(migrations_dir)
 
-        Kaal::ActiveRecord::MigrationTemplates.for_backend(backend).map.with_index do |(name, contents), index|
+        Kaal::Internal::ActiveRecord::MigrationTemplates.for_backend(backend).map.with_index do |(name, contents), index|
           slug = name.sub(/^\d+_/, '')
           existing = Dir[migrations_dir.join("*_#{slug}").to_s].first
           next({ status: :exists, path: existing.to_s }) if existing
 
-          timestamp = (base_time + index).strftime('%Y%m%d%H%M%S')
+          timestamp = (time_source.call + index).strftime('%Y%m%d%H%M%S')
           target = migrations_dir.join("#{timestamp}_#{slug}")
           File.write(target, contents)
           { status: :create, path: target.to_s }

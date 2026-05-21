@@ -32,13 +32,12 @@ For the documented at-most-once dispatch guarantee, enable the dispatch log regi
 
 ```ruby
 require "kaal"
-require "kaal/sequel"
 require "sequel"
 
 database = Sequel.connect(adapter: "sqlite", database: File.expand_path("../db/kaal.sqlite3", __dir__))
 
 Kaal.configure do |config|
-  config.backend = Kaal::Backend::DatabaseAdapter.new(database)
+  config.backend = Kaal::Backend::SQLite.new(database: database)
   config.scheduler_config_path = "config/scheduler.yml"
 end
 ```
@@ -46,23 +45,22 @@ end
 Alternative SQL backends:
 
 ```ruby
-config.backend = Kaal::Backend::PostgresAdapter.new(database)
-config.backend = Kaal::Backend::MySQLAdapter.new(database)
+config.backend = Kaal::Backend::Postgres.new(database: database)
+config.backend = Kaal::Backend::MySQL.new(database: database)
 ```
 
 ## Active Record adapter example
 
 ```ruby
 require "kaal"
-require "kaal/active_record"
-
-Kaal::ActiveRecord::ConnectionSupport.configure!(
-  adapter: "sqlite3",
-  database: File.expand_path("../db/kaal.sqlite3", __dir__)
-)
 
 Kaal.configure do |config|
-  config.backend = Kaal::ActiveRecord::DatabaseAdapter.new
+  config.backend = Kaal::Backend::SQLite.new(
+    connection: {
+      adapter: "sqlite3",
+      database: File.expand_path("../db/kaal.sqlite3", __dir__)
+    }
+  )
   config.scheduler_config_path = "config/scheduler.yml"
 end
 ```
@@ -70,17 +68,17 @@ end
 Alternative SQL backends:
 
 ```ruby
-config.backend = Kaal::ActiveRecord::PostgresAdapter.new
-config.backend = Kaal::ActiveRecord::MySQLAdapter.new
+config.backend = Kaal::Backend::Postgres.new(connection: ENV.fetch("DATABASE_URL"))
+config.backend = Kaal::Backend::MySQL.new(connection: ENV.fetch("DATABASE_URL"))
 ```
 
 ## Rails plugin behavior
 
 When you use `kaal-rails`, the plugin selects a backend from the Rails database adapter unless you override it yourself:
 
-- SQLite -> `Kaal::ActiveRecord::DatabaseAdapter`
-- PostgreSQL -> `Kaal::ActiveRecord::PostgresAdapter`
-- MySQL -> `Kaal::ActiveRecord::MySQLAdapter`
+- SQLite -> `Kaal::Backend::SQLite`
+- PostgreSQL -> `Kaal::Backend::Postgres`
+- MySQL -> `Kaal::Backend::MySQL`
 
 Install flow examples:
 
@@ -119,9 +117,9 @@ When you use `kaal-sinatra`, the addon chooses the backend in this order:
 
 For SQL-backed Sinatra apps, the addon selects a backend from the Sequel adapter unless you pass `adapter:` explicitly:
 
-- SQLite -> `Kaal::Backend::DatabaseAdapter`
-- PostgreSQL -> `Kaal::Backend::PostgresAdapter`
-- MySQL -> `Kaal::Backend::MySQLAdapter`
+- SQLite -> `Kaal::Backend::SQLite`
+- PostgreSQL -> `Kaal::Backend::Postgres`
+- MySQL -> `Kaal::Backend::MySQL`
 
 Typical setup:
 
@@ -171,9 +169,9 @@ When you use `kaal-roda`, the addon chooses the backend in this order:
 
 For SQL-backed Roda apps, the addon selects a backend from the Sequel adapter unless you pass `adapter:` explicitly:
 
-- SQLite -> `Kaal::Backend::DatabaseAdapter`
-- PostgreSQL -> `Kaal::Backend::PostgresAdapter`
-- MySQL -> `Kaal::Backend::MySQLAdapter`
+- SQLite -> `Kaal::Backend::SQLite`
+- PostgreSQL -> `Kaal::Backend::Postgres`
+- MySQL -> `Kaal::Backend::MySQL`
 
 Typical setup:
 
@@ -225,9 +223,9 @@ When you use `kaal-hanami`, the addon chooses the backend in this order:
 
 For SQL-backed Hanami apps, the addon selects a backend from the Sequel adapter unless you pass `adapter:` explicitly:
 
-- SQLite -> `Kaal::Backend::DatabaseAdapter`
-- PostgreSQL -> `Kaal::Backend::PostgresAdapter`
-- MySQL -> `Kaal::Backend::MySQLAdapter`
+- SQLite -> `Kaal::Backend::SQLite`
+- PostgreSQL -> `Kaal::Backend::Postgres`
+- MySQL -> `Kaal::Backend::MySQL`
 
 Typical setup:
 
