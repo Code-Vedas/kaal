@@ -5,6 +5,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 require 'spec_helper'
+require 'open3'
 
 RSpec.describe Kaal::ActiveRecord do
   it 'raises an actionable load error when active record is unavailable' do
@@ -31,10 +32,13 @@ RSpec.describe Kaal::ActiveRecord do
   end
 
   it 'does not eagerly load active record internals on require "kaal"' do
-    output = Bundler.with_unbundled_env do
-      `ruby -I#{File.expand_path('../../lib', __dir__)} -e 'require "kaal"; puts defined?(Kaal::Internal::ActiveRecord::BaseRecord).inspect'`
-    end
+    output, status = Open3.capture2e(
+      'bundle', 'exec', RbConfig.ruby,
+      "-I#{File.expand_path('../../lib', __dir__)}",
+      '-e', 'require "kaal"; puts defined?(Kaal::Internal::ActiveRecord::BaseRecord).inspect'
+    )
 
+    expect(status.success?).to be(true), output
     expect(output.strip).to eq('nil')
   end
 end

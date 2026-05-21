@@ -21,7 +21,7 @@ class MultiNodeCliCheck
   def initialize(backend)
     @backend = backend
     @repo_root = File.expand_path('..', __dir__)
-    @bundle_root = File.join(@repo_root, 'core', 'kaal')
+    @bundle_root = File.join(@repo_root, 'gems', 'kaal')
     @project_root = File.join(@repo_root, 'tmp', 'multi_node_cli', backend)
     @log_dir = File.join(@project_root, 'logs')
     @namespace = "kaal-multi-node-cli-#{backend}-#{Process.pid}-#{Time.now.to_i}"
