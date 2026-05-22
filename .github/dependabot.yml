@@ -9,14 +9,6 @@ updates:
     schedule:
       interval: daily
   - package-ecosystem: bundler
-    directory: /core/kaal-activerecord
-    schedule:
-      interval: daily
-  - package-ecosystem: bundler
-    directory: /core/kaal-sequel
-    schedule:
-      interval: daily
-  - package-ecosystem: bundler
     directory: /gems/kaal-rails
     schedule:
       interval: daily

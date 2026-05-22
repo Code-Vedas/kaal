@@ -14,7 +14,7 @@ Gem::Specification.new do |spec|
   spec.email = ['nitesh.purohit.it@gmail.com', 'team@codevedas.com']
   spec.summary = 'Roda integration for Kaal, a distributed cron scheduler for Ruby.'
   spec.description = <<-DESC
-    Kaal-Roda provides a thin integration layer that wires Kaal and Kaal-Sequel into Roda applications with explicit lifecycle control.
+    Kaal-Roda provides a thin integration layer that wires Kaal into Roda applications with explicit lifecycle control.
   DESC
   spec.homepage = 'https://github.com/Code-Vedas/kaal'
   spec.license = 'MIT'
