@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [0.4.0](https://github.com/code-vedas/kaal/tree/v0.4.0) (2026-05-21)
+
+[Full Changelog](https://github.com/code-vedas/kaal/compare/v0.3.0...v0.4.0)
+
+### Breaking Changes
+- refactor: move kaal into gems and collapse sql adapters @niteshpurohit (#107)
+
 ## [0.3.0](https://github.com/code-vedas/kaal/tree/v0.3.0) (2026-03-24)
 
 [Full Changelog](https://github.com/code-vedas/kaal/compare/v0.2.1...v0.3.0)
