@@ -99,6 +99,33 @@ RSpec.describe Kaal do
       )
       expect(dataset).to have_received(:delete)
     end
+
+    it 'deletes malformed claimed rows in the skip-locked path' do
+      dataset = instance_double(Sequel::Dataset)
+      locked_dataset = instance_double(Sequel::Dataset)
+      delete_dataset = instance_double(Sequel::Dataset)
+      connection = instance_double(Sequel::Database)
+      persistence_database = instance_double(Kaal::Persistence::Database, connection:)
+      allow(Kaal::Persistence::Database).to receive(:new).with(connection).and_return(persistence_database)
+      engine = described_class.new(database: connection, use_skip_locked: true)
+      due_rows = [
+        { job_id: 'job:bad', run_at:, job_class: 'ExampleJob', args: '{', queue: nil, created_at: run_at }
+      ]
+
+      allow(connection).to receive(:transaction).and_yield
+      allow(connection).to receive(:[]).with(:kaal_delayed_jobs).and_return(dataset)
+      allow(dataset).to receive(:where).with(job_id: ['job:bad']).and_return(delete_dataset)
+      allow(dataset).to receive(:where).with(no_args).and_return(dataset)
+      allow(dataset).to receive_messages(order: dataset, for_update: locked_dataset)
+      allow(locked_dataset).to receive_messages(skip_locked: locked_dataset, all: due_rows)
+      allow(locked_dataset).to receive(:limit).with(5).and_return(locked_dataset)
+      allow(delete_dataset).to receive(:delete)
+
+      jobs = engine.pop_due(now: run_at, limit: 5)
+
+      expect(jobs).to eq([])
+      expect(delete_dataset).to have_received(:delete)
+    end
   end
 
   describe Kaal::DelayedJob::RedisEngine do

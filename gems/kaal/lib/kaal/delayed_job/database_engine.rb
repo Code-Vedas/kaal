@@ -74,8 +74,8 @@ module Kaal
         connection.transaction do
           delayed_jobs_dataset = connection[:kaal_delayed_jobs]
           due_rows = delayed_jobs_dataset.where { run_at <= now }.order(:run_at, :job_id).for_update.skip_locked.limit(limit).all
+          job_ids = due_rows.map { |row| row[:job_id] }
           normalized_jobs = due_rows.filter_map { |row| self.class.normalize_row(row) }
-          job_ids = normalized_jobs.map { |job| job[:job_id] }
           delayed_jobs_dataset.where(job_id: job_ids).delete unless job_ids.empty?
           normalized_jobs
         end

@@ -11,19 +11,21 @@ module Kaal
       module_function
 
       def for_backend(backend)
-        case backend.to_s
+        backend_name = backend.to_s
+
+        case backend_name
         when 'sqlite'
           {
             '001_create_kaal_dispatches.rb' => dispatches_template,
             '002_create_kaal_locks.rb' => locks_template,
             '003_create_kaal_definitions.rb' => definitions_template,
-            '004_create_kaal_delayed_jobs.rb' => delayed_jobs_template
+            '004_create_kaal_delayed_jobs.rb' => delayed_jobs_template('sqlite')
           }
         when 'postgres', 'mysql'
           {
             '001_create_kaal_dispatches.rb' => dispatches_template,
             '002_create_kaal_definitions.rb' => definitions_template,
-            '003_create_kaal_delayed_jobs.rb' => delayed_jobs_template
+            '003_create_kaal_delayed_jobs.rb' => delayed_jobs_template(backend_name)
           }
         else
           {}
@@ -95,7 +97,14 @@ module Kaal
         RUBY
       end
 
-      def delayed_jobs_template
+      def delayed_jobs_template(backend)
+        args_definition =
+          if backend == 'mysql'
+            'String :args, text: true, null: false'
+          else
+            "String :args, text: true, null: false, default: '[]'"
+          end
+
         <<~RUBY
           Sequel.migration do
             change do
@@ -104,7 +113,7 @@ module Kaal
                 String :job_id, null: false
                 Time :run_at, null: false
                 String :job_class, null: false
-                String :args, text: true, null: false, default: '[]'
+                #{args_definition}
                 String :queue
                 Time :created_at, null: false
               end
