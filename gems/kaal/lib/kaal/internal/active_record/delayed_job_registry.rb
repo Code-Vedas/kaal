@@ -36,7 +36,7 @@ module Kaal
             @model.create!(attributes)
           end
 
-          normalize(@model.new(attributes))
+          self.class.normalize(@model.new(attributes))
         rescue ::ActiveRecord::RecordNotUnique
           raise Kaal::DelayedJob::DuplicateJobError, "Delayed job #{job_id.inspect} already exists"
         end
@@ -54,14 +54,14 @@ module Kaal
             due_records = @model.where('run_at <= ?', now).order(:run_at, :job_id).lock('FOR UPDATE SKIP LOCKED').limit(limit).to_a
             job_ids = due_records.map(&:job_id)
             @model.where(job_id: job_ids).delete_all unless job_ids.empty?
-            due_records.filter_map { |record| normalize(record) }
+            due_records.filter_map { |record| self.class.normalize(record) }
           end
         end
 
         def pop_due_with_delete_confirmation(now:, limit:)
           @model.transaction do
             @model.where('run_at <= ?', now).order(:run_at, :job_id).limit(limit).each_with_object([]) do |record, jobs|
-              normalized_job = normalize(record)
+              normalized_job = self.class.normalize(record)
               jobs << normalized_job if @model.where(job_id: record.job_id).delete_all.positive? && normalized_job
             end
           end
@@ -70,15 +70,30 @@ module Kaal
         public
 
         def find_job(job_id)
-          normalize(@model.find_by(job_id: job_id))
+          self.class.normalize(@model.find_by(job_id: job_id))
         end
 
         def all_jobs
-          @model.order(:run_at, :job_id).filter_map { |record| normalize(record) }
+          @model.order(:run_at, :job_id).filter_map { |record| self.class.normalize(record) }
         end
 
         def claim_strategy
           @use_skip_locked ? :skip_locked : :delete_confirmation
+        end
+
+        def self.normalize(record)
+          return nil unless record
+
+          {
+            job_id: record.job_id,
+            run_at: record.run_at,
+            job_class: record.job_class,
+            args: parse_args(record.args),
+            queue: record.queue,
+            created_at: record.created_at
+          }
+        rescue JSON::ParserError
+          nil
         end
 
         private
@@ -94,24 +109,10 @@ module Kaal
           connection.execute("INSERT INTO #{connection.quote_table_name(table_name)} (#{quoted_columns}) VALUES (#{quoted_values})")
         end
 
-        def normalize(record)
-          return nil unless record
-
-          {
-            job_id: record.job_id,
-            run_at: record.run_at,
-            job_class: record.job_class,
-            args: parse_args(record.args),
-            queue: record.queue,
-            created_at: record.created_at
-          }
-        rescue JSON::ParserError
-          nil
-        end
-
-        def parse_args(args_payload)
+        def self.parse_args(args_payload)
           JSON.parse(args_payload || '[]')
         end
+        private_class_method :parse_args
       end
     end
   end
