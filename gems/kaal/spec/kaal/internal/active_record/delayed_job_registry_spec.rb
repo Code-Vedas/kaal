@@ -85,4 +85,19 @@ RSpec.describe Kaal::Internal::ActiveRecord::DelayedJobRegistry do
       [{ job_id: 'job:a', run_at:, job_class: 'ExampleJob', args: ['a'], queue: nil, created_at: run_at }]
     )
   end
+
+  it 'skips malformed arg payloads instead of raising' do
+    Kaal::Internal::ActiveRecord::DelayedJobRecord.create!(
+      job_id: 'job:bad',
+      run_at: run_at,
+      job_class: 'ExampleJob',
+      args: '{',
+      queue: nil,
+      created_at: run_at
+    )
+
+    expect(registry.find_job('job:bad')).to be_nil
+    expect(registry.all_jobs).to eq([])
+    expect(registry.pop_due(now: run_at, limit: 10)).to eq([])
+  end
 end

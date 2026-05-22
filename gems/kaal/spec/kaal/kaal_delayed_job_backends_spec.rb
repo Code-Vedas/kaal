@@ -57,6 +57,22 @@ RSpec.describe Kaal do
       expect(described_class.normalize_row(nil)).to be_nil
     end
 
+    it 'skips malformed arg payloads instead of raising' do
+      db[:kaal_delayed_jobs].insert(
+        job_id: 'job:bad',
+        run_at: run_at,
+        job_class: 'ExampleJob',
+        args: '{',
+        queue: nil,
+        created_at: run_at
+      )
+
+      expect(described_class.normalize_row(db[:kaal_delayed_jobs].first(job_id: 'job:bad'))).to be_nil
+      expect(engine.find_job('job:bad')).to be_nil
+      expect(engine.all_jobs).to eq([])
+      expect(engine.pop_due(now: run_at, limit: 10)).to eq([])
+    end
+
     it 'claims due jobs through the skip-locked path when enabled' do
       dataset = instance_double(Sequel::Dataset)
       locked_dataset = instance_double(Sequel::Dataset)

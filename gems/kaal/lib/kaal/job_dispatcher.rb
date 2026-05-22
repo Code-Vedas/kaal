@@ -9,14 +9,16 @@ module Kaal
   module JobDispatcher
     module_function
 
-    def resolve_job_class(job_class_name:, key:, queue: nil)
-      job_class = normalize_job_class(job_class_name, key)
+    def resolve_job_class(job_class_name:, key:, queue: nil, apply_delayed_job_allow_list: true)
+      job_class = normalize_job_class(job_class_name, key, apply_delayed_job_allow_list:)
       validate_dispatch_interface(job_class, key, queue)
     end
 
-    def normalized_job_class_name(job_class_name:, key:)
+    def normalized_job_class_name(job_class_name:, key:, apply_delayed_job_allow_list: true)
       normalized_job_class_name = normalize_job_class_name(job_class_name)
       raise SchedulerConfigError, "Job class cannot be blank for key '#{key}'" if normalized_job_class_name.empty?
+
+      return normalized_job_class_name unless apply_delayed_job_allow_list
 
       validate_allowed_job_class_name!(job_class_name: normalized_job_class_name, key:)
       normalized_job_class_name
@@ -49,14 +51,18 @@ module Kaal
     def normalize_job_class_name(job_class)
       case job_class
       when Module
-        job_class.name
+        job_class.name.to_s.strip
       else
         job_class.to_s.strip
       end
     end
 
-    def normalize_job_class(job_class_name, key)
-      normalized_job_class_name = normalized_job_class_name(job_class_name:, key:)
+    def normalize_job_class(job_class_name, key, apply_delayed_job_allow_list: true)
+      normalized_job_class_name = normalized_job_class_name(
+        job_class_name:,
+        key:,
+        apply_delayed_job_allow_list:
+      )
 
       return job_class_name if job_class_name.is_a?(Module)
 

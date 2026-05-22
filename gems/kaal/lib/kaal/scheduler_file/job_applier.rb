@@ -77,7 +77,12 @@ module Kaal
       end
 
       def resolved_job_class(job_class_name:, key:, queue: nil)
-        Kaal::JobDispatcher.resolve_job_class(job_class_name:, key:, queue:)
+        Kaal::JobDispatcher.resolve_job_class(
+          job_class_name:,
+          key:,
+          queue:,
+          apply_delayed_job_allow_list: false
+        )
       end
 
       def conflict?(key:, existing_definition:)

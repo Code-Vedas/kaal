@@ -54,14 +54,15 @@ module Kaal
             due_records = @model.where('run_at <= ?', now).order(:run_at, :job_id).lock('FOR UPDATE SKIP LOCKED').limit(limit).to_a
             job_ids = due_records.map(&:job_id)
             @model.where(job_id: job_ids).delete_all unless job_ids.empty?
-            due_records.map { |record| normalize(record) }
+            due_records.filter_map { |record| normalize(record) }
           end
         end
 
         def pop_due_with_delete_confirmation(now:, limit:)
           @model.transaction do
             @model.where('run_at <= ?', now).order(:run_at, :job_id).limit(limit).each_with_object([]) do |record, jobs|
-              jobs << normalize(record) if @model.where(job_id: record.job_id).delete_all.positive?
+              normalized_job = normalize(record)
+              jobs << normalized_job if @model.where(job_id: record.job_id).delete_all.positive? && normalized_job
             end
           end
         end
@@ -73,7 +74,7 @@ module Kaal
         end
 
         def all_jobs
-          @model.order(:run_at, :job_id).map { |record| normalize(record) }
+          @model.order(:run_at, :job_id).filter_map { |record| normalize(record) }
         end
 
         def claim_strategy
@@ -100,10 +101,16 @@ module Kaal
             job_id: record.job_id,
             run_at: record.run_at,
             job_class: record.job_class,
-            args: JSON.parse(record.args || '[]'),
+            args: parse_args(record.args),
             queue: record.queue,
             created_at: record.created_at
           }
+        rescue JSON::ParserError
+          nil
+        end
+
+        def parse_args(args_payload)
+          JSON.parse(args_payload || '[]')
         end
       end
     end

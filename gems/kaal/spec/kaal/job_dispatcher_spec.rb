@@ -66,6 +66,18 @@ RSpec.describe Kaal::JobDispatcher do
     expect(described_class.normalized_job_class_name(job_class_name: ' DispatcherLaterJob ', key: 'job:a')).to eq('DispatcherLaterJob')
   end
 
+  it 'rejects anonymous classes with a scheduler config error' do
+    anonymous_job_class = Class.new do
+      def self.perform_later(*) = nil
+    end
+
+    expect(described_class.normalize_job_class_name(anonymous_job_class)).to eq('')
+
+    expect do
+      described_class.resolve_job_class(job_class_name: anonymous_job_class, key: 'job:a')
+    end.to raise_error(Kaal::SchedulerConfigError, /Job class cannot be blank/)
+  end
+
   it 'dispatches through queue, perform_later, and perform branches' do
     described_class.dispatch(job_class: DispatcherQueueJob, queue: 'low', args: [1])
     described_class.dispatch(job_class: DispatcherLaterJob, queue: nil, args: [2])
@@ -109,5 +121,17 @@ RSpec.describe Kaal::JobDispatcher do
     expect do
       described_class.normalized_job_class_name(job_class_name: 'DispatcherLaterJob', key: 'job:a')
     end.to raise_error(Kaal::SchedulerConfigError, /not allowed/)
+  end
+
+  it 'can skip the delayed-job allow-list for recurring scheduler resolution' do
+    Kaal.configuration.delayed_job_allowed_class_prefixes = ['Allowed::']
+
+    expect(
+      described_class.resolve_job_class(
+        job_class_name: 'DispatcherLaterJob',
+        key: 'job:a',
+        apply_delayed_job_allow_list: false
+      )
+    ).to eq(DispatcherLaterJob)
   end
 end
