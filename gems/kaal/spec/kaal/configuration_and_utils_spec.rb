@@ -10,6 +10,14 @@ RSpec.describe Kaal::Configuration do
   describe Kaal::Configuration do
     subject(:configuration) { described_class.new }
 
+    let(:redis_backend) do
+      redis_client = Object.new
+      redis_client.define_singleton_method(:set) { |*| true }
+      redis_client.define_singleton_method(:eval) { |*| true }
+
+      Kaal::Backend::RedisAdapter.new(redis_client)
+    end
+
     def with_environment(overrides)
       original = {}
       overrides.each_key { |key| original[key] = ENV.fetch(key, nil) }
@@ -130,7 +138,7 @@ RSpec.describe Kaal::Configuration do
     end
 
     it 'warns about unrestricted delayed-job class resolution on shared production backends' do
-      configuration.backend = Kaal::Backend::RedisAdapter.new(SpecSupport::FakeRedisClient.new)
+      configuration.backend = redis_backend
       configuration.logger = Logger.new(StringIO.new)
 
       with_environment('RACK_ENV' => 'production') do
@@ -149,7 +157,7 @@ RSpec.describe Kaal::Configuration do
     end
 
     it 'does not warn when delayed-job class prefixes are configured' do
-      configuration.backend = Kaal::Backend::RedisAdapter.new(SpecSupport::FakeRedisClient.new)
+      configuration.backend = redis_backend
       configuration.delayed_job_allowed_class_prefixes = ['Reports::']
 
       with_environment('RACK_ENV' => 'production') do
@@ -162,7 +170,7 @@ RSpec.describe Kaal::Configuration do
       rails_env = double(production?: true)
       rails_module.define_singleton_method(:env) { rails_env }
       stub_const('Rails', rails_module)
-      configuration.backend = Kaal::Backend::RedisAdapter.new(SpecSupport::FakeRedisClient.new)
+      configuration.backend = redis_backend
 
       with_environment('RACK_ENV' => 'development') do
         expect(configuration.validation_warnings).to include(
@@ -174,7 +182,7 @@ RSpec.describe Kaal::Configuration do
     it 'logs validation warnings without raising in validate!' do
       logger_io = StringIO.new
       configuration.logger = Logger.new(logger_io)
-      configuration.backend = Kaal::Backend::RedisAdapter.new(SpecSupport::FakeRedisClient.new)
+      configuration.backend = redis_backend
 
       with_environment('APP_ENV' => 'production') do
         expect(configuration.validate!).to be(configuration)
@@ -223,6 +231,21 @@ RSpec.describe Kaal::Configuration do
         Kaal::ConfigurationError,
         %r{Invalid time_zone configuration: "Nope/Zone" \(normalized: "Nope/Zone"\)}
       )
+    end
+  end
+
+  describe Kaal::DelayedJob::MySQLVersionSupport do
+    it 'parses mysql version numbers without regex backtracking' do
+      expect(described_class.version_number('8.0.32')).to eq(80_032)
+      expect(described_class.version_number('8.0.32-24')).to eq(80_032)
+      expect(described_class.version_number('10.11.14-MariaDB')).to eq(101_114)
+      expect(described_class.version_number('not-a-version')).to eq(0)
+      expect(described_class.version_number('8.0')).to eq(0)
+    end
+
+    it 'detects skip locked support from parsed version numbers' do
+      expect(described_class.skip_locked_supported?('8.0.0')).to be(true)
+      expect(described_class.skip_locked_supported?('5.7.44')).to be(false)
     end
   end
 

@@ -17,11 +17,26 @@ module Kaal
       end
 
       def version_number(version_string)
-        match = version_string.to_s.match(/(\d+)\.(\d+)\.(\d+)/)
-        return 0 unless match
+        major, minor, patch = version_components(version_string)
+        return 0 unless major && minor && patch
 
-        major, minor, patch = match.captures.map(&:to_i)
         (major * 10_000) + (minor * 100) + patch
+      end
+
+      def version_components(version_string)
+        major, minor, patch = version_string.to_s.split('.', 3)
+        [
+          integer_prefix(major),
+          integer_prefix(minor),
+          integer_prefix(patch)
+        ]
+      end
+
+      def integer_prefix(value)
+        digits = value.to_s.each_char.take_while { |character| character.between?('0', '9') }.join
+        return nil if digits.empty?
+
+        digits.to_i
       end
     end
   end
