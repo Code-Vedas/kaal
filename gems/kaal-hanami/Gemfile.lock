@@ -1,7 +1,7 @@
 PATH
   remote: ../kaal
   specs:
-    kaal (0.3.0)
+    kaal (0.4.0)
       fugit (~> 1.8)
       i18n (~> 1.14)
       thor (~> 1.3)
@@ -10,15 +10,15 @@ PATH
 PATH
   remote: .
   specs:
-    kaal-hanami (0.3.0)
+    kaal-hanami (0.4.0)
       hanami (>= 2.0, < 3.0)
-      kaal (= 0.3.0)
+      kaal (= 0.4.0)
       rack (>= 2.2)
 
 GEM
   remote: https://rubygems.org/
   specs:
-    ansi (1.5.0)
+    ansi (1.6.0)
     ast (2.4.3)
     base64 (0.3.0)
     bigdecimal (3.3.1)
@@ -28,12 +28,12 @@ GEM
     date (3.5.1)
     diff-lcs (1.6.2)
     docile (1.4.1)
-    dry-auto_inject (1.1.0)
+    dry-auto_inject (1.2.0)
       dry-core (~> 1.1)
       zeitwerk (~> 2.6)
     dry-cli (1.4.1)
-    dry-configurable (1.3.0)
-      dry-core (~> 1.1)
+    dry-configurable (1.4.0)
+      dry-core (~> 1.0)
       zeitwerk (~> 2.6)
     dry-core (1.2.0)
       concurrent-ruby (~> 1.0)
@@ -79,7 +79,7 @@ GEM
       dry-inflector (~> 1.0)
       dry-logic (~> 1.4)
       zeitwerk (~> 2.6)
-    erb (6.0.2)
+    erb (6.0.4)
     et-orbi (1.4.0)
       tzinfo
     fugit (1.12.1)
@@ -127,24 +127,23 @@ GEM
     i18n (1.14.8)
       concurrent-ruby (~> 1.0)
     io-console (0.8.2)
-    irb (1.17.0)
+    irb (1.18.0)
       pp (>= 0.6.0)
       prism (>= 1.3.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
-    json (2.19.2)
+    json (2.19.5)
     language_server-protocol (3.17.0.5)
     lint_roller (1.1.0)
     logger (1.7.0)
-    mustermann (3.0.4)
-      ruby2_keywords (~> 0.0.1)
-    mustermann-contrib (3.0.4)
+    mustermann (3.1.1)
+    mustermann-contrib (3.1.1)
       hansi (~> 0.2.0)
-      mustermann (= 3.0.4)
+      mustermann (= 3.1.1)
     mysql2 (0.5.7)
       bigdecimal
-    parallel (1.27.0)
-    parser (3.3.10.2)
+    parallel (2.1.0)
+    parser (3.3.11.1)
       ast (~> 2.4.1)
       racc
     pg (1.6.3)
@@ -163,8 +162,8 @@ GEM
       stringio
     raabro (1.4.0)
     racc (1.8.1)
-    rack (3.2.5)
-    rack-session (2.1.1)
+    rack (3.2.6)
+    rack-session (2.1.2)
       base64 (>= 0.1.0)
       rack (>= 3.0.0)
     rack-test (2.2.0)
@@ -172,8 +171,8 @@ GEM
     rackup (2.3.1)
       rack (>= 3)
     rainbow (3.1.1)
-    rake (13.3.1)
-    rbs (4.0.1)
+    rake (13.4.2)
+    rbs (4.0.2)
       logger
       prism (>= 1.6.0)
       tsort
@@ -183,7 +182,7 @@ GEM
       tsort
     redis (5.4.1)
       redis-client (>= 0.22.0)
-    redis-client (0.28.0)
+    redis-client (0.29.0)
       connection_pool
     reek (6.5.0)
       dry-schema (~> 1.13)
@@ -191,7 +190,7 @@ GEM
       parser (~> 3.3.0)
       rainbow (>= 2.0, < 4.0)
       rexml (~> 3.1)
-    regexp_parser (2.11.3)
+    regexp_parser (2.12.0)
     reline (0.6.3)
       io-console (~> 0.5)
     rexml (3.4.4)
@@ -208,11 +207,11 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.13.0)
     rspec-support (3.13.7)
-    rubocop (1.86.0)
+    rubocop (1.86.2)
       json (~> 2.3)
       language_server-protocol (~> 3.17.0.2)
       lint_roller (~> 1.1.0)
-      parallel (~> 1.10)
+      parallel (>= 1.10)
       parser (>= 3.3.0.2)
       rainbow (>= 2.2.2, < 4.0)
       regexp_parser (>= 2.9.3, < 3.0)
@@ -232,15 +231,14 @@ GEM
     rubocop-rspec (3.9.0)
       lint_roller (~> 1.1)
       rubocop (~> 1.81)
-    ruby-lsp (0.26.8)
+    ruby-lsp (0.26.9)
       language_server-protocol (~> 3.17.0)
       prism (>= 1.2, < 2.0)
       rbs (>= 3, < 5)
     ruby-lsp-rspec (0.1.29)
       ruby-lsp (~> 0.26.0)
     ruby-progressbar (1.13.0)
-    ruby2_keywords (0.0.5)
-    sequel (5.102.0)
+    sequel (5.104.0)
       bigdecimal
     simplecov (0.22.0)
       docile (~> 1.1)
@@ -272,7 +270,7 @@ GEM
     unicode-display_width (3.2.0)
       unicode-emoji (~> 4.1)
     unicode-emoji (4.2.0)
-    zeitwerk (2.7.5)
+    zeitwerk (2.8.1)
 
 PLATFORMS
   aarch64-linux
