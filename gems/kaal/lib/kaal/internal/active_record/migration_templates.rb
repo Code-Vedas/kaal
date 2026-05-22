@@ -17,17 +17,20 @@ module Kaal
             {
               '001_create_kaal_dispatches.rb' => dispatches_template,
               '002_create_kaal_locks.rb' => locks_template,
-              '003_create_kaal_definitions.rb' => definitions_template('sqlite')
+              '003_create_kaal_definitions.rb' => definitions_template('sqlite'),
+              '004_create_kaal_delayed_jobs.rb' => delayed_jobs_template('sqlite')
             }
           when 'postgres'
             {
               '001_create_kaal_dispatches.rb' => dispatches_template,
-              '002_create_kaal_definitions.rb' => definitions_template('postgres')
+              '002_create_kaal_definitions.rb' => definitions_template('postgres'),
+              '003_create_kaal_delayed_jobs.rb' => delayed_jobs_template('postgres')
             }
           when 'mysql'
             {
               '001_create_kaal_dispatches.rb' => dispatches_template,
-              '002_create_kaal_definitions.rb' => definitions_template('mysql')
+              '002_create_kaal_definitions.rb' => definitions_template('mysql'),
+              '003_create_kaal_delayed_jobs.rb' => delayed_jobs_template('mysql')
             }
           else
             {}
@@ -98,6 +101,33 @@ module Kaal
                 add_index :kaal_definitions, :key, unique: true
                 add_index :kaal_definitions, :enabled
                 add_index :kaal_definitions, :source
+              end
+            end
+          RUBY
+        end
+
+        def delayed_jobs_template(backend)
+          args_definition =
+            if backend == 'mysql'
+              't.text :args, null: false'
+            else
+              "t.text :args, null: false, default: '[]'"
+            end
+
+          <<~RUBY
+            class CreateKaalDelayedJobs < ActiveRecord::Migration[7.1]
+              def change
+                create_table :kaal_delayed_jobs do |t|
+                  t.string :job_id, null: false
+                  t.datetime :run_at, null: false
+                  t.string :job_class, null: false
+                  #{args_definition}
+                  t.string :queue
+                  t.datetime :created_at, null: false
+                end
+
+                add_index :kaal_delayed_jobs, :job_id, unique: true
+                add_index :kaal_delayed_jobs, :run_at
               end
             end
           RUBY

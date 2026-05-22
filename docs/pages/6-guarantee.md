@@ -6,13 +6,17 @@ permalink: /dispatch-guarantee
 
 # At-Most-Once Dispatch Guarantee
 
-Kaal guarantees at-most-once dispatch per `(key, fire_time)` for Redis, Postgres, and MySQL-backed deployments under the documented crash-and-restart model.
+Kaal guarantees at-most-once dispatch per `(key, fire_time)` for recurring jobs and at-most-once dispatch per `job_id` for delayed jobs on Redis, Postgres, and MySQL-backed deployments under the documented crash-and-restart model.
 
 ## What This Means
 
 If multiple scheduler nodes observe the same due occurrence, Kaal dispatches that occurrence at most once.
 
+If multiple scheduler nodes sweep the same due delayed job, Kaal dispatches that `job_id` at most once.
+
 For any given `(key, fire_time)`, Kaal also generates the same deterministic `idempotency_key`. That gives job code a stable dedupe key when it needs to extend Kaal's dispatch guarantee to downstream effects.
+
+Delayed jobs use caller-supplied `job_id` values instead of generated `idempotency_key` values. Choose stable `job_id` values when delayed-job enqueue operations themselves must be idempotent.
 
 ## Operational Assumptions
 
@@ -23,6 +27,12 @@ This guarantee applies when:
 - `lease_ttl >= window_lookback + tick_interval`
 - all nodes use the same namespace
 - all nodes load the same scheduler definition set
+
+For delayed jobs, the relevant assumptions are:
+
+- all scheduler nodes share the same healthy delayed-job store for the configured backend
+- all nodes use the same namespace and backend configuration
+- all nodes can resolve the delayed job class at dispatch time unless the class is blocked by configuration
 
 ## Documented Model
 
@@ -40,6 +50,16 @@ The documented model covers:
 - repeated normal ticks
 - process crash and restart
 - normal backend reconnect behavior
+
+For delayed jobs, the documented model is:
+
+1. persist the delayed job in backend storage keyed by `job_id`
+2. on each tick, sweep due delayed jobs in `run_at` order
+3. atomically claim due delayed jobs from backend storage
+4. dispatch the claimed job through the shared job dispatcher
+5. if dispatch raises after claim, log the failure and do not retry automatically
+
+Redis uses an atomic pop. Postgres and supported MySQL versions use `SKIP LOCKED`. Older SQL backends fall back to delete confirmation; that path remains correct, and Kaal adds a small pre-claim jitter to reduce synchronized contention between nodes.
 
 It does not claim arbitrary network partition or split-brain storage guarantees.
 
@@ -65,4 +85,4 @@ Examples:
 
 ## Boundary
 
-Kaal guarantees at-most-once scheduler dispatch per `(key, fire_time)` under the documented model. Exactly-once effects in external systems still depend on the job's own idempotency handling.
+Kaal guarantees at-most-once scheduler dispatch per `(key, fire_time)` for recurring work and at-most-once dispatch per `job_id` for delayed work under the documented model. Delayed jobs are deleted from storage before dispatch is attempted, so a failure after claim is treated as lost work and must be handled operationally or by the job producer. Exactly-once effects in external systems still depend on the job's own idempotency handling.

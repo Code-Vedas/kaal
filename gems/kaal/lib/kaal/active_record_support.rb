@@ -68,9 +68,9 @@ module Kaal
     end
 
     def migration_suffixes_for(backend)
-      return %w[dispatches locks definitions] if backend.to_s == 'sqlite'
+      return %w[dispatches locks definitions delayed_jobs] if backend.to_s == 'sqlite'
 
-      %w[dispatches definitions]
+      %w[dispatches definitions delayed_jobs]
     end
 
     def alphanumeric?(char)

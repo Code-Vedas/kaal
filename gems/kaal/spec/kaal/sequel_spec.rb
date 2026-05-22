@@ -18,13 +18,13 @@ RSpec.describe Kaal::Sequel do
 
   it 'exposes migration templates for sql backends' do
     expect(Kaal::Persistence::MigrationTemplates.for_backend(:sqlite).keys).to eq(
-      %w[001_create_kaal_dispatches.rb 002_create_kaal_locks.rb 003_create_kaal_definitions.rb]
+      %w[001_create_kaal_dispatches.rb 002_create_kaal_locks.rb 003_create_kaal_definitions.rb 004_create_kaal_delayed_jobs.rb]
     )
     expect(Kaal::Persistence::MigrationTemplates.for_backend(:postgres).keys).to eq(
-      %w[001_create_kaal_dispatches.rb 002_create_kaal_definitions.rb]
+      %w[001_create_kaal_dispatches.rb 002_create_kaal_definitions.rb 003_create_kaal_delayed_jobs.rb]
     )
     expect(Kaal::Persistence::MigrationTemplates.for_backend(:mysql).keys).to eq(
-      %w[001_create_kaal_dispatches.rb 002_create_kaal_definitions.rb]
+      %w[001_create_kaal_dispatches.rb 002_create_kaal_definitions.rb 003_create_kaal_delayed_jobs.rb]
     )
   end
 end

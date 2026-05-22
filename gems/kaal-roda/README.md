@@ -25,9 +25,9 @@ gem 'sqlite3' # or pg / mysql2 for SQL
 
 If you use SQL persistence, create the Kaal tables using Sequel migrations. `kaal` exposes the Sequel migration templates for:
 
-- SQLite: `kaal_dispatches`, `kaal_locks`, `kaal_definitions`
-- PostgreSQL: `kaal_dispatches`, `kaal_definitions`
-- MySQL: `kaal_dispatches`, `kaal_definitions`
+- SQLite: `kaal_dispatches`, `kaal_locks`, `kaal_definitions`, `kaal_delayed_jobs`
+- PostgreSQL: `kaal_dispatches`, `kaal_definitions`, `kaal_delayed_jobs`
+- MySQL: `kaal_dispatches`, `kaal_definitions`, `kaal_delayed_jobs`
 
 Your app should also provide `config/scheduler.yml`.
 
@@ -38,6 +38,7 @@ Your app should also provide `config/scheduler.yml`.
 - redis convenience wiring when the app passes a redis client
 - automatic SQL backend selection from the Sequel adapter unless the app passes `adapter:`
 - explicit lifecycle helpers so web processes do not implicitly start background scheduler threads
+- the normal Kaal runtime API inside a Roda app
 
 ## Minimal Roda
 

@@ -13,7 +13,7 @@ module Kaal
         @engine = if database
                     Kaal::Sequel.require_sequel!
                     require 'kaal/internal/sequel'
-                    Kaal::Internal::Sequel::PostgresBackend.new(database, namespace:)
+                    Kaal::Internal::Sequel::PostgresBackend.new(database, namespace:, **)
                   else
                     Kaal::ActiveRecord.require_activerecord!
                     require 'kaal/internal/active_record'
@@ -27,6 +27,10 @@ module Kaal
 
       def definition_registry
         @engine.definition_registry
+      end
+
+      def delayed_store
+        @engine.delayed_store
       end
 
       def acquire(key, ttl)

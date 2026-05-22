@@ -14,13 +14,16 @@ module Kaal
         include Kaal::Backend::DispatchLogging
 
         MAX_LOCK_NAME_LENGTH = 64
+        UNSET_SKIP_LOCKED_SUPPORT = Object.new.freeze
 
-        def initialize(connection = nil, dispatch_registry: nil, definition_registry: nil, namespace: nil)
+        def initialize(connection = nil, dispatch_registry: nil, definition_registry: nil, namespace: nil,
+                       use_skip_locked: UNSET_SKIP_LOCKED_SUPPORT)
           super()
           ConnectionSupport.configure!(connection)
           @dispatch_registry = dispatch_registry
           @definition_registry = definition_registry
           @namespace = namespace
+          @use_skip_locked = use_skip_locked
         end
 
         def dispatch_registry
@@ -29,6 +32,10 @@ module Kaal
 
         def definition_registry
           @definition_registry ||= DefinitionRegistry.new
+        end
+
+        def delayed_store
+          @delayed_store ||= DelayedJobRegistry.new(use_skip_locked: supports_skip_locked?)
         end
 
         def acquire(key, _ttl)
@@ -55,15 +62,25 @@ module Kaal
 
         private
 
-        def scalar(sql, value)
-          result = BaseRecord.connection.exec_query(
-            BaseRecord.send(:sanitize_sql_array, [sql, value])
-          )
+        def scalar(sql, *binds)
+          sanitized_sql = if binds.empty?
+                            sql
+                          else
+                            BaseRecord.send(:sanitize_sql_array, [sql, *binds])
+                          end
+          result = BaseRecord.connection.exec_query(sanitized_sql)
           result.first.values.first
         end
 
         def resolved_namespace
           @namespace || Kaal.configuration.namespace
+        end
+
+        def supports_skip_locked?
+          return @use_skip_locked unless @use_skip_locked.equal?(UNSET_SKIP_LOCKED_SUPPORT)
+
+          version_string = scalar('SELECT VERSION() AS version')
+          Kaal::DelayedJob::MySQLVersionSupport.skip_locked_supported?(version_string)
         end
       end
     end

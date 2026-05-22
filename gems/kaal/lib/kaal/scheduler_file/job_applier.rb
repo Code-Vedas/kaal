@@ -77,7 +77,7 @@ module Kaal
       end
 
       def resolved_job_class(job_class_name:, key:, queue: nil)
-        resolve_job_class(job_class_name:, key:, queue:)
+        Kaal::JobDispatcher.resolve_job_class(job_class_name:, key:, queue:)
       end
 
       def conflict?(key:, existing_definition:)
@@ -178,64 +178,34 @@ module Kaal
         nil
       end
 
-      def resolve_job_class(job_class_name:, key:, queue: nil)
-        normalized_job_class_name = job_class_name.to_s.strip
-        raise SchedulerConfigError, "Job class cannot be blank for key '#{key}'" if normalized_job_class_name.empty?
-
-        error_message = "Unknown job_class #{normalized_job_class_name.inspect} for key '#{key}'"
-        job_class = begin
-          Kaal::Support::HashTools.constantize(normalized_job_class_name)
-        rescue NameError
-          nil
-        end
-
-        return validate_dispatch_interface(job_class, key, queue) if job_class
-
-        raise_unknown_job_class(error_message)
-      end
-
-      private :build_callback, :resolve_job_class
+      private :build_callback
 
       def dispatch_job(job_class, queue, args, kwargs)
-        job_class_name = job_class.name
-
-        if queue && !job_class.respond_to?(:set)
-          raise SchedulerConfigError,
-                "job_class '#{job_class_name}' must respond to .set to use queue #{queue.inspect}"
-        end
-
-        if queue
-          job_class.set(queue: queue).perform_later(*args, **kwargs)
-        elsif job_class.respond_to?(:perform_later)
-          job_class.perform_later(*args, **kwargs)
-        elsif job_class.respond_to?(:perform)
-          job_class.perform(*args, **kwargs)
+        if kwargs.empty?
+          Kaal::JobDispatcher.dispatch(job_class:, queue:, args:)
         else
-          raise SchedulerConfigError,
-                "job_class '#{job_class_name}' must respond to .perform, .perform_later, or .set(...).perform_later"
+          job_class_name = job_class.name
+
+          if queue && !job_class.respond_to?(:set)
+            raise SchedulerConfigError,
+                  "job_class '#{job_class_name}' must respond to .set to use queue #{queue.inspect}"
+          end
+
+          if queue
+            job_class.set(queue: queue).perform_later(*args, **kwargs)
+          elsif job_class.respond_to?(:perform_later)
+            job_class.perform_later(*args, **kwargs)
+          elsif job_class.respond_to?(:perform)
+            job_class.perform(*args, **kwargs)
+          else
+            raise SchedulerConfigError,
+                  "job_class '#{job_class_name}' must respond to .perform, .perform_later, or .set(...).perform_later"
+          end
         end
-      end
-
-      def raise_unknown_job_class(error_message)
-        raise SchedulerConfigError, error_message
-      end
-
-      def validate_dispatch_interface(job_class, key, queue)
-        queue_present = !queue.nil?
-        supports_set = job_class.respond_to?(:set)
-        supports_perform_later = job_class.respond_to?(:perform_later)
-        supports_perform = job_class.respond_to?(:perform)
-
-        return job_class if queue_present && supports_set
-        return job_class if !queue_present && supports_perform_later
-        return job_class if !queue_present && supports_perform
-
-        raise SchedulerConfigError,
-              "job_class '#{job_class.name}' for key '#{key}' must respond to .perform, .perform_later, or .set(...).perform_later"
       end
 
       def active_job_dispatch?(job_class, queue)
-        (queue && job_class.respond_to?(:set)) || job_class.respond_to?(:perform_later)
+        Kaal::JobDispatcher.active_job_dispatch?(job_class, queue)
       end
     end
   end

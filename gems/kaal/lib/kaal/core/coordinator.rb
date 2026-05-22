@@ -31,6 +31,9 @@ module Kaal
   # @example Stop the coordinator
   #   coordinator.stop!
   class Coordinator
+    DELAYED_JOB_BATCH_SIZE = 100
+    DELAYED_JOB_DELETE_CONFIRMATION_JITTER_MAX = 0.05
+
     ##
     # Initialize a new Coordinator instance.
     #
@@ -174,6 +177,7 @@ module Kaal
       each_enabled_entry do |entry|
         calculate_and_dispatch_due_times(entry)
       end
+      dispatch_due_delayed_jobs
     rescue ConfigurationError => e
       log_configuration_error('Kaal coordinator tick failed', e)
       raise
@@ -377,14 +381,63 @@ module Kaal
       logger&.error("Work dispatch failed for #{cron_key}: #{e.message}")
     end
 
-    def generate_idempotency_key(cron_key, fire_time)
-      Kaal::IdempotencyKeyGenerator.call(cron_key, fire_time, configuration: @configuration)
+    def dispatch_due_delayed_jobs
+      delayed_store = delayed_store_for_tick
+      return unless delayed_store
+
+      loop do
+        apply_delayed_job_claim_jitter_if_needed(delayed_store)
+        due_jobs = delayed_store.pop_due(now: Time.now.utc, limit: DELAYED_JOB_BATCH_SIZE)
+        break if due_jobs.empty?
+
+        due_jobs.each do |job|
+          dispatch_delayed_job(job, delayed_store)
+        end
+      end
+    rescue StandardError => e
+      @configuration.logger&.error("Delayed job dispatch failed: #{e.message}")
     end
 
-    def generate_lock_key(cron_key, fire_time)
-      namespace = @configuration.namespace || 'kaal'
-      "#{namespace}:dispatch:#{cron_key}:#{fire_time.to_i}"
+    def dispatch_delayed_job(job, delayed_store)
+      if delayed_store.requires_dispatch_lock?
+        lock_key = generate_delayed_lock_key(job.fetch(:job_id))
+        return unless acquire_lock(lock_key)
+      end
+
+      job_class = Kaal::JobDispatcher.resolve_job_class(
+        job_class_name: job.fetch(:job_class),
+        key: job.fetch(:job_id),
+        queue: job[:queue]
+      )
+      Kaal::JobDispatcher.dispatch(job_class:, queue: job[:queue], args: job.fetch(:args))
+      @configuration.logger&.debug("Dispatched delayed job #{job.fetch(:job_id)} for #{job.fetch(:run_at)}")
+      true
+    rescue StandardError => e
+      Kaal::DelayedJob::DispatchFailureLogger.log_claimed_dispatch_failure(
+        logger: @configuration.logger,
+        job:,
+        error: e
+      )
+      nil
     end
+
+    def delayed_store_for_tick
+      backend = @configuration.backend
+      backend.respond_to?(:delayed_store) ? backend.delayed_store : nil
+    end
+
+    def apply_delayed_job_claim_jitter_if_needed(delayed_store)
+      return unless delayed_store.claim_strategy == :delete_confirmation
+
+      jitter = rand * DELAYED_JOB_DELETE_CONFIRMATION_JITTER_MAX
+      sleep(jitter) if jitter.positive?
+    end
+
+    def generate_idempotency_key(cron_key, fire_time) = Kaal::IdempotencyKeyGenerator.call(cron_key, fire_time, configuration: @configuration)
+
+    def generate_lock_key(cron_key, fire_time) = "#{@configuration.namespace || 'kaal'}:dispatch:#{cron_key}:#{fire_time.to_i}"
+
+    def generate_delayed_lock_key(job_id) = "#{@configuration.namespace || 'kaal'}:delayed_dispatch:#{job_id}"
 
     def sleep_until_next_tick
       @mutex.synchronize do

@@ -16,12 +16,14 @@ module Kaal
           {
             '001_create_kaal_dispatches.rb' => dispatches_template,
             '002_create_kaal_locks.rb' => locks_template,
-            '003_create_kaal_definitions.rb' => definitions_template
+            '003_create_kaal_definitions.rb' => definitions_template,
+            '004_create_kaal_delayed_jobs.rb' => delayed_jobs_template
           }
         when 'postgres', 'mysql'
           {
             '001_create_kaal_dispatches.rb' => dispatches_template,
-            '002_create_kaal_definitions.rb' => definitions_template
+            '002_create_kaal_definitions.rb' => definitions_template,
+            '003_create_kaal_delayed_jobs.rb' => delayed_jobs_template
           }
         else
           {}
@@ -88,6 +90,27 @@ module Kaal
               add_index :kaal_definitions, :key, unique: true
               add_index :kaal_definitions, :enabled
               add_index :kaal_definitions, :source
+            end
+          end
+        RUBY
+      end
+
+      def delayed_jobs_template
+        <<~RUBY
+          Sequel.migration do
+            change do
+              create_table?(:kaal_delayed_jobs) do
+                primary_key :id
+                String :job_id, null: false
+                Time :run_at, null: false
+                String :job_class, null: false
+                String :args, text: true, null: false, default: '[]'
+                String :queue
+                Time :created_at, null: false
+              end
+
+              add_index :kaal_delayed_jobs, :job_id, unique: true
+              add_index :kaal_delayed_jobs, :run_at
             end
           end
         RUBY

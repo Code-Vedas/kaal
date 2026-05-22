@@ -10,6 +10,19 @@ RSpec.describe Kaal::Configuration do
   describe Kaal::Configuration do
     subject(:configuration) { described_class.new }
 
+    def with_environment(overrides)
+      original = {}
+      overrides.each_key { |key| original[key] = ENV.fetch(key, nil) }
+      overrides.each do |key, value|
+        value.nil? ? ENV.delete(key) : ENV[key] = value
+      end
+      yield
+    ensure
+      original&.each do |key, value|
+        value.nil? ? ENV.delete(key) : ENV[key] = value
+      end
+    end
+
     it 'normalizes values into the exported hash' do
       configuration.tick_interval = '10'
       configuration.window_lookback = '20'
@@ -20,6 +33,7 @@ RSpec.describe Kaal::Configuration do
       configuration.enable_log_dispatch_registry = 'yes'
       configuration.scheduler_conflict_policy = 'code_wins'
       configuration.scheduler_missing_file_policy = 'error'
+      configuration.delayed_job_allowed_class_prefixes = [:jobs, ' Allowed::']
 
       expect(configuration.to_h).to include(
         tick_interval: 10,
@@ -30,7 +44,8 @@ RSpec.describe Kaal::Configuration do
         time_zone: 'utc',
         enable_log_dispatch_registry: true,
         scheduler_conflict_policy: :code_wins,
-        scheduler_missing_file_policy: :error
+        scheduler_missing_file_policy: :error,
+        delayed_job_allowed_class_prefixes: %w[jobs Allowed::]
       )
     end
 
@@ -53,12 +68,14 @@ RSpec.describe Kaal::Configuration do
       configuration.time_zone = nil
       configuration.scheduler_conflict_policy = nil
       configuration.scheduler_missing_file_policy = nil
+      configuration.delayed_job_allowed_class_prefixes = nil
 
       expect(configuration.to_h).to include(
         enable_log_dispatch_registry: false,
         time_zone: nil,
         scheduler_conflict_policy: nil,
-        scheduler_missing_file_policy: nil
+        scheduler_missing_file_policy: nil,
+        delayed_job_allowed_class_prefixes: []
       )
     end
 
@@ -75,6 +92,7 @@ RSpec.describe Kaal::Configuration do
 
     it 'validates a healthy configuration' do
       expect(configuration.validate).to eq([])
+      expect(configuration.validation_warnings).to eq([])
       expect(configuration.validate!).to be(configuration)
     end
 
@@ -110,6 +128,60 @@ RSpec.describe Kaal::Configuration do
         'lease_ttl (124s) must be >= window_lookback + tick_interval (125s) to prevent duplicate dispatch'
       )
     end
+
+    it 'warns about unrestricted delayed-job class resolution on shared production backends' do
+      configuration.backend = Kaal::Backend::RedisAdapter.new(SpecSupport::FakeRedisClient.new)
+      configuration.logger = Logger.new(StringIO.new)
+
+      with_environment('RACK_ENV' => 'production') do
+        expect(configuration.validation_warnings).to include(
+          a_string_including('delayed_job_allowed_class_prefixes is empty')
+        )
+      end
+    end
+
+    it 'does not warn for unrestricted delayed-job class resolution on memory backends' do
+      configuration.backend = Kaal::Backend::MemoryAdapter.new
+
+      with_environment('RACK_ENV' => 'production') do
+        expect(configuration.validation_warnings).to eq([])
+      end
+    end
+
+    it 'does not warn when delayed-job class prefixes are configured' do
+      configuration.backend = Kaal::Backend::RedisAdapter.new(SpecSupport::FakeRedisClient.new)
+      configuration.delayed_job_allowed_class_prefixes = ['Reports::']
+
+      with_environment('RACK_ENV' => 'production') do
+        expect(configuration.validation_warnings).to eq([])
+      end
+    end
+
+    it 'detects Rails production before environment variables' do
+      rails_module = Module.new
+      rails_env = double(production?: true)
+      rails_module.define_singleton_method(:env) { rails_env }
+      stub_const('Rails', rails_module)
+      configuration.backend = Kaal::Backend::RedisAdapter.new(SpecSupport::FakeRedisClient.new)
+
+      with_environment('RACK_ENV' => 'development') do
+        expect(configuration.validation_warnings).to include(
+          a_string_including('class resolution is unrestricted')
+        )
+      end
+    end
+
+    it 'logs validation warnings without raising in validate!' do
+      logger_io = StringIO.new
+      configuration.logger = Logger.new(logger_io)
+      configuration.backend = Kaal::Backend::RedisAdapter.new(SpecSupport::FakeRedisClient.new)
+
+      with_environment('APP_ENV' => 'production') do
+        expect(configuration.validate!).to be(configuration)
+      end
+
+      expect(logger_io.string).to include('delayed_job_allowed_class_prefixes is empty')
+    end
   end
 
   describe Kaal::SchedulerTimeZoneResolver do
@@ -118,6 +190,8 @@ RSpec.describe Kaal::Configuration do
     let(:configuration) { Kaal::Configuration.new }
 
     it 'defaults to utc' do
+      allow(Time).to receive(:zone).and_return(nil)
+
       expect(resolver.time_zone_identifier).to eq('UTC')
     end
 
@@ -125,13 +199,9 @@ RSpec.describe Kaal::Configuration do
       tzinfo_zone_class = Struct.new(:identifier)
       time_zone_class = Struct.new(:tzinfo)
       zone = time_zone_class.new(tzinfo_zone_class.new('America/New_York'))
-      time_singleton = Time.singleton_class
-      original_zone_method = time_singleton.method_defined?(:zone, false)
-      time_singleton.send(:define_method, :zone) { zone }
+      allow(Time).to receive(:zone).and_return(zone)
 
       expect(resolver.time_zone_identifier).to eq('America/New_York')
-    ensure
-      time_singleton&.send(:remove_method, :zone) unless original_zone_method
     end
 
     it 'returns a configured time zone' do

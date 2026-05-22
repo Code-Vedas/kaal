@@ -10,6 +10,11 @@ require 'kaal/registry'
 require 'kaal/dispatch/registry'
 require 'kaal/dispatch/memory_engine'
 require 'kaal/dispatch/redis_engine'
+require 'kaal/delayed_job/registry'
+require 'kaal/delayed_job/memory_engine'
+require 'kaal/delayed_job/redis_engine'
+require 'kaal/delayed_job/dispatch_failure_logger'
+require 'kaal/delayed_job/mysql_version_support'
 require 'kaal/definition/registry'
 require 'kaal/definition/memory_engine'
 require 'kaal/definition/redis_engine'
@@ -25,6 +30,7 @@ require 'kaal/persistence/migration_templates'
 require 'kaal/sequel_support'
 require 'kaal/active_record_support'
 require 'kaal/utils'
+require 'kaal/job_dispatcher'
 require 'kaal/register_conflict_support'
 require 'kaal/definitions/registry_accessor'
 require 'kaal/definitions/registration_service'
@@ -56,12 +62,15 @@ module Kaal
       @definition_registry = nil
       @definitions_registry_accessor = nil
       @dispatch_registry_accessor = nil
+      @risky_configuration_warnings_emitted = {}
     end
 
     def reset_registry!
       @registry = Registry.new
       definition_registry = @definition_registry
       definition_registry.clear if definition_registry.respond_to?(:clear)
+      delayed_store = configuration.backend&.delayed_store
+      delayed_store.clear if delayed_store.respond_to?(:clear)
       @coordinator = nil
     end
 
@@ -84,6 +93,7 @@ module Kaal
     end
 
     def load_scheduler_file!(runtime_context: RuntimeContext.default)
+      warn_on_risky_configuration!
       SchedulerFileLoader.new(
         configuration: configuration,
         definition_registry: definition_registry,
@@ -119,6 +129,7 @@ module Kaal
     end
 
     def start!
+      warn_on_risky_configuration!
       coordinator.start!
     end
 
@@ -136,6 +147,30 @@ module Kaal
 
     def tick!
       coordinator.tick!
+    end
+
+    # Enqueue a one-off delayed job. Delivery is at-most-once after claim.
+    def enqueue_at(at:, job_class:, args:, job_id:, queue: nil, connection: nil)
+      delayed_store = delayed_store!
+      resolved_run_at = normalize_delayed_run_at(at)
+      resolved_args = normalize_delayed_args(args)
+      resolved_queue = normalize_delayed_queue(queue)
+      resolved_job_id = normalize_delayed_job_id(job_id)
+      resolved_job_class = JobDispatcher.resolve_job_class(
+        job_class_name: job_class,
+        key: resolved_job_id,
+        queue: resolved_queue
+      )
+      resolved_job_class_name = JobDispatcher.normalize_job_class_name(resolved_job_class)
+
+      delayed_store.enqueue(
+        job_id: resolved_job_id,
+        run_at: resolved_run_at,
+        job_class: resolved_job_class_name,
+        args: resolved_args,
+        queue: resolved_queue,
+        connection: connection
+      )
     end
 
     def with_idempotency(key, fire_time)
@@ -193,6 +228,14 @@ module Kaal
       configuration.time_zone = value
     end
 
+    def delayed_job_allowed_class_prefixes
+      configuration.delayed_job_allowed_class_prefixes
+    end
+
+    def delayed_job_allowed_class_prefixes=(value)
+      configuration.delayed_job_allowed_class_prefixes = value
+    end
+
     def definition_registry
       definitions_registry_accessor.call
     end
@@ -203,6 +246,25 @@ module Kaal
 
     def validate!
       configuration.validate!
+    end
+
+    def validation_warnings
+      configuration.validation_warnings
+    end
+
+    def warn_on_risky_configuration!(configuration: self.configuration, logger: configuration.logger)
+      warnings = configuration.validation_warnings
+      return [] if warnings.empty?
+
+      @risky_configuration_warnings_emitted ||= {}
+      warnings.each do |warning|
+        next if @risky_configuration_warnings_emitted[warning]
+
+        logger&.warn(warning)
+        @risky_configuration_warnings_emitted[warning] = true
+      end
+
+      warnings
     end
 
     def valid?(expression)
@@ -252,6 +314,55 @@ module Kaal
 
     def dispatch_registry_accessor
       @dispatch_registry_accessor ||= Backend::DispatchRegistryAccessor.new(configuration: configuration)
+    end
+
+    def delayed_store!
+      delayed_store = configuration.backend&.delayed_store
+      return delayed_store if delayed_store
+
+      raise ArgumentError, 'Configured backend does not support delayed jobs'
+    end
+
+    def normalize_delayed_run_at(at)
+      time = at.is_a?(Time) ? at : at&.to_time
+      ensure_delayed_time!(time)
+
+      time.utc
+    rescue NoMethodError
+      ensure_delayed_time!(nil)
+    end
+
+    def normalize_delayed_args(args)
+      raise ArgumentError, 'args must be an array' unless args.is_a?(Array)
+
+      args.dup
+    end
+
+    def normalize_delayed_queue(queue)
+      case queue
+      when nil
+        return nil
+      end
+
+      normalized_queue = queue.to_s
+      raise ArgumentError, 'queue cannot be blank' if normalized_queue.strip.empty?
+
+      normalized_queue
+    end
+
+    def normalize_delayed_job_id(job_id)
+      normalized_job_id = job_id.to_s
+      raise ArgumentError, 'job_id cannot be blank' if normalized_job_id.strip.empty?
+
+      normalized_job_id
+    end
+
+    def invalid_delayed_time_error
+      ArgumentError.new('at must be a Time or time-like value')
+    end
+
+    def ensure_delayed_time!(time)
+      raise invalid_delayed_time_error unless time
     end
   end
 end

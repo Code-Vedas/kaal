@@ -8,7 +8,7 @@ permalink: /overview
 
 Kaal is a distributed cron scheduler for Ruby, packaged as a core engine plus datastore and framework integration gems.
 
-It exists to solve one problem cleanly: coordinate recurring work across processes or nodes without duplicating scheduler dispatches.
+It exists to solve one problem cleanly: coordinate scheduled work across processes or nodes without duplicating scheduler dispatches.
 
 ## What it owns
 
@@ -16,6 +16,7 @@ Kaal handles:
 
 - cron parsing and next-fire calculation
 - recurring job registration
+- delayed-job persistence and dispatch
 - scheduler ticking and coordination
 - shared-backend dispatch tracking
 - deterministic `idempotency_key` generation for downstream dedupe

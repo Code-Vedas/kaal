@@ -23,9 +23,31 @@ defaults:
         idempotency_key: "{{idempotency_key}}"
 ```
 
-Kaal loads the scheduler file at boot and dispatches the configured work on each eligible tick.
+Kaal loads the scheduler file at boot and dispatches the configured recurring work on each eligible tick.
 
 For Redis, Postgres, and MySQL-backed deployments, the same `(key, fire_time)` yields the same deterministic `idempotency_key`. Use that key at the job boundary when downstream systems also need dedupe.
+
+## Runtime API
+
+Recurring jobs come from `config/scheduler.yml`. Delayed jobs use `Kaal.enqueue_at`:
+
+```ruby
+Kaal.enqueue_at(
+  at: Time.now.utc + 300,
+  job_class: "ReminderJob",
+  args: [user_id],
+  queue: "mailers",
+  job_id: "reminder:#{user_id}"
+)
+```
+
+Delayed-job behavior:
+
+- recurring schedules are defined in `config/scheduler.yml`; delayed jobs are enqueued directly through the runtime API
+- `job_id` is the delayed-job identity and must be unique while the job is pending
+- `args` are positional only
+- `queue` uses the same dispatch rules as recurring jobs
+- string job classes are constantized and class or module values are used directly
 
 ## Configure the backend
 
@@ -130,6 +152,15 @@ bundle exec rails db:migrate
 ```
 
 Rails auto-selects the matching `Kaal::Backend::*` class from the configured database unless you override `Kaal.configuration.backend` yourself.
+
+When using delayed jobs in Rails, run the generated Kaal migrations before enqueueing or dispatching work.
+
+Delayed-job class resolution follows one rule everywhere in Kaal:
+
+- string `job_class` values are constantized at dispatch time
+- class or module values are used directly when you call `Kaal.enqueue_at`
+
+If your deployment uses a shared Redis or SQL backend in production, configure `delayed_job_allowed_class_prefixes` so stored delayed-job payloads cannot resolve arbitrary application constants.
 
 ### Sinatra
 

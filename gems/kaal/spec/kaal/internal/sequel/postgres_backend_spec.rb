@@ -22,6 +22,9 @@ RSpec.describe Kaal::Internal::Sequel::PostgresBackend do
   end
 
   it 'acquires and releases advisory locks' do
+    delayed_store = instance_double(Kaal::DelayedJob::DatabaseEngine)
+    allow(Kaal::DelayedJob::DatabaseEngine).to receive(:new).and_return(delayed_store)
+
     adapter = described_class.new(:fake)
     allow(adapter).to receive(:log_dispatch_attempt)
 
@@ -29,6 +32,8 @@ RSpec.describe Kaal::Internal::Sequel::PostgresBackend do
     expect(adapter.release('key')).to be(false)
     expect(described_class.send(:calculate_lock_id, 'key')).to be_a(Integer)
     expect(adapter.dispatch_registry).to be_a(Kaal::Dispatch::DatabaseEngine)
+    expect(adapter.delayed_store).to eq(delayed_store)
+    expect(Kaal::DelayedJob::DatabaseEngine).to have_received(:new).with(database: connection, use_skip_locked: true)
     expect(adapter.definition_registry).to be_a(Kaal::Definition::DatabaseEngine)
   end
 

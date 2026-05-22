@@ -2,7 +2,7 @@
 
 Distributed cron scheduling for plain Ruby.
 
-`kaal` is the core engine gem. It owns scheduler/runtime behavior, the registry APIs, the plain Ruby CLI, and the optional SQL backend surfaces.
+`kaal` is the core engine gem. It owns scheduler/runtime behavior, the registry APIs, the plain Ruby CLI, delayed-job dispatch, and the optional SQL backend surfaces.
 
 ## Installation
 
@@ -110,6 +110,8 @@ REDIS_URL=redis://127.0.0.1:6379/0 bin/rspec-e2e redis
 
 ## Runtime API
 
+Recurring jobs:
+
 ```ruby
 Kaal.register(
   key: 'reports:daily',
@@ -122,6 +124,35 @@ Kaal.register(
 Kaal.start!
 ```
 
+Delayed jobs:
+
+```ruby
+Kaal.enqueue_at(
+  at: Time.now.utc + 300,
+  job_class: "InvoiceReminderJob",
+  args: [123],
+  queue: "mailers",
+  job_id: "invoice-reminder:123"
+)
+```
+
+Rules shared by the runtime surface:
+
+- delayed jobs use `job_id` as their identity and require it to be unique while pending
+- delayed-job `args` are positional only
+- recurring and delayed jobs share the same job-class dispatch rules
+- string job classes are constantized and class or module values are used directly
+
+To restrict delayed-job class names:
+
+```ruby
+Kaal.configure do |config|
+  config.delayed_job_allowed_class_prefixes = ["Reports::", "Billing::"]
+end
+```
+
+An empty `delayed_job_allowed_class_prefixes` list leaves delayed-job class resolution unrestricted. That is reasonable for local or trusted deployments. On shared Redis or SQL backends in production, set a restrictive prefix list.
+
 ## SQL Backends
 
 Use the explicit SQL backends when you want persisted registries:
@@ -130,3 +161,7 @@ Use the explicit SQL backends when you want persisted registries:
 - `Kaal::Backend::Postgres`
 - `Kaal::Backend::MySQL`
 - `kaal-rails` for Rails-native install and auto-wiring
+
+For SQL-backed deployments, run the generated migrations so `kaal_delayed_jobs` exists alongside the recurring scheduler tables.
+
+Postgres and supported MySQL versions claim due delayed jobs with `SKIP LOCKED`. Older SQL paths still preserve correctness with delete confirmation, and Kaal adds a small pre-claim jitter there to reduce multi-node contention.
