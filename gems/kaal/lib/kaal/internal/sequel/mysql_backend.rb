@@ -6,6 +6,7 @@
 # LICENSE file in the root directory of this source tree.
 require 'digest'
 require 'kaal/backend/dispatch_logging'
+require 'kaal/delayed_job/mysql_version_support'
 require 'kaal/persistence/database'
 
 module Kaal

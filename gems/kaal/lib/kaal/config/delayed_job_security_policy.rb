@@ -9,6 +9,7 @@ module Kaal
     # Evaluates whether delayed-job class resolution is too open for the
     # current deployment shape and returns the matching warning message.
     module DelayedJobSecurityPolicy
+      NON_SHARED_BACKEND_CLASS_NAMES = ['NilClass', 'Kaal::Backend::MemoryAdapter'].freeze
       WARNING_MESSAGE = 'Delayed jobs resolve stored job_class values at dispatch time. ' \
                         'delayed_job_allowed_class_prefixes is empty, so class resolution is unrestricted on this shared backend. ' \
                         'Configure a restrictive delayed_job_allowed_class_prefixes list for production deployments.'
@@ -35,8 +36,8 @@ module Kaal
       end
 
       def shared_delayed_job_backend?(backend)
-        !!backend.delayed_store && !backend.is_a?(Kaal::Backend::MemoryAdapter)
-      rescue NoMethodError
+        !NON_SHARED_BACKEND_CLASS_NAMES.include?(backend.class.name)
+      rescue StandardError
         false
       end
 

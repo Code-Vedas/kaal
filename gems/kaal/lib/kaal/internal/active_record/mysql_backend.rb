@@ -5,6 +5,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 require 'digest'
+require 'kaal/delayed_job/mysql_version_support'
 
 module Kaal
   module Internal

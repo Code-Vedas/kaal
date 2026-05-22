@@ -7,6 +7,18 @@
 require 'spec_helper'
 
 RSpec.describe Kaal::Configuration do
+  def with_time_zone(zone)
+    time_singleton = Time.singleton_class
+    original_zone_method = time_singleton.method_defined?(:zone, false)
+    previous_zone_method = Time.method(:zone) if Time.respond_to?(:zone)
+
+    time_singleton.send(:define_method, :zone) { zone }
+    yield
+  ensure
+    time_singleton.send(:remove_method, :zone) if time_singleton.method_defined?(:zone, false)
+    time_singleton.send(:define_method, :zone, previous_zone_method) if original_zone_method && previous_zone_method
+  end
+
   describe Kaal::Configuration do
     subject(:configuration) { described_class.new }
 
@@ -190,6 +202,22 @@ RSpec.describe Kaal::Configuration do
 
       expect(logger_io.string).to include('delayed_job_allowed_class_prefixes is empty')
     end
+
+    it 'does not instantiate delayed stores while evaluating warnings' do
+      backend = Class.new do
+        def delayed_store
+          raise 'should not be called'
+        end
+      end.new
+      configuration.backend = backend
+
+      with_environment('RACK_ENV' => 'production') do
+        expect { configuration.validation_warnings }.not_to raise_error
+        expect(configuration.validation_warnings).to include(
+          a_string_including('delayed_job_allowed_class_prefixes is empty')
+        )
+      end
+    end
   end
 
   describe Kaal::SchedulerTimeZoneResolver do
@@ -198,18 +226,19 @@ RSpec.describe Kaal::Configuration do
     let(:configuration) { Kaal::Configuration.new }
 
     it 'defaults to utc' do
-      allow(Time).to receive(:zone).and_return(nil)
-
-      expect(resolver.time_zone_identifier).to eq('UTC')
+      with_time_zone(nil) do
+        expect(resolver.time_zone_identifier).to eq('UTC')
+      end
     end
 
     it 'falls back to Time.zone when no explicit time zone is configured' do
       tzinfo_zone_class = Struct.new(:identifier)
       time_zone_class = Struct.new(:tzinfo)
       zone = time_zone_class.new(tzinfo_zone_class.new('America/New_York'))
-      allow(Time).to receive(:zone).and_return(zone)
 
-      expect(resolver.time_zone_identifier).to eq('America/New_York')
+      with_time_zone(zone) do
+        expect(resolver.time_zone_identifier).to eq('America/New_York')
+      end
     end
 
     it 'returns a configured time zone' do
