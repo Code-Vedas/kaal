@@ -196,6 +196,21 @@ RSpec.describe Kaal do
 
       redis.hset('ops:delayed_jobs:payloads', 'bad', '{')
       redis.zadd('ops:delayed_jobs:schedule', run_at.to_f, 'bad')
+      redis.hset(
+        'ops:delayed_jobs:payloads',
+        'bad-time',
+        JSON.generate(
+          job_id: 'bad-time',
+          run_at: 'not-a-time',
+          job_class: 'ExampleJob',
+          args: [],
+          queue: nil,
+          created_at: Time.utc(2026, 1, 1, 0, 0, 0).iso8601
+        )
+      )
+      redis.zadd('ops:delayed_jobs:schedule', run_at.to_f, 'bad-time')
+
+      expect(engine.find_job('bad-time')).to be_nil
       expect(engine.all_jobs).to eq([])
       expect(described_class.deserialize(nil)).to be_nil
     end

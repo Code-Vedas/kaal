@@ -83,13 +83,17 @@ module Kaal
         return nil unless raw
 
         parsed = JSON.parse(raw)
+        run_at = parse_time(parsed['run_at'])
+        created_at = parse_time(parsed['created_at'])
+        return nil unless run_at && created_at
+
         {
           job_id: parsed['job_id'],
-          run_at: parse_time(parsed['run_at']),
+          run_at: run_at,
           job_class: parsed['job_class'],
           args: parsed['args'] || [],
           queue: parsed['queue'],
-          created_at: parse_time(parsed['created_at'])
+          created_at: created_at
         }
       rescue JSON::ParserError
         nil

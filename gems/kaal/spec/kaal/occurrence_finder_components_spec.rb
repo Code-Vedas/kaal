@@ -586,6 +586,55 @@ RSpec.describe Kaal::OccurrenceFinder do
       expect(coordinator).not_to have_received(:sleep)
     end
 
+    it 'stops delayed-job sweeping before claiming when stop is requested' do
+      calls = []
+      store = Class.new do
+        def initialize(calls)
+          @calls = calls
+        end
+
+        def claim_strategy
+          :atomic_pop
+        end
+
+        def pop_due(**)
+          @calls << :pop_due
+          []
+        end
+      end.new(calls)
+
+      configuration.backend = Struct.new(:delayed_store).new(store)
+      coordinator.instance_variable_set(:@stop_requested, true)
+
+      coordinator.send(:dispatch_due_delayed_jobs)
+
+      expect(calls).to eq([])
+    end
+
+    it 'bounds delayed-job sweep batches per tick' do
+      calls = []
+      store = Class.new do
+        def initialize(calls)
+          @calls = calls
+        end
+
+        def claim_strategy
+          :atomic_pop
+        end
+
+        def pop_due(**)
+          @calls << :pop_due
+          [{ job_id: "job:#{@calls.length}", run_at: Time.utc(2026, 1, 1), job_class: 'MissingDelayedJobTarget', args: [], queue: nil }]
+        end
+      end.new(calls)
+
+      configuration.backend = Struct.new(:delayed_store).new(store)
+
+      coordinator.send(:dispatch_due_delayed_jobs)
+
+      expect(calls.length).to eq(Kaal::Coordinator::DELAYED_JOB_MAX_BATCHES_PER_TICK)
+    end
+
     it 'logs delayed dispatch failures without re-inserting the claimed job' do
       backend.delayed_store.enqueue(
         job_id: 'job:a',

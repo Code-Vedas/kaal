@@ -16,24 +16,12 @@ module Kaal
   #
   # The coordinator:
   # 1. Runs a background thread on tick_interval
-  # 2. For each registered cron, calculates due fire times within the window
-  # 3. Attempts to acquire a distributed lease for each due time
-  # 4. Calls the enqueue callback if the lease is acquired
-  # 5. Supports graceful shutdown and re-entrancy for testing
-  #
-  # @example Start the coordinator
-  #   coordinator = Kaal::Coordinator.new
-  #   coordinator.start!
-  #
-  # @example Manual tick execution (for testing)
-  #   coordinator.tick!
-  #
-  # @example Stop the coordinator
-  #   coordinator.stop!
+  # 2. Calculates due cron fire times and acquires distributed leases for them
+  # 3. Dispatches claimed work and supports graceful shutdown and test re-entrancy
   class Coordinator
     DELAYED_JOB_BATCH_SIZE = 100
+    DELAYED_JOB_MAX_BATCHES_PER_TICK = 10
     DELAYED_JOB_DELETE_CONFIRMATION_JITTER_MAX = 0.05
-
     ##
     # Initialize a new Coordinator instance.
     #
@@ -385,12 +373,16 @@ module Kaal
       delayed_store = delayed_store_for_tick
       return unless delayed_store
 
-      loop do
+      DELAYED_JOB_MAX_BATCHES_PER_TICK.times do
+        break if stop_delayed_dispatch?
+
         apply_delayed_job_claim_jitter_if_needed(delayed_store)
         due_jobs = delayed_store.pop_due(now: Time.now.utc, limit: DELAYED_JOB_BATCH_SIZE)
         break if due_jobs.empty?
 
         due_jobs.each do |job|
+          break if stop_delayed_dispatch?
+
           dispatch_delayed_job(job, delayed_store)
         end
       end
@@ -424,6 +416,10 @@ module Kaal
     def delayed_store_for_tick
       backend = @configuration.backend
       backend.respond_to?(:delayed_store) ? backend.delayed_store : nil
+    end
+
+    def stop_delayed_dispatch?
+      stop_requested?
     end
 
     def apply_delayed_job_claim_jitter_if_needed(delayed_store)
