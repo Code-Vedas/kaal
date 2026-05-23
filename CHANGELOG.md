@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## [0.5.0](https://github.com/code-vedas/kaal/tree/v0.5.0) (2026-05-23)
+
+[Full Changelog](https://github.com/code-vedas/kaal/compare/v0.4.0...v0.5.0)
+
+### 🚀 Features
+
+- feat: add delayed job support and related tests @niteshpurohit (#109)
+
 ## [0.4.0](https://github.com/code-vedas/kaal/tree/v0.4.0) (2026-05-21)
 
 [Full Changelog](https://github.com/code-vedas/kaal/compare/v0.3.0...v0.4.0)
