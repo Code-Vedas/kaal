@@ -24,12 +24,13 @@ module Kaal
       normalized_job_class_name
     end
 
-    def dispatch(job_class:, queue:, args:)
+    def dispatch(job_class:, queue:, args:, key: nil)
       job_class_name = job_class.name
+      scheduler_context = key ? " for scheduler job '#{key}'" : ''
 
       if queue && !job_class.respond_to?(:set)
         raise SchedulerConfigError,
-              "job_class '#{job_class_name}' must respond to .set to use queue #{queue.inspect}"
+              "job_class '#{job_class_name}' must respond to .set to use queue #{queue.inspect}#{scheduler_context}"
       end
 
       if queue
@@ -40,7 +41,7 @@ module Kaal
         job_class.perform(*args)
       else
         raise SchedulerConfigError,
-              "job_class '#{job_class_name}' must respond to .perform, .perform_later, or .set(...).perform_later"
+              "job_class '#{job_class_name}' must respond to .perform, .perform_later, or .set(...).perform_later#{scheduler_context}"
       end
     end
 

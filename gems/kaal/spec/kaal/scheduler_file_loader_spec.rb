@@ -270,11 +270,11 @@ RSpec.describe Kaal::SchedulerFileLoader do
     bad_job = Class.new
     stub_const('BadJobClass', bad_job)
     expect do
-      applier.send(:dispatch_job, bad_job, nil, [], { idempotency_key: 'abc' }, 'job')
+      applier.send(:dispatch_job, bad_job, nil, [], {}, 'job')
     end.to raise_error(Kaal::SchedulerConfigError, /scheduler job 'job'/)
 
     expect do
-      applier.send(:dispatch_job, bad_job, 'low', [], { idempotency_key: 'abc' }, 'job')
+      applier.send(:dispatch_job, bad_job, 'low', [], {}, 'job')
     end.to raise_error(Kaal::SchedulerConfigError, /scheduler job 'job'/)
 
     expect(loader.send(:stringify_keys, a: { b: 1 })).to eq('a' => { 'b' => 1 })

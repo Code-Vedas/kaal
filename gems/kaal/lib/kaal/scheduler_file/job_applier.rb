@@ -187,7 +187,7 @@ module Kaal
 
       def dispatch_job(job_class, queue, args, kwargs, key)
         if kwargs.empty?
-          Kaal::JobDispatcher.dispatch(job_class:, queue:, args:)
+          Kaal::JobDispatcher.dispatch(job_class:, queue:, args:, key:)
         else
           job_class_name = job_class.name
 
