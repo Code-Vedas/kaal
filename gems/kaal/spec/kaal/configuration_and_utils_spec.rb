@@ -8,6 +8,10 @@ require 'spec_helper'
 
 RSpec.describe Kaal::Configuration do
   def with_time_zone(zone)
+    time_singleton = nil
+    original_zone_method = false
+    previous_zone_method = nil
+
     time_singleton = Time.singleton_class
     original_zone_method = time_singleton.method_defined?(:zone, false)
     previous_zone_method = Time.method(:zone) if Time.respond_to?(:zone)
@@ -15,8 +19,8 @@ RSpec.describe Kaal::Configuration do
     time_singleton.send(:define_method, :zone) { zone }
     yield
   ensure
-    time_singleton.send(:remove_method, :zone) if time_singleton.method_defined?(:zone, false)
-    time_singleton.send(:define_method, :zone, previous_zone_method) if original_zone_method && previous_zone_method
+    time_singleton&.send(:remove_method, :zone) if time_singleton&.method_defined?(:zone, false)
+    time_singleton.send(:define_method, :zone, previous_zone_method) if time_singleton && original_zone_method && previous_zone_method
   end
 
   describe Kaal::Configuration do
@@ -216,6 +220,22 @@ RSpec.describe Kaal::Configuration do
         expect(configuration.validation_warnings).to include(
           a_string_including('delayed_job_allowed_class_prefixes is empty')
         )
+      end
+    end
+
+    it 'does not warn for adapters that do not implement delayed storage' do
+      configuration.backend = Kaal::Backend::NullAdapter.new
+
+      with_environment('RACK_ENV' => 'production') do
+        expect(configuration.validation_warnings).to eq([])
+      end
+    end
+
+    it 'does not warn for backend adapters that inherit the base delayed_store implementation' do
+      configuration.backend = Class.new(Kaal::Backend::Adapter).allocate
+
+      with_environment('RACK_ENV' => 'production') do
+        expect(configuration.validation_warnings).to eq([])
       end
     end
   end
