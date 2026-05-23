@@ -34,13 +34,13 @@ RSpec.describe Kaal do
 
     job = described_class.enqueue_at(
       at: run_at,
-      job_class: DelayedJobSpecPerformLaterTarget,
+      job_class: DelayedJobSpecQueueTarget,
       args: ['a'],
-      queue: nil,
-      job_id: 'job:a'
+      queue: ' low ',
+      job_id: ' job:a '
     )
 
-    expect(job).to include(job_id: 'job:a', job_class: 'DelayedJobSpecPerformLaterTarget', args: ['a'])
+    expect(job).to include(job_id: 'job:a', job_class: 'DelayedJobSpecQueueTarget', args: ['a'], queue: 'low')
     expect(described_class.backend.delayed_store.find_job('job:a')).to include(job_id: 'job:a')
   end
 

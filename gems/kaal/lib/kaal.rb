@@ -344,15 +344,15 @@ module Kaal
         return nil
       end
 
-      normalized_queue = queue.to_s
-      raise ArgumentError, 'queue cannot be blank' if normalized_queue.strip.empty?
+      normalized_queue = queue.to_s.strip
+      raise ArgumentError, 'queue cannot be blank' if normalized_queue.empty?
 
       normalized_queue
     end
 
     def normalize_delayed_job_id(job_id)
-      normalized_job_id = job_id.to_s
-      raise ArgumentError, 'job_id cannot be blank' if normalized_job_id.strip.empty?
+      normalized_job_id = job_id.to_s.strip
+      raise ArgumentError, 'job_id cannot be blank' if normalized_job_id.empty?
 
       normalized_job_id
     end

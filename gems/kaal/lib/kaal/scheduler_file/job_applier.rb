@@ -162,7 +162,7 @@ module Kaal
           validate_keyword_keys(raw_kwargs, key)
 
           resolved_kwargs = raw_kwargs.transform_keys(&:to_sym)
-          dispatch_job(job_class, queue, resolved_args, resolved_kwargs)
+          dispatch_job(job_class, queue, resolved_args, resolved_kwargs, key)
         end
       end
 
@@ -185,7 +185,7 @@ module Kaal
 
       private :build_callback
 
-      def dispatch_job(job_class, queue, args, kwargs)
+      def dispatch_job(job_class, queue, args, kwargs, key)
         if kwargs.empty?
           Kaal::JobDispatcher.dispatch(job_class:, queue:, args:)
         else
@@ -193,7 +193,7 @@ module Kaal
 
           if queue && !job_class.respond_to?(:set)
             raise SchedulerConfigError,
-                  "job_class '#{job_class_name}' must respond to .set to use queue #{queue.inspect}"
+                  "job_class '#{job_class_name}' must respond to .set to use queue #{queue.inspect} for scheduler job '#{key}'"
           end
 
           if queue
@@ -204,7 +204,7 @@ module Kaal
             job_class.perform(*args, **kwargs)
           else
             raise SchedulerConfigError,
-                  "job_class '#{job_class_name}' must respond to .perform, .perform_later, or .set(...).perform_later"
+                  "job_class '#{job_class_name}' must respond to .perform, .perform_later, or .set(...).perform_later for scheduler job '#{key}'"
           end
         end
       end
