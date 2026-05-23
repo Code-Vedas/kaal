@@ -8,7 +8,7 @@ module Kaal
   module Backend
     # PostgreSQL-backed backend for either Sequel or Active Record persistence.
     class Postgres < Adapter
-      def initialize(database: nil, connection: nil, namespace: nil, **)
+      def initialize(database: nil, connection: nil, namespace: nil)
         super()
         @engine = if database
                     Kaal::Sequel.require_sequel!
@@ -17,7 +17,7 @@ module Kaal
                   else
                     Kaal::ActiveRecord.require_activerecord!
                     require 'kaal/internal/active_record'
-                    Kaal::Internal::ActiveRecord::PostgresBackend.new(connection, namespace:, **)
+                    Kaal::Internal::ActiveRecord::PostgresBackend.new(connection, namespace:)
                   end
       end
 
@@ -27,6 +27,10 @@ module Kaal
 
       def definition_registry
         @engine.definition_registry
+      end
+
+      def delayed_store
+        @engine.delayed_store
       end
 
       def acquire(key, ttl)

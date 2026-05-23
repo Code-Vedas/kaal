@@ -277,6 +277,7 @@ RSpec.describe Kaal::OccurrenceFinder do
       coordinator.send(:dispatch_work, callable_entry, fire_time)
       expect(calls.first[:idempotency_key]).to include('ops-job:a')
       expect(coordinator.send(:generate_lock_key, 'job:a', fire_time)).to eq("ops:dispatch:job:a:#{fire_time.to_i}")
+      expect(coordinator.send(:generate_delayed_lock_key, 'job:a')).to eq('ops:delayed_dispatch:job:a')
 
       tick_cv = Object.new
       tick_cv.define_singleton_method(:wait) { |_mutex, _interval| true }
@@ -497,6 +498,219 @@ RSpec.describe Kaal::OccurrenceFinder do
         end
       end.new
       expect(coordinator.send(:cleanup_old_dispatch_records, 10)).to be_nil
+    end
+
+    it 'dispatches due delayed jobs in order and leaves future jobs untouched' do
+      calls = []
+      stub_const('CoordinatorDelayedJobTarget', Class.new do
+        define_singleton_method(:perform_later) { |value| calls << value }
+      end)
+
+      backend.delayed_store.enqueue(
+        job_id: 'job:b',
+        run_at: Time.utc(2026, 1, 1, 0, 1, 0),
+        job_class: 'CoordinatorDelayedJobTarget',
+        args: ['b'],
+        queue: nil
+      )
+      backend.delayed_store.enqueue(
+        job_id: 'job:a',
+        run_at: Time.utc(2026, 1, 1, 0, 1, 0),
+        job_class: 'CoordinatorDelayedJobTarget',
+        args: ['a'],
+        queue: nil
+      )
+      backend.delayed_store.enqueue(
+        job_id: 'job:future',
+        run_at: Time.utc(2026, 1, 1, 0, 2, 0),
+        job_class: 'CoordinatorDelayedJobTarget',
+        args: ['future'],
+        queue: nil
+      )
+
+      allow(Time).to receive(:now).and_return(Time.utc(2026, 1, 1, 0, 1, 0))
+      coordinator.send(:dispatch_due_delayed_jobs)
+
+      expect(calls).to eq(%w[a b])
+      expect(backend.delayed_store.find_job('job:future')).to include(job_id: 'job:future')
+    end
+
+    it 'adds delayed-job claim jitter only for delete-confirmation stores' do
+      jitter_store = Class.new do
+        def claim_strategy
+          :delete_confirmation
+        end
+
+        def pop_due(**)
+          []
+        end
+      end.new
+
+      allow(coordinator).to receive(:rand).and_return(0.4)
+      allow(coordinator).to receive(:sleep)
+      configuration.backend = Struct.new(:delayed_store).new(jitter_store)
+
+      coordinator.send(:dispatch_due_delayed_jobs)
+
+      expect(coordinator).to have_received(:sleep).with(be_within(0.0001).of(0.02))
+    end
+
+    it 'skips delayed-job claim jitter for atomic-pop and skip-locked stores' do
+      atomic_store = Class.new do
+        def claim_strategy
+          :atomic_pop
+        end
+
+        def pop_due(**)
+          []
+        end
+      end.new
+
+      skip_locked_store = Class.new do
+        def claim_strategy
+          :skip_locked
+        end
+
+        def pop_due(**)
+          []
+        end
+      end.new
+
+      allow(coordinator).to receive(:sleep)
+      configuration.backend = Struct.new(:delayed_store).new(atomic_store)
+      coordinator.send(:dispatch_due_delayed_jobs)
+
+      configuration.backend = Struct.new(:delayed_store).new(skip_locked_store)
+      coordinator.send(:dispatch_due_delayed_jobs)
+
+      expect(coordinator).not_to have_received(:sleep)
+    end
+
+    it 'stops delayed-job sweeping before claiming when stop is requested' do
+      calls = []
+      store = Class.new do
+        def initialize(calls)
+          @calls = calls
+        end
+
+        def claim_strategy
+          :atomic_pop
+        end
+
+        def pop_due(**)
+          @calls << :pop_due
+          []
+        end
+      end.new(calls)
+
+      configuration.backend = Struct.new(:delayed_store).new(store)
+      coordinator.instance_variable_set(:@stop_requested, true)
+
+      coordinator.send(:dispatch_due_delayed_jobs)
+
+      expect(calls).to eq([])
+    end
+
+    it 'bounds delayed-job sweep batches per tick' do
+      calls = []
+      store = Class.new do
+        def initialize(calls)
+          @calls = calls
+        end
+
+        def claim_strategy
+          :atomic_pop
+        end
+
+        def pop_due(**)
+          @calls << :pop_due
+          [{ job_id: "job:#{@calls.length}", run_at: Time.utc(2026, 1, 1), job_class: 'MissingDelayedJobTarget', args: [], queue: nil }]
+        end
+      end.new(calls)
+
+      configuration.backend = Struct.new(:delayed_store).new(store)
+
+      coordinator.send(:dispatch_due_delayed_jobs)
+
+      expect(calls.length).to eq(Kaal::Coordinator::DELAYED_JOB_MAX_BATCHES_PER_TICK)
+    end
+
+    it 'logs delayed dispatch failures without re-inserting the claimed job' do
+      backend.delayed_store.enqueue(
+        job_id: 'job:a',
+        run_at: Time.utc(2026, 1, 1, 0, 1, 0),
+        job_class: 'MissingDelayedJobTarget',
+        args: [],
+        queue: nil
+      )
+
+      allow(Time).to receive(:now).and_return(Time.utc(2026, 1, 1, 0, 1, 0))
+      coordinator.send(:dispatch_due_delayed_jobs)
+
+      expect(logger_io.string).to include('Delayed job job:a dispatch failed after claim')
+      expect(logger_io.string).to include('job was already claimed and will not be retried')
+      expect(logger_io.string).to include('job_class="MissingDelayedJobTarget"')
+      expect(backend.delayed_store.find_job('job:a')).to be_nil
+    end
+
+    it 'enforces delayed-job allow-lists at dispatch time before constantization' do
+      configuration.delayed_job_allowed_class_prefixes = ['Allowed::']
+      backend.delayed_store.enqueue(
+        job_id: 'job:blocked',
+        run_at: Time.utc(2026, 1, 1, 0, 1, 0),
+        job_class: 'Disallowed::Job',
+        args: [],
+        queue: nil
+      )
+
+      allow(Time).to receive(:now).and_return(Time.utc(2026, 1, 1, 0, 1, 0))
+      coordinator.send(:dispatch_due_delayed_jobs)
+
+      expect(logger_io.string).to include('Delayed job job:blocked dispatch failed after claim')
+      expect(logger_io.string).to include('job_class="Disallowed::Job"')
+    end
+
+    it 'covers delayed store lookup and lock-guard branches' do
+      expect(coordinator.send(:delayed_store_for_tick)).to eq(backend.delayed_store)
+
+      configuration.backend = nil
+      expect(coordinator.send(:delayed_store_for_tick)).to be_nil
+
+      configuration.backend = Object.new
+      expect(coordinator.send(:delayed_store_for_tick)).to be_nil
+
+      locked_store = Class.new do
+        def requires_dispatch_lock?
+          true
+        end
+      end.new
+      allow(coordinator).to receive(:acquire_lock).and_return(false)
+      expect(
+        coordinator.send(
+          :dispatch_delayed_job,
+          { job_id: 'job:a', run_at: Time.utc(2026, 1, 1), job_class: 'MissingJob', args: [], queue: nil },
+          locked_store
+        )
+      ).to be_nil
+    end
+
+    it 'covers delayed dispatch rescue and no-store sweep branches' do
+      configuration.backend = Object.new
+      expect { coordinator.send(:dispatch_due_delayed_jobs) }.not_to raise_error
+
+      configuration.backend = Struct.new(:delayed_store).new(
+        Class.new do
+          def claim_strategy
+            :atomic_pop
+          end
+
+          def pop_due(**)
+            raise 'boom'
+          end
+        end.new
+      )
+      expect { coordinator.send(:dispatch_due_delayed_jobs) }.not_to raise_error
+      expect(logger_io.string).to include('Delayed job dispatch failed')
     end
   end
 end

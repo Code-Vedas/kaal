@@ -6,6 +6,7 @@
 # LICENSE file in the root directory of this source tree.
 require 'digest'
 require 'kaal/backend/dispatch_logging'
+require 'kaal/delayed_job/mysql_version_support'
 require 'kaal/persistence/database'
 
 module Kaal
@@ -16,11 +17,13 @@ module Kaal
         include Kaal::Backend::DispatchLogging
 
         MAX_LOCK_NAME_LENGTH = 64
+        UNSET_SKIP_LOCKED_SUPPORT = Object.new.freeze
 
-        def initialize(database, namespace: nil)
+        def initialize(database, namespace: nil, use_skip_locked: UNSET_SKIP_LOCKED_SUPPORT)
           super()
           @database = Kaal::Persistence::Database.new(database)
           @namespace = namespace
+          @use_skip_locked = use_skip_locked
         end
 
         def dispatch_registry
@@ -29,6 +32,10 @@ module Kaal
 
         def definition_registry
           @definition_registry ||= Kaal::Definition::DatabaseEngine.new(database: @database.connection)
+        end
+
+        def delayed_store
+          @delayed_store ||= Kaal::DelayedJob::DatabaseEngine.new(database: @database.connection, use_skip_locked: supports_skip_locked?)
         end
 
         def acquire(key, _ttl)
@@ -62,6 +69,13 @@ module Kaal
 
         def resolved_namespace
           @namespace || Kaal.configuration.namespace
+        end
+
+        def supports_skip_locked?
+          return @use_skip_locked unless @use_skip_locked.equal?(UNSET_SKIP_LOCKED_SUPPORT)
+
+          version_string = scalar('SELECT VERSION() AS version')
+          Kaal::DelayedJob::MySQLVersionSupport.skip_locked_supported?(version_string)
         end
       end
     end

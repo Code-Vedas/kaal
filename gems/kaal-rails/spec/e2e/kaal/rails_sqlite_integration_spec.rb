@@ -17,7 +17,7 @@ RSpec.describe Kaal::Rails, integration: :sqlite do
       KaalRailsDummyAppSupport.run!(app_root, env, 'bin/rails', 'generate', 'kaal:install', '--backend=sqlite')
       expect(File).to exist(File.join(app_root, 'config', 'scheduler.yml'))
       expect(KaalRailsDummyAppSupport.migration_slugs(app_root)).to eq(
-        %w[create_kaal_definitions.rb create_kaal_dispatches.rb create_kaal_locks.rb]
+        %w[create_kaal_definitions.rb create_kaal_delayed_jobs.rb create_kaal_dispatches.rb create_kaal_locks.rb]
       )
 
       KaalRailsDummyAppSupport.run!(app_root, env, 'bin/rails', 'db:migrate')

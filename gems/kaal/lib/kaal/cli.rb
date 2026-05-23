@@ -20,6 +20,7 @@ module Kaal
         Kaal.reset_configuration!
         Kaal.reset_registry!
         load config_path
+        Kaal.warn_on_risky_configuration!
         runtime_context = RuntimeContext.default(root_path: root_path)
         Kaal.load_scheduler_file!(runtime_context: runtime_context) if File.exist?(scheduler_path)
       end

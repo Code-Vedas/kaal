@@ -41,11 +41,14 @@ module Kaal
       end
 
       def configure_backend!(configuration: Kaal.configuration, backend: build_backend)
+        logger = configuration.logger
         current_backend = configuration.backend
-        return current_backend if current_backend
-        return nil unless backend
+        selected_backend = current_backend || backend
+        return nil unless selected_backend
 
-        configuration.backend = backend
+        configuration.backend = selected_backend unless current_backend
+        Kaal.warn_on_risky_configuration!(configuration:, logger:)
+        selected_backend
       end
 
       def install!(root: ::Rails.root, backend: detect_backend_name)

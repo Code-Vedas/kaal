@@ -8,9 +8,9 @@
 [![Code Coverage](https://qlty.sh/gh/Code-Vedas/projects/kaal/coverage.svg)](https://qlty.sh/gh/Code-Vedas/projects/kaal/coverage)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
 
-Kaal coordinates recurring jobs across processes or nodes without changing how your app enqueues work. You choose the package surface that matches your runtime, define jobs in `config/scheduler.yml`, and run the scheduler in a dedicated process with `bundle exec kaal start`.
+Kaal coordinates recurring and delayed jobs across processes or nodes without changing how your app enqueues work. You choose the package surface that matches your runtime, configure a backend, use the runtime APIs, and run the scheduler in a dedicated process with `bundle exec kaal start`.
 
-For Redis, Postgres, and MySQL-backed deployments, Kaal guarantees at-most-once dispatch per `(key, fire_time)` under the documented crash-and-restart model. Use the provided `idempotency_key` in your job boundary when downstream effects must also be deduplicated.
+For Redis, Postgres, and MySQL-backed deployments, Kaal guarantees at-most-once dispatch per `(key, fire_time)` for recurring jobs and at-most-once dispatch per `job_id` for delayed jobs under the documented crash-and-restart model. Use the provided `idempotency_key` in your job boundary when downstream effects must also be deduplicated.
 
 Project docs: <https://kaal.codevedas.com>
 
@@ -63,7 +63,7 @@ bundle exec kaal init --backend=memory
 - `config/kaal.rb`
 - `config/scheduler.yml`
 
-Register a job in `config/scheduler.yml`:
+Register a recurring job in `config/scheduler.yml`:
 
 ```yaml
 defaults:
@@ -170,6 +170,8 @@ bundle exec rails db:migrate
 ```
 
 For PostgreSQL or MySQL, swap `sqlite` for `postgres` or `mysql`.
+
+The generated migrations install the full Kaal persistence surface.
 
 ### Sinatra
 
@@ -291,6 +293,44 @@ spec:
 ```
 
 Framework integrations can start the scheduler inside the web process, but that should be an intentional opt-in, not the default production model.
+
+## Runtime API
+
+Recurring jobs:
+
+```ruby
+Kaal.register(
+  key: "reports:daily",
+  cron: "0 9 * * *",
+  enqueue: ->(fire_time:, idempotency_key:) {
+    ReportsJob.perform(fire_time: fire_time, idempotency_key: idempotency_key)
+  }
+)
+```
+
+Delayed jobs:
+
+```ruby
+Kaal.enqueue_at(
+  at: Time.now.utc + 300,
+  job_class: "BillingReminderJob",
+  args: [invoice_id],
+  queue: "mailers",
+  job_id: "billing-reminder:#{invoice_id}"
+)
+```
+
+Both surfaces share the same backend and dispatch model. Delayed jobs require unique `job_id` values while pending, use positional `args`, and follow the same job-class resolution rules: string names are constantized and class or module values are used directly.
+
+Restrict delayed-job class names when needed:
+
+```ruby
+Kaal.configure do |config|
+  config.delayed_job_allowed_class_prefixes = ["Reports::", "Billing::"]
+end
+```
+
+Leave `delayed_job_allowed_class_prefixes` empty only for local or otherwise trusted deployments. On shared Redis or SQL backends in production, Kaal will warn because delayed jobs resolve stored `job_class` values at dispatch time.
 
 ## Guarantee and idempotency
 

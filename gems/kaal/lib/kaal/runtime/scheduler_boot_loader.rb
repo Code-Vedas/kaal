@@ -22,6 +22,8 @@ module Kaal
       configuration = fetch_configuration
       return unless configuration
 
+      Kaal.warn_on_risky_configuration!(configuration:, logger: @logger)
+
       return load_scheduler_file if configuration.scheduler_missing_file_policy == :error
 
       scheduler_path = configuration.scheduler_config_path.to_s.strip

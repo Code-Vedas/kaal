@@ -80,7 +80,7 @@ RSpec.describe Kaal::Rails do
       expect(
         result.fetch(:migrations).map { |migration| File.basename(migration.fetch(:path)).sub(/^\d+_/, '') }.sort
       ).to eq(
-        %w[create_kaal_definitions.rb create_kaal_dispatches.rb create_kaal_locks.rb]
+        %w[create_kaal_definitions.rb create_kaal_delayed_jobs.rb create_kaal_dispatches.rb create_kaal_locks.rb]
       )
       expect(second_result.fetch(:scheduler_config).fetch(:status)).to eq(:exists)
       expect(second_result.fetch(:migrations).map { |migration| migration.fetch(:status) }).to all(eq(:exists))
@@ -136,7 +136,7 @@ RSpec.describe Kaal::Rails do
 
       expect(File).to exist(File.join(root, 'config', 'scheduler.yml'))
       expect(Dir[File.join(root, 'db/migrate/*.rb')].map { |path| File.basename(path).sub(/^\d+_/, '') }.sort).to eq(
-        %w[create_kaal_definitions.rb create_kaal_dispatches.rb]
+        %w[create_kaal_definitions.rb create_kaal_delayed_jobs.rb create_kaal_dispatches.rb]
       )
     end
   end

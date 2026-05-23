@@ -7,6 +7,7 @@
 require 'securerandom'
 require_relative 'dispatch_logging'
 require_relative '../definition/redis_engine'
+require_relative '../delayed_job/redis_engine'
 
 module Kaal
   module Backend
@@ -63,6 +64,10 @@ module Kaal
       # @return [Kaal::Definition::RedisEngine] redis definition engine instance
       def definition_registry
         @definition_registry ||= Kaal::Definition::RedisEngine.new(@redis, namespace: @namespace)
+      end
+
+      def delayed_store
+        @delayed_store ||= Kaal::DelayedJob::RedisEngine.new(@redis, namespace: @namespace)
       end
 
       ##

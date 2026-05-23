@@ -5,6 +5,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 require 'kaal/config/configuration'
+require 'kaal/config/delayed_job_security_policy'
 require 'kaal/config/scheduler_config_error'
 require 'kaal/config/scheduler_time_zone_resolver'
 
