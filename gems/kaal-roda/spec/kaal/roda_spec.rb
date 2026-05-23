@@ -17,7 +17,7 @@ RSpec.describe Kaal::Roda do
   end
 
   it 'has a version number and exposes the Roda plugin' do
-    expect(described_class::VERSION).to eq('0.4.0')
+    expect(described_class::VERSION).to eq('0.5.0')
     expect(defined?(Roda::RodaPlugins::Kaal)).to eq('constant')
   end
 
