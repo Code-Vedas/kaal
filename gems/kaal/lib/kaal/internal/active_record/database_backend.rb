@@ -6,6 +6,7 @@
 # LICENSE file in the root directory of this source tree.
 require 'kaal/backend/adapter'
 require 'kaal/backend/dispatch_logging'
+require 'kaal/internal/active_record/delayed_job_registry'
 
 module Kaal
   module Internal
@@ -29,6 +30,10 @@ module Kaal
 
         def definition_registry
           @definition_registry ||= DefinitionRegistry.new
+        end
+
+        def delayed_store
+          @delayed_store ||= DelayedJobRegistry.new
         end
 
         def acquire(key, ttl)

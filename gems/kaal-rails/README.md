@@ -41,12 +41,15 @@ bundle exec rails generate kaal:install --backend=mysql
 bundle exec rails db:migrate
 ```
 
+These migrations install the Kaal persistence tables required by the selected backend.
+
 ## What It Provides
 
 - Rails-native setup on top of the Kaal engine
 - Active Record-backed persistence through the core `kaal` gem
 - migration templates for the Kaal tables required by the selected backend
 - automatic backend selection from the Rails database adapter unless the app sets `Kaal.configuration.backend` itself
+- the normal Kaal runtime API in a Rails install surface
 
 ## Usage
 

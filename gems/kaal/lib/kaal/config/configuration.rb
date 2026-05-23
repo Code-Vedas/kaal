@@ -31,7 +31,8 @@ module Kaal
       recovery_startup_jitter: 5, # max random delay in seconds
       scheduler_config_path: 'config/scheduler.yml',
       scheduler_conflict_policy: :error,
-      scheduler_missing_file_policy: :warn
+      scheduler_missing_file_policy: :warn,
+      delayed_job_allowed_class_prefixes: []
     }.freeze
 
     ##
@@ -69,6 +70,15 @@ module Kaal
       validation_errors
     end
 
+    # Non-fatal configuration warnings.
+    #
+    # @return [Array<String>] warning messages
+    def validation_warnings
+      warnings = []
+      add_delayed_job_security_warning(warnings)
+      warnings
+    end
+
     ##
     # Validate the configuration settings.
     # Raises errors if required settings are invalid.
@@ -78,6 +88,10 @@ module Kaal
     def validate!
       errors = validation_errors
       raise ConfigurationError, errors.join('; ') if errors.any?
+
+      validation_warnings.each do |warning|
+        @values[:logger]&.warn(warning)
+      end
 
       self
     end
@@ -105,7 +119,8 @@ module Kaal
         recovery_startup_jitter: @values[:recovery_startup_jitter],
         scheduler_config_path: @values[:scheduler_config_path],
         scheduler_conflict_policy: @values[:scheduler_conflict_policy],
-        scheduler_missing_file_policy: @values[:scheduler_missing_file_policy]
+        scheduler_missing_file_policy: @values[:scheduler_missing_file_policy],
+        delayed_job_allowed_class_prefixes: @values[:delayed_job_allowed_class_prefixes]
       }
     end
 
@@ -191,6 +206,13 @@ module Kaal
       errors << 'scheduler_missing_file_policy must be :warn or :error'
     end
 
+    def add_delayed_job_security_warning(warnings)
+      warning = Kaal::Config::DelayedJobSecurityPolicy.warning_for(self)
+      return unless warning
+
+      warnings << warning
+    end
+
     def handle_known_key(method_name)
       name = method_name.to_s
       setter = name.end_with?('=')
@@ -218,8 +240,17 @@ module Kaal
         value ? true : false
       when :scheduler_conflict_policy, :scheduler_missing_file_policy
         value&.to_sym
+      when :delayed_job_allowed_class_prefixes
+        normalize_delayed_job_allowed_class_prefixes(value)
       else
         value
+      end
+    end
+
+    def normalize_delayed_job_allowed_class_prefixes(value)
+      Array(value).filter_map do |entry|
+        normalized_entry = entry.to_s.strip
+        normalized_entry unless normalized_entry.empty?
       end
     end
   end

@@ -177,6 +177,22 @@ RSpec.describe Kaal::SchedulerFileLoader do
     expect(applier.conflict?(key: 'conflict', existing_definition: Kaal.definition_registry.find_definition('conflict'))).to be(true)
   end
 
+  it 'does not apply delayed-job allow-lists to scheduler-file recurring jobs' do
+    Kaal.configure do |config|
+      config.delayed_job_allowed_class_prefixes = ['Allowed::']
+    end
+
+    loader = described_class.new(
+      configuration: Kaal.configuration,
+      definition_registry: Kaal.definition_registry,
+      registry: Kaal.registry,
+      logger: Logger.new(StringIO.new),
+      runtime_context: runtime_context
+    )
+
+    expect(loader.send(:resolve_job_class, job_class_name: 'ExampleSchedulerJob', key: 'job')).to eq(ExampleSchedulerJob)
+  end
+
   it 'applies scheduler jobs through .perform when .perform_later is unavailable' do
     perform_calls = []
     perform_job = Class.new do
@@ -254,12 +270,12 @@ RSpec.describe Kaal::SchedulerFileLoader do
     bad_job = Class.new
     stub_const('BadJobClass', bad_job)
     expect do
-      applier.send(:dispatch_job, bad_job, nil, [], {})
-    end.to raise_error(Kaal::SchedulerConfigError, /must respond to/)
+      applier.send(:dispatch_job, bad_job, nil, [], {}, 'job')
+    end.to raise_error(Kaal::SchedulerConfigError, /scheduler job 'job'/)
 
     expect do
-      applier.send(:dispatch_job, bad_job, 'low', [], {})
-    end.to raise_error(Kaal::SchedulerConfigError, /must respond to \.set to use queue/)
+      applier.send(:dispatch_job, bad_job, 'low', [], {}, 'job')
+    end.to raise_error(Kaal::SchedulerConfigError, /scheduler job 'job'/)
 
     expect(loader.send(:stringify_keys, a: { b: 1 })).to eq('a' => { 'b' => 1 })
     expect(loader.send(:symbolize_keys_deep, 'a' => { 'b' => 1 })).to eq(a: { b: 1 })

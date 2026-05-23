@@ -5,6 +5,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 require 'kaal/backend/dispatch_logging'
+require 'kaal/delayed_job/database_engine'
 require 'kaal/persistence/database'
 
 module Kaal
@@ -26,6 +27,10 @@ module Kaal
 
         def definition_registry
           @definition_registry ||= Kaal::Definition::DatabaseEngine.new(database: @database.connection)
+        end
+
+        def delayed_store
+          @delayed_store ||= Kaal::DelayedJob::DatabaseEngine.new(database: @database.connection)
         end
 
         def acquire(key, ttl)

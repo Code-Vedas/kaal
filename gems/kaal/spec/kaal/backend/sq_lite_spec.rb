@@ -9,6 +9,7 @@ require 'spec_helper'
 RSpec.describe Kaal::Backend::SQLite do
   it 'loads the explicit sql backends from require "kaal"' do
     expect(defined?(Kaal::Dispatch::DatabaseEngine)).to eq('constant')
+    expect(defined?(Kaal::DelayedJob::DatabaseEngine)).to eq('constant')
     expect(defined?(Kaal::Definition::DatabaseEngine)).to eq('constant')
     expect(described_class.name).to eq('Kaal::Backend::SQLite')
     expect(defined?(Kaal::Backend::Postgres)).to eq('constant')

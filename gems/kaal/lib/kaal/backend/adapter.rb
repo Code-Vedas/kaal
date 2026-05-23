@@ -94,6 +94,10 @@ module Kaal
       def definition_registry
         nil
       end
+
+      def delayed_store
+        nil
+      end
     end
 
     ##

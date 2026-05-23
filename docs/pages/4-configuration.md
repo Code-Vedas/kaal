@@ -23,10 +23,31 @@ Kaal.configure do |config|
   config.scheduler_config_path = "config/scheduler.yml"
   config.enable_dispatch_recovery = true
   config.enable_log_dispatch_registry = false
+  config.delayed_job_allowed_class_prefixes = []
 end
 ```
 
 For the documented at-most-once dispatch guarantee, enable the dispatch log registry and keep `lease_ttl >= window_lookback + tick_interval`. See [At-Most-Once Dispatch Guarantee](/dispatch-guarantee).
+
+## Delayed-job configuration
+
+Delayed jobs reuse the configured backend. No separate delayed-job backend setting exists.
+
+Optional delayed-job class restrictions are prefix-based:
+
+```ruby
+Kaal.configure do |config|
+  config.delayed_job_allowed_class_prefixes = ["Reports::", "Billing::"]
+end
+```
+
+Behavior:
+
+- an empty array means unrestricted delayed-job class names
+- restrictions are checked both when enqueueing and when dispatching
+- this setting applies to delayed jobs only; recurring scheduler-file jobs continue to use the scheduler-file validation rules
+
+For local or otherwise trusted deployments, an empty list is valid. On shared Redis or SQL backends in production, configure a restrictive prefix list. Kaal warns on startup when delayed-job class resolution is unrestricted in that kind of deployment.
 
 ## Sequel adapter example
 
@@ -86,6 +107,8 @@ Install flow examples:
 bundle exec rails generate kaal:install --backend=sqlite
 bundle exec rails db:migrate
 ```
+
+Those migrations install the Kaal persistence schema used for both recurring and delayed jobs.
 
 ```bash
 bundle exec rails generate kaal:install --backend=postgres

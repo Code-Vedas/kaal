@@ -30,6 +30,10 @@ module Kaal
       def locks_dataset
         connection[:kaal_locks]
       end
+
+      def delayed_jobs_dataset
+        connection[:kaal_delayed_jobs]
+      end
     end
   end
 end

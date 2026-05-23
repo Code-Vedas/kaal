@@ -29,7 +29,7 @@ RSpec/ExampleLength:
 Layout/LineLength:
   Max: 160
 Metrics/ClassLength:
-  Max: 275
+  Max: 300
 Metrics/AbcSize:
   Max: 30
 RSpec/MultipleMemoizedHelpers:

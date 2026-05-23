@@ -23,6 +23,7 @@ RSpec.describe Kaal::Internal::Sequel::MySQLBackend do
 
       def yield_value(sql)
         return 1 if sql.include?('GET_LOCK')
+        return '8.0.36' if sql.include?('VERSION')
 
         1
       end
@@ -35,6 +36,9 @@ RSpec.describe Kaal::Internal::Sequel::MySQLBackend do
   end
 
   it 'acquires, releases, and normalizes lock names' do
+    delayed_store = instance_double(Kaal::DelayedJob::DatabaseEngine)
+    allow(Kaal::DelayedJob::DatabaseEngine).to receive(:new).and_return(delayed_store)
+
     adapter = described_class.new(:fake)
     allow(adapter).to receive(:log_dispatch_attempt)
 
@@ -42,6 +46,8 @@ RSpec.describe Kaal::Internal::Sequel::MySQLBackend do
     expect(adapter.release('short-key')).to be(true)
     expect(described_class.send(:normalize_lock_name, 'x' * 80)).to match(/\A.{47}:.{16}\z/)
     expect(adapter.dispatch_registry).to be_a(Kaal::Dispatch::DatabaseEngine)
+    expect(adapter.delayed_store).to eq(delayed_store)
+    expect(Kaal::DelayedJob::DatabaseEngine).to have_received(:new).with(database: connection, use_skip_locked: true)
     expect(adapter.definition_registry).to be_a(Kaal::Definition::DatabaseEngine)
   end
 
@@ -73,5 +79,15 @@ RSpec.describe Kaal::Internal::Sequel::MySQLBackend do
     adapter = described_class.new(:fake)
     allow(adapter).to receive(:log_dispatch_attempt)
     expect(adapter.acquire('key', 10)).to be(false)
+  end
+
+  it 'falls back when mysql does not support skip locked' do
+    delayed_store = instance_double(Kaal::DelayedJob::DatabaseEngine)
+    allow(Kaal::DelayedJob::DatabaseEngine).to receive(:new).and_return(delayed_store)
+
+    adapter = described_class.new(:fake, use_skip_locked: false)
+
+    expect(adapter.delayed_store).to eq(delayed_store)
+    expect(Kaal::DelayedJob::DatabaseEngine).to have_received(:new).with(database: connection, use_skip_locked: false)
   end
 end

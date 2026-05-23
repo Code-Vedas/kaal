@@ -32,6 +32,10 @@ module Kaal
           @definition_registry ||= DefinitionRegistry.new
         end
 
+        def delayed_store
+          @delayed_store ||= DelayedJobRegistry.new(use_skip_locked: true)
+        end
+
         def acquire(key, _ttl)
           acquired = scalar('SELECT pg_try_advisory_lock(?) AS acquired', self.class.calculate_lock_id(key)) == true
           log_dispatch_attempt(key) if acquired

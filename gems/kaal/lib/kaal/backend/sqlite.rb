@@ -29,6 +29,10 @@ module Kaal
         @engine.definition_registry
       end
 
+      def delayed_store
+        @engine.delayed_store
+      end
+
       def acquire(key, ttl)
         @engine.acquire(key, ttl)
       end

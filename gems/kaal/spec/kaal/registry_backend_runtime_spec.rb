@@ -11,6 +11,7 @@ module SpecSupport
     def initialize
       @store = {}
       @hashes = Hash.new { |hash, key| hash[key] = {} }
+      @sorted_sets = Hash.new { |hash, key| hash[key] = {} }
       @scripts = []
     end
 
@@ -25,11 +26,17 @@ module SpecSupport
 
     def eval(script, keys:, argv:)
       @scripts << script
-      key = keys.first
-      return 0 unless @store[key]&.fetch(:value, nil) == argv.first
+      if script.include?('ZRANGEBYSCORE')
+        pop_due_from_sorted_set(keys:, argv:)
+      elsif script.include?('HEXISTS')
+        insert_delayed_payload(keys:, argv:)
+      else
+        key = keys.first
+        return 0 unless @store[key]&.fetch(:value, nil) == argv.first
 
-      @store.delete(key)
-      1
+        @store.delete(key)
+        1
+      end
     end
 
     def setex(key, ttl, value)
@@ -52,8 +59,61 @@ module SpecSupport
       @hashes[key].delete(field)
     end
 
+    def hexists?(key, field)
+      @hashes[key].key?(field)
+    end
+
     def hvals(key)
       @hashes[key].values
+    end
+
+    def zadd(key, score, member)
+      @sorted_sets[key][member] = score.to_f
+    end
+
+    def zrange(key, start_index, end_index)
+      members = sorted_members(key)
+      return members[start_index..] || [] if end_index == -1
+
+      members[start_index..end_index] || []
+    end
+
+    def zrem(key, member)
+      @sorted_sets[key].delete(member) ? 1 : 0
+    end
+
+    private
+
+    def insert_delayed_payload(keys:, argv:)
+      payloads_key, schedule_key = keys
+      job_id, payload, score = argv
+      return 0 if hexists?(payloads_key, job_id)
+
+      hset(payloads_key, job_id, payload)
+      zadd(schedule_key, score, job_id)
+      1
+    end
+
+    def pop_due_from_sorted_set(keys:, argv:)
+      payloads_key, schedule_key = keys
+      now, limit = argv
+      due_ids = sorted_members(schedule_key)
+                .select { |job_id| @sorted_sets[schedule_key][job_id] <= now.to_f }
+                .first(limit.to_i)
+
+      due_ids.each_with_object([]) do |job_id, payloads|
+        next unless zrem(schedule_key, job_id) == 1
+
+        payload = hget(payloads_key, job_id)
+        next unless payload
+
+        hdel(payloads_key, job_id)
+        payloads << payload
+      end
+    end
+
+    def sorted_members(key)
+      @sorted_sets[key].sort_by { |member, score| [score, member] }.map(&:first)
     end
   end
 
@@ -142,6 +202,18 @@ RSpec.describe Kaal::Registry do
     end
   end
 
+  describe Kaal::DelayedJob::Registry do
+    subject(:registry) { described_class.new }
+
+    it 'raises for abstract methods' do
+      expect { registry.enqueue(job_id: 'job:a') }.to raise_error(NotImplementedError)
+      expect { registry.pop_due(now: Time.now.utc, limit: 1) }.to raise_error(NotImplementedError)
+      expect { registry.find_job('job:a') }.to raise_error(NotImplementedError)
+      expect { registry.all_jobs }.to raise_error(NotImplementedError)
+      expect(registry.requires_dispatch_lock?).to be(false)
+    end
+  end
+
   describe Kaal::Definition::MemoryEngine do
     subject(:engine) { described_class.new }
 
@@ -219,6 +291,54 @@ RSpec.describe Kaal::Registry do
 
     it 'returns nil for missing dispatch records' do
       expect(engine.find_dispatch('job:a', Time.utc(2026, 1, 1))).to be_nil
+    end
+  end
+
+  describe Kaal::DelayedJob::MemoryEngine do
+    subject(:engine) { described_class.new }
+
+    it 'stores due jobs in order and rejects duplicates' do
+      engine.enqueue(job_id: 'job:b', run_at: Time.utc(2026, 1, 1, 0, 1), job_class: 'ExampleJob', args: [2], queue: nil)
+      engine.enqueue(job_id: 'job:a', run_at: Time.utc(2026, 1, 1, 0, 1), job_class: 'ExampleJob', args: [1], queue: 'low')
+
+      expect do
+        engine.enqueue(job_id: 'job:a', run_at: Time.utc(2026, 1, 1, 0, 2), job_class: 'ExampleJob', args: [], queue: nil)
+      end.to raise_error(Kaal::DelayedJob::DuplicateJobError)
+
+      expect(engine.find_job('job:a')).to include(queue: 'low')
+      expect(engine.pop_due(now: Time.utc(2026, 1, 1, 0, 1), limit: 10).map { |job| job[:job_id] }).to eq(%w[job:a job:b])
+      expect(engine.all_jobs).to eq([])
+      expect(engine.clear).to eq({})
+    end
+
+    it 'reports the atomic-pop claim strategy' do
+      expect(engine.claim_strategy).to eq(:atomic_pop)
+    end
+  end
+
+  describe Kaal::DelayedJob::RedisEngine do
+    subject(:engine) { described_class.new(redis, namespace: 'ops') }
+
+    let(:redis) { SpecSupport::FakeRedisClient.new }
+
+    it 'stores, orders, and removes due delayed jobs' do
+      engine.enqueue(job_id: 'job:b', run_at: Time.utc(2026, 1, 1, 0, 1), job_class: 'ExampleJob', args: [2], queue: nil)
+      engine.enqueue(job_id: 'job:a', run_at: Time.utc(2026, 1, 1, 0, 1), job_class: 'ExampleJob', args: [1], queue: 'low')
+
+      expect do
+        engine.enqueue(job_id: 'job:a', run_at: Time.utc(2026, 1, 1, 0, 2), job_class: 'ExampleJob', args: [], queue: nil)
+      end.to raise_error(Kaal::DelayedJob::DuplicateJobError)
+
+      expect(engine.find_job('job:a')).to include(queue: 'low')
+      expect(engine.all_jobs.map { |job| job[:job_id] }).to eq(%w[job:a job:b])
+      expect(engine.pop_due(now: Time.utc(2026, 1, 1, 0, 1), limit: 1).map { |job| job[:job_id] }).to eq(['job:a'])
+      expect(engine.pop_due(now: Time.utc(2026, 1, 1, 0, 1), limit: 10).map { |job| job[:job_id] }).to eq(['job:b'])
+      expect(described_class.deserialize('{')).to be_nil
+      expect(described_class.parse_time('bad')).to be_nil
+    end
+
+    it 'reports the atomic-pop claim strategy' do
+      expect(engine.claim_strategy).to eq(:atomic_pop)
     end
   end
 

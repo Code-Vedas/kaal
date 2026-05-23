@@ -8,16 +8,20 @@ module Kaal
   module Backend
     # MySQL-backed backend for either Sequel or Active Record persistence.
     class MySQL < Adapter
-      def initialize(database: nil, connection: nil, namespace: nil, **)
+      UNSET_SKIP_LOCKED_SUPPORT = Object.new.freeze
+
+      def initialize(database: nil, connection: nil, namespace: nil,
+                     use_skip_locked: UNSET_SKIP_LOCKED_SUPPORT)
         super()
+        backend_class = self.class
         @engine = if database
                     Kaal::Sequel.require_sequel!
                     require 'kaal/internal/sequel'
-                    Kaal::Internal::Sequel::MySQLBackend.new(database, namespace:)
+                    backend_class.send(:build_sequel_backend, database, namespace, use_skip_locked)
                   else
                     Kaal::ActiveRecord.require_activerecord!
                     require 'kaal/internal/active_record'
-                    Kaal::Internal::ActiveRecord::MySQLBackend.new(connection, namespace:, **)
+                    backend_class.send(:build_active_record_backend, connection, namespace, use_skip_locked)
                   end
       end
 
@@ -29,6 +33,10 @@ module Kaal
         @engine.definition_registry
       end
 
+      def delayed_store
+        @engine.delayed_store
+      end
+
       def acquire(key, ttl)
         @engine.acquire(key, ttl)
       end
@@ -36,6 +44,20 @@ module Kaal
       def release(key)
         @engine.release(key)
       end
+
+      def self.build_sequel_backend(database, namespace, use_skip_locked)
+        return Kaal::Internal::Sequel::MySQLBackend.new(database, namespace:) if use_skip_locked.equal?(UNSET_SKIP_LOCKED_SUPPORT)
+
+        Kaal::Internal::Sequel::MySQLBackend.new(database, namespace:, use_skip_locked:)
+      end
+      private_class_method :build_sequel_backend
+
+      def self.build_active_record_backend(connection, namespace, use_skip_locked)
+        return Kaal::Internal::ActiveRecord::MySQLBackend.new(connection, namespace:) if use_skip_locked.equal?(UNSET_SKIP_LOCKED_SUPPORT)
+
+        Kaal::Internal::ActiveRecord::MySQLBackend.new(connection, namespace:, use_skip_locked:)
+      end
+      private_class_method :build_active_record_backend
     end
   end
 end

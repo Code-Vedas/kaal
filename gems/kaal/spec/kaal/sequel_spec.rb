@@ -18,13 +18,22 @@ RSpec.describe Kaal::Sequel do
 
   it 'exposes migration templates for sql backends' do
     expect(Kaal::Persistence::MigrationTemplates.for_backend(:sqlite).keys).to eq(
-      %w[001_create_kaal_dispatches.rb 002_create_kaal_locks.rb 003_create_kaal_definitions.rb]
+      %w[001_create_kaal_dispatches.rb 002_create_kaal_locks.rb 003_create_kaal_definitions.rb 004_create_kaal_delayed_jobs.rb]
     )
     expect(Kaal::Persistence::MigrationTemplates.for_backend(:postgres).keys).to eq(
-      %w[001_create_kaal_dispatches.rb 002_create_kaal_definitions.rb]
+      %w[001_create_kaal_dispatches.rb 002_create_kaal_definitions.rb 003_create_kaal_delayed_jobs.rb]
     )
     expect(Kaal::Persistence::MigrationTemplates.for_backend(:mysql).keys).to eq(
-      %w[001_create_kaal_dispatches.rb 002_create_kaal_definitions.rb]
+      %w[001_create_kaal_dispatches.rb 002_create_kaal_definitions.rb 003_create_kaal_delayed_jobs.rb]
     )
+  end
+
+  it 'omits text defaults for mysql delayed-job migrations' do
+    mysql_template = Kaal::Persistence::MigrationTemplates.for_backend(:mysql).fetch('003_create_kaal_delayed_jobs.rb')
+    sqlite_template = Kaal::Persistence::MigrationTemplates.for_backend(:sqlite).fetch('004_create_kaal_delayed_jobs.rb')
+
+    expect(mysql_template).to include('String :args, text: true, null: false')
+    expect(mysql_template).not_to include("String :args, text: true, null: false, default: '[]'")
+    expect(sqlite_template).to include("String :args, text: true, null: false, default: '[]'")
   end
 end

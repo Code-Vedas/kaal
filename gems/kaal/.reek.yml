@@ -11,6 +11,8 @@ detectors:
   TooManyMethods:
     enabled: true
     max_methods: 30
+    exclude:
+      - Kaal::Coordinator
   BooleanParameter:
     enabled: false
   ControlParameter:
@@ -36,11 +38,16 @@ detectors:
       - Kaal::Registry#validate_entry
       - Kaal::Coordinator#already_dispatched?
       - Kaal::Coordinator#cleanup_old_dispatch_records
+      - Kaal::Coordinator#delayed_store_for_tick
       - Kaal#dispatch_log_registry
       - Kaal#dispatched?
       - Kaal#reset_registry!
       - Kaal::Backend::DispatchRegistryAccessor#fetch_registry
       - Kaal::Backend::RedisAdapter#initialize
+      - Kaal::JobDispatcher#active_job_dispatch?
+      - Kaal::JobDispatcher#dispatch
+      - Kaal::JobDispatcher#validate_dispatch_interface
+      - Kaal::DelayedJob::DispatchFailureLogger#log_claimed_dispatch_failure
       - Kaal::SchedulerFileLoader::JobApplier#dispatch_job
       - Kaal::SchedulerFileLoader::JobApplier#active_job_dispatch?
       - Kaal::SchedulerFileLoader::JobApplier#validate_dispatch_interface
@@ -57,10 +64,12 @@ detectors:
       - Kaal::Dispatch::RedisEngine#convert_timestamps
       - Kaal::Backend::DispatchLogging#parse_lock_key
       - Kaal::Internal::ActiveRecord::DefinitionRegistry#normalize_definition_record
+      - Kaal::Internal::ActiveRecord::DelayedJobRegistry#normalize
       - Kaal::Internal::ActiveRecord::MySQLBackend#scalar
       - Kaal::Internal::ActiveRecord::PostgresBackend#scalar
       - Kaal::SchedulerHashTransform#stringify_keys
       - Kaal::SchedulerHashTransform#symbolize_keys_deep
+      - Kaal::SchedulerFileLoader::JobApplier#resolved_job_class
       - Kaal::SchedulerFileLoader::JobApplier#active_job_dispatch?
   FeatureEnvy:
     enabled: true
@@ -69,10 +78,13 @@ detectors:
       - Kaal::Configuration#normalize_value
       - Kaal::Coordinator#already_dispatched?
       - Kaal::Coordinator#cleanup_old_dispatch_records
+      - Kaal::Coordinator#dispatch_delayed_job
+      - Kaal::Coordinator#delayed_store_for_tick
       - Kaal::OccurrenceFinder#call
       - Kaal::Backend::DispatchRegistryAccessor#fetch_registry
       - Kaal::Definition::DatabaseEngine#normalize_row
       - Kaal::Internal::ActiveRecord::DefinitionRegistry#upsert_definition
+      - Kaal::Internal::ActiveRecord::DelayedJobRegistry#insert_with_connection
       - Kaal::Internal::ActiveRecord::DispatchRegistry#log_dispatch
       - Kaal::Internal::ActiveRecord::DispatchRegistry#normalize
       - Kaal::SchedulerFileLoader::JobApplier#dispatch_job
@@ -82,6 +94,7 @@ detectors:
     enabled: true
     exclude:
       - Kaal::CronHumanizer#ensure_i18n_loaded!
+      - Kaal::Coordinator#dispatch_delayed_job
       - Kaal::SchedulerFileLoader::JobApplier#validate_dispatch_interface
   NilCheck:
     enabled: true
@@ -91,6 +104,8 @@ detectors:
       - Kaal::Coordinator#cleanup_old_dispatch_records
       - Kaal#dispatch_log_registry
       - Kaal#dispatched?
+      - Kaal#normalize_delayed_queue
+      - Kaal::JobDispatcher#validate_dispatch_interface
       - Kaal::SchedulerFileLoader::JobApplier#validate_dispatch_interface
 
 exclude_paths:

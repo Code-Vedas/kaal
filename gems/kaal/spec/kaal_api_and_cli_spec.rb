@@ -9,6 +9,19 @@ require 'spec_helper'
 RSpec.describe Kaal do
   let(:fire_time) { Time.utc(2026, 1, 1, 0, 0, 0) }
 
+  def with_environment(overrides)
+    original = {}
+    overrides.each_key { |key| original[key] = ENV.fetch(key, nil) }
+    overrides.each do |key, value|
+      value.nil? ? ENV.delete(key) : ENV[key] = value
+    end
+    yield
+  ensure
+    original&.each do |key, value|
+      value.nil? ? ENV.delete(key) : ENV[key] = value
+    end
+  end
+
   before do
     described_class.instance_variable_set(:@registration_service, nil)
     I18n.load_path = [File.expand_path('../config/locales/en.yml', __dir__)]
@@ -70,6 +83,7 @@ RSpec.describe Kaal do
     expect(described_class.lint('* * * * *')).to eq([])
     expect(described_class.to_human('@daily')).to eq('Daily')
     expect(described_class.validate).to eq([])
+    expect(described_class.validation_warnings).to eq([])
     expect(described_class.validate!).to be_a(Kaal::Configuration)
 
     expect { described_class.with_idempotency('job:a', fire_time) }.to raise_error(ArgumentError)
@@ -92,6 +106,19 @@ RSpec.describe Kaal do
     coordinator = instance_double(Kaal::Coordinator, running?: false)
     described_class.instance_variable_set(:@coordinator, coordinator)
     expect(described_class.reset_coordinator!).to be_a(Kaal::Coordinator)
+  end
+
+  it 'warns once per process for risky delayed-job configuration' do
+    logger_io = StringIO.new
+    described_class.logger = Logger.new(logger_io)
+    described_class.backend = Kaal::Backend::RedisAdapter.new(SpecSupport::FakeRedisClient.new)
+
+    with_environment('RACK_ENV' => 'production') do
+      described_class.warn_on_risky_configuration!
+      described_class.warn_on_risky_configuration!
+    end
+
+    expect(logger_io.string.scan('delayed_job_allowed_class_prefixes is empty').length).to eq(1)
   end
 
   it 'resets configuration, registry, and coordinator state' do
@@ -236,14 +263,25 @@ RSpec.describe Kaal do
       root = Dir.mktmpdir
       cli = described_class.new([], { root: root, config: File.join(root, 'config', 'custom.rb') }, shell:)
       FileUtils.mkdir_p(File.join(root, 'config'))
-      File.write(File.join(root, 'config', 'custom.rb'), "Kaal.configure { |config| config.tick_interval = 9 }\n")
+      File.write(File.join(root, 'config', 'custom.rb'), <<~RUBY)
+        Kaal.configure do |config|
+          config.tick_interval = 9
+          config.backend = Kaal::Backend::RedisAdapter.new(SpecSupport::FakeRedisClient.new)
+          config.logger = Logger.new(StringIO.new)
+        end
+      RUBY
       File.write(File.join(root, 'config', 'scheduler.yml'), "defaults:\n  jobs: []\n")
       allow(Kaal).to receive(:load_scheduler_file!).and_return([])
       allow(Kaal::SignalHandlerInstaller).to receive(:new).and_return(
         instance_double(Kaal::SignalHandlerInstaller, install: { 'TERM' => 'DEFAULT' })
       )
+      allow(Kaal).to receive(:warn_on_risky_configuration!).and_call_original
 
-      cli.send(:load_project!)
+      with_environment('RACK_ENV' => 'production') do
+        cli.send(:load_project!)
+      end
+
+      expect(Kaal).to have_received(:warn_on_risky_configuration!).at_least(:once)
       expect(Kaal.tick_interval).to eq(9)
       expect(described_class.install_foreground_signal_handlers({})).to eq({ 'TERM' => 'DEFAULT' })
 

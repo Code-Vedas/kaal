@@ -15,6 +15,7 @@ module KaalActiveRecordSupport
       database_path = File.join(root, 'kaal.sqlite3')
       connection = { adapter: 'sqlite3', database: database_path }
       Kaal::ActiveRecord.require_activerecord!
+      require 'kaal/internal/active_record'
       Kaal::Internal::ActiveRecord::ConnectionSupport.configure!(connection)
       create_schema!(locks: true)
       yield connection
@@ -27,6 +28,7 @@ module KaalActiveRecordSupport
     create_dispatches_table(connection)
     create_locks_table(connection) if locks
     create_definitions_table(connection)
+    create_delayed_jobs_table(connection)
   end
 
   def reset_database!(database_url)
@@ -65,6 +67,7 @@ module KaalActiveRecordSupport
   end
 
   def drop_tables(connection)
+    connection.drop_table(:kaal_delayed_jobs, if_exists: true)
     connection.drop_table(:kaal_locks, if_exists: true)
     connection.drop_table(:kaal_dispatches, if_exists: true)
     connection.drop_table(:kaal_definitions, if_exists: true)
@@ -112,6 +115,22 @@ module KaalActiveRecordSupport
     connection.add_index :kaal_definitions, :key, unique: true
     connection.add_index :kaal_definitions, :enabled
     connection.add_index :kaal_definitions, :source
+  end
+
+  def create_delayed_jobs_table(connection)
+    args_options = { null: false }
+    args_options[:default] = '[]' unless mysql_connection?(connection)
+
+    connection.create_table :kaal_delayed_jobs do |t|
+      t.string :job_id, null: false
+      t.datetime :run_at, null: false
+      t.string :job_class, null: false
+      t.text :args, **args_options
+      t.string :queue
+      t.datetime :created_at, null: false
+    end
+    connection.add_index :kaal_delayed_jobs, :job_id, unique: true
+    connection.add_index :kaal_delayed_jobs, :run_at
   end
 
   def build_admin_database_url(uri)

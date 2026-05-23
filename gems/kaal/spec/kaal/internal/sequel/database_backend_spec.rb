@@ -45,6 +45,17 @@ RSpec.describe Kaal::Internal::Sequel::DatabaseBackend do
       String :status, null: false
     end
     db.add_index :kaal_dispatches, %i[key fire_time], unique: true
+
+    db.create_table :kaal_delayed_jobs do
+      primary_key :id
+      String :job_id, null: false
+      Time :run_at, null: false
+      String :job_class, null: false
+      String :args, text: true, null: false, default: '[]'
+      String :queue
+      Time :created_at, null: false
+    end
+    db.add_index :kaal_delayed_jobs, :job_id, unique: true
   end
 
   it 'acquires a lock once and releases it' do
@@ -56,6 +67,7 @@ RSpec.describe Kaal::Internal::Sequel::DatabaseBackend do
   it 'exposes sequel-backed registries' do
     expect(adapter.definition_registry).to be_a(Kaal::Definition::DatabaseEngine)
     expect(adapter.dispatch_registry).to be_a(Kaal::Dispatch::DatabaseEngine)
+    expect(adapter.delayed_store).to be_a(Kaal::DelayedJob::DatabaseEngine)
   end
 
   it 'wraps lock adapter errors' do

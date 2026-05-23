@@ -6,6 +6,7 @@
 # LICENSE file in the root directory of this source tree.
 require_relative 'dispatch_logging'
 require_relative '../definition/memory_engine'
+require_relative '../delayed_job/memory_engine'
 
 module Kaal
   module Backend
@@ -48,6 +49,10 @@ module Kaal
       # @return [Kaal::Definition::MemoryEngine] memory engine instance
       def definition_registry
         @definition_registry ||= Kaal::Definition::MemoryEngine.new
+      end
+
+      def delayed_store
+        @delayed_store ||= Kaal::DelayedJob::MemoryEngine.new
       end
 
       ##

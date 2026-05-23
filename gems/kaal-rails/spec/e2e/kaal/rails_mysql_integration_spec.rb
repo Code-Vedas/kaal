@@ -17,7 +17,7 @@ RSpec.describe Kaal::Rails, integration: :mysql do
       KaalRailsDummyAppSupport.reset_database!(mysql_env.fetch('DATABASE_URL'))
       KaalRailsDummyAppSupport.run!(app_root, mysql_env, 'bin/rake', 'kaal:install:migrations')
       expect(KaalRailsDummyAppSupport.migration_slugs(app_root)).to eq(
-        %w[create_kaal_definitions.rb create_kaal_dispatches.rb]
+        %w[create_kaal_definitions.rb create_kaal_delayed_jobs.rb create_kaal_dispatches.rb]
       )
 
       KaalRailsDummyAppSupport.run!(app_root, mysql_env, 'bin/rails', 'db:migrate')
