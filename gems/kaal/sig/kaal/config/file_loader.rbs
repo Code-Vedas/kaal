@@ -7,7 +7,7 @@ module Kaal
 
       @env: Kaal::rbs_any
 
-      ENV_KEY_MAP: { "KAAL_BACKEND" => :backend, "KAAL_NAMESPACE" => :namespace, "KAAL_TICK_INTERVAL" => :tick_interval, "KAAL_WINDOW_LOOKBACK" => :window_lookback, "KAAL_WINDOW_LOOKAHEAD" => :window_lookahead, "KAAL_LEASE_TTL" => :lease_ttl, "KAAL_SCHEDULER_CONFIG_PATH" => :scheduler_config_path, "KAAL_ENABLE_LOG_DISPATCH_REGISTRY" => :enable_log_dispatch_registry, "KAAL_ENABLE_DISPATCH_RECOVERY" => :enable_dispatch_recovery, "KAAL_RECOVERY_WINDOW" => :recovery_window, "KAAL_RECOVERY_STARTUP_JITTER" => :recovery_startup_jitter, "KAAL_TIME_ZONE" => :time_zone, "KAAL_SCHEDULER_CONFLICT_POLICY" => :scheduler_conflict_policy, "KAAL_SCHEDULER_MISSING_FILE_POLICY" => :scheduler_missing_file_policy, "KAAL_DELAYED_JOB_ALLOWED_CLASS_PREFIXES" => :delayed_job_allowed_class_prefixes }
+      ENV_KEY_MAP: ::Hash[::String, ::Symbol]
 
       def initialize: (configuration: Kaal::rbs_any, runtime_context: Kaal::rbs_any, ?env: Kaal::rbs_any) -> void
 

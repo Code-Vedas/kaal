@@ -41,25 +41,25 @@ module ActiveRecord
   end
 
   class Base
-    def self.connection_db_config: () -> Kaal::rbs_any
+    def self.connection_db_config: () -> ::Kaal::rbs_any
   end
 end
 
 module Rails
-  def self.root: () -> Kaal::rbs_any
+  def self.root: () -> ::Kaal::rbs_any
   def self.env: () -> String
 
   module Generators
     class Base
-      def self.argument: (*Kaal::rbs_any args, **Kaal::rbs_any kwargs) -> void
-      def self.class_option: (*Kaal::rbs_any args, **Kaal::rbs_any kwargs) -> void
-      def self.desc: (*Kaal::rbs_any args, **Kaal::rbs_any kwargs) -> void
-      def self.namespace: (*Kaal::rbs_any args, **Kaal::rbs_any kwargs) -> void
+      def self.argument: (*::Kaal::rbs_any args, **::Kaal::rbs_any kwargs) -> void
+      def self.class_option: (*::Kaal::rbs_any args, **::Kaal::rbs_any kwargs) -> void
+      def self.desc: (*::Kaal::rbs_any args, **::Kaal::rbs_any kwargs) -> void
+      def self.namespace: (*::Kaal::rbs_any args, **::Kaal::rbs_any kwargs) -> void
     end
   end
 
   class Railtie
-    def self.initializer: (*Kaal::rbs_any args, **Kaal::rbs_any kwargs) { () -> Kaal::rbs_any } -> void
-    def self.rake_tasks: () { () -> Kaal::rbs_any } -> void
+    def self.initializer: (*::Kaal::rbs_any args, **::Kaal::rbs_any kwargs) { () -> ::Kaal::rbs_any } -> void
+    def self.rake_tasks: () { () -> ::Kaal::rbs_any } -> void
   end
 end

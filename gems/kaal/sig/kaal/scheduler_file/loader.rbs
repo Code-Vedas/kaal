@@ -28,7 +28,7 @@ module Kaal
 
     PLACEHOLDER_PATTERN: ::Regexp
 
-    ALLOWED_PLACEHOLDERS: { "fire_time.iso8601" => Kaal::rbs_any, "fire_time.unix" => Kaal::rbs_any, "idempotency_key" => Kaal::rbs_any, "key" => Kaal::rbs_any }
+    ALLOWED_PLACEHOLDERS: ::Hash[::String, Kaal::rbs_any]
 
     def initialize: (configuration: Kaal::rbs_any, definition_registry: Kaal::rbs_any, registry: Kaal::rbs_any, logger: Kaal::rbs_any, ?runtime_context: Kaal::rbs_any) -> void
 

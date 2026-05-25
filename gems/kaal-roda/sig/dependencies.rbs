@@ -49,6 +49,6 @@ end
 
 class Roda
   module RodaPlugins
-    def self.register_plugin: (*Kaal::rbs_any args, **Kaal::rbs_any kwargs) -> void
+    def self.register_plugin: (*::Kaal::rbs_any args, **::Kaal::rbs_any kwargs) -> void
   end
 end

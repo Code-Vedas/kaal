@@ -2,7 +2,7 @@ module Kaal
   module CronHumanizer
     I18N_LOAD_MUTEX: Kaal::rbs_any
 
-    MACRO_PHRASES: { "@yearly" => "phrases.yearly", "@monthly" => "phrases.monthly", "@weekly" => "phrases.weekly", "@daily" => "phrases.daily", "@hourly" => "phrases.hourly" }
+    MACRO_PHRASES: ::Hash[::String, ::String]
 
     def self.to_human: (Kaal::rbs_any expression, ?locale: Kaal::rbs_any?) -> Kaal::rbs_any
 

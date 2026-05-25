@@ -1,11 +1,11 @@
 module Kaal
   module Generators
     class InstallGenerator < ::Rails::Generators::Base
-      def install_kaal: () -> Kaal::rbs_any
+      def install_kaal: () -> ::Kaal::rbs_any
 
       private
 
-      def selected_backend: () -> Kaal::rbs_any
+      def selected_backend: () -> ::Kaal::rbs_any
     end
   end
 end
