@@ -6,38 +6,38 @@ module Kaal
 
     FIELD_SPECS: ::Array[{ name: "minute", min: 0, max: 59, names: nil } | { name: "hour", min: 0, max: 23, names: nil } | { name: "day-of-month", min: 1, max: 31, names: nil } | { name: "month", min: 1, max: 12, names: { "jan" => 1, "feb" => 2, "mar" => 3, "apr" => 4, "may" => 5, "jun" => 6, "jul" => 7, "aug" => 8, "sep" => 9, "oct" => 10, "nov" => 11, "dec" => 12 } } | { name: "day-of-week", min: 0, max: 7, names: { "sun" => 0, "mon" => 1, "tue" => 2, "wed" => 3, "thu" => 4, "fri" => 5, "sat" => 6 } }]
 
-    def self?.normalize_expression: (Kaal::rbs_any expression) -> Kaal::rbs_any
+    def self.normalize_expression: (Kaal::rbs_any expression) -> Kaal::rbs_any
 
-    def self?.safe_normalize_expression: (Kaal::rbs_any expression) -> Kaal::rbs_any
+    def self.safe_normalize_expression: (Kaal::rbs_any expression) -> Kaal::rbs_any
 
-    def self?.unsupported_macro_error_message: (Kaal::rbs_any expression) -> ::String
+    def self.unsupported_macro_error_message: (Kaal::rbs_any expression) -> ::String
 
-    def self?.invalid_expression_error_message: (Kaal::rbs_any expression) -> ::String
+    def self.invalid_expression_error_message: (Kaal::rbs_any expression) -> ::String
 
-    def self?.valid?: (Kaal::rbs_any expression) -> Kaal::rbs_any
+    def self.valid?: (Kaal::rbs_any expression) -> Kaal::rbs_any
 
-    def self?.simplify: (Kaal::rbs_any expression) -> Kaal::rbs_any
+    def self.simplify: (Kaal::rbs_any expression) -> Kaal::rbs_any
 
-    def self?.lint: (Kaal::rbs_any expression) -> (::Array[Kaal::rbs_any] | Kaal::rbs_any)
+    def self.lint: (Kaal::rbs_any expression) -> (::Array[Kaal::rbs_any] | Kaal::rbs_any)
 
-    def self?.lint_field: (Kaal::rbs_any field, Kaal::rbs_any spec) -> Kaal::rbs_any
+    def self.lint_field: (Kaal::rbs_any field, Kaal::rbs_any spec) -> Kaal::rbs_any
 
-    def self?.lint_segment: (Kaal::rbs_any segment, Kaal::rbs_any spec) -> (::Array[Kaal::rbs_any] | Kaal::rbs_any | ::Array[::String])
+    def self.lint_segment: (Kaal::rbs_any segment, Kaal::rbs_any spec) -> (::Array[Kaal::rbs_any] | Kaal::rbs_any | ::Array[::String])
 
-    def self?.lint_step_only: (Kaal::rbs_any step, Kaal::rbs_any spec) -> (::Array[Kaal::rbs_any] | ::Array[::String])
+    def self.lint_step_only: (Kaal::rbs_any step, Kaal::rbs_any spec) -> (::Array[Kaal::rbs_any] | ::Array[::String])
 
-    def self?.lint_range_segment: (Kaal::rbs_any segment, Kaal::rbs_any start_value, Kaal::rbs_any end_value, Kaal::rbs_any step, Kaal::rbs_any spec) -> (::Array[::String] | ::Array[Kaal::rbs_any])
+    def self.lint_range_segment: (Kaal::rbs_any segment, Kaal::rbs_any start_value, Kaal::rbs_any end_value, Kaal::rbs_any step, Kaal::rbs_any spec) -> (::Array[::String] | ::Array[Kaal::rbs_any])
 
-    def self?.lint_base_step_segment: (Kaal::rbs_any segment, Kaal::rbs_any base, Kaal::rbs_any step, Kaal::rbs_any spec) -> (::Array[::String] | ::Array[Kaal::rbs_any])
+    def self.lint_base_step_segment: (Kaal::rbs_any segment, Kaal::rbs_any base, Kaal::rbs_any step, Kaal::rbs_any spec) -> (::Array[::String] | ::Array[Kaal::rbs_any])
 
-    def self?.parse_value: (Kaal::rbs_any token, Kaal::rbs_any spec) -> (Kaal::rbs_any | nil)
+    def self.parse_value: (Kaal::rbs_any token, Kaal::rbs_any spec) -> (Kaal::rbs_any | nil)
 
-    def self?.macro?: (Kaal::rbs_any expression) -> Kaal::rbs_any
+    def self.macro?: (Kaal::rbs_any expression) -> Kaal::rbs_any
 
-    def self?.five_fields?: (Kaal::rbs_any expression) -> Kaal::rbs_any
+    def self.five_fields?: (Kaal::rbs_any expression) -> Kaal::rbs_any
 
-    def self?.canonical_macro_for: (Kaal::rbs_any macro) -> Kaal::rbs_any
+    def self.canonical_macro_for: (Kaal::rbs_any macro) -> Kaal::rbs_any
 
-    def self?.field_count_message: (Kaal::rbs_any expression) -> ::String
+    def self.field_count_message: (Kaal::rbs_any expression) -> ::String
   end
 end

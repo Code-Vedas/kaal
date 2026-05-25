@@ -68,7 +68,7 @@ module Kaal
 
     def acquire_lock: (Kaal::rbs_any lock_key) -> Kaal::rbs_any
 
-    def each_enabled_entry: () { (?) -> Kaal::rbs_any } -> Kaal::rbs_any
+    def each_enabled_entry: () { (Kaal::rbs_any) -> Kaal::rbs_any } -> Kaal::rbs_any
 
     def dispatch_work: (Kaal::rbs_any entry, Kaal::rbs_any fire_time) -> Kaal::rbs_any
 

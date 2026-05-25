@@ -28,7 +28,7 @@ module Kaal
 
     def clear: () -> Kaal::rbs_any
 
-    def each: () ?{ (?) -> Kaal::rbs_any } -> Kaal::rbs_any
+    def each: () ?{ (Kaal::rbs_any) -> void } -> Kaal::rbs_any
 
     def to_a: () -> Kaal::rbs_any
 

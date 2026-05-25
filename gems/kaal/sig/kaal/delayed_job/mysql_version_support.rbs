@@ -3,13 +3,13 @@ module Kaal
     module MySQLVersionSupport
       MINIMUM_SKIP_LOCKED_VERSION: 80000
 
-      def self?.skip_locked_supported?: (Kaal::rbs_any version_string) -> Kaal::rbs_any
+      def self.skip_locked_supported?: (Kaal::rbs_any version_string) -> Kaal::rbs_any
 
-      def self?.version_number: (Kaal::rbs_any version_string) -> (0 | Kaal::rbs_any)
+      def self.version_number: (Kaal::rbs_any version_string) -> (0 | Kaal::rbs_any)
 
-      def self?.version_components: (Kaal::rbs_any version_string) -> ::Array[Kaal::rbs_any]
+      def self.version_components: (Kaal::rbs_any version_string) -> ::Array[Kaal::rbs_any]
 
-      def self?.integer_prefix: (Kaal::rbs_any value) -> (nil | Kaal::rbs_any)
+      def self.integer_prefix: (Kaal::rbs_any value) -> (nil | Kaal::rbs_any)
     end
   end
 end

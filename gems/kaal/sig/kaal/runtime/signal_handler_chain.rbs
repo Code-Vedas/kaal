@@ -10,7 +10,7 @@ module Kaal
 
     def initialize: (signal: Kaal::rbs_any, previous_handler: Kaal::rbs_any, logger: Kaal::rbs_any) -> void
 
-    def call: (*Kaal::rbs_any, **Kaal::rbs_any) ?{ (?) -> Kaal::rbs_any } -> (nil | Kaal::rbs_any)
+    def call: (*Kaal::rbs_any, **Kaal::rbs_any) ?{ (Kaal::rbs_any) -> Kaal::rbs_any } -> (nil | Kaal::rbs_any)
 
     private
 

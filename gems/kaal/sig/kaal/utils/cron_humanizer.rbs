@@ -4,36 +4,36 @@ module Kaal
 
     MACRO_PHRASES: { "@yearly" => "phrases.yearly", "@monthly" => "phrases.monthly", "@weekly" => "phrases.weekly", "@daily" => "phrases.daily", "@hourly" => "phrases.hourly" }
 
-    def self?.to_human: (Kaal::rbs_any expression, ?locale: Kaal::rbs_any?) -> Kaal::rbs_any
+    def self.to_human: (Kaal::rbs_any expression, ?locale: Kaal::rbs_any?) -> Kaal::rbs_any
 
-    def self?.humanize_expression: (Kaal::rbs_any normalized) -> Kaal::rbs_any
+    def self.humanize_expression: (Kaal::rbs_any normalized) -> Kaal::rbs_any
 
-    def self?.humanize_macro: (Kaal::rbs_any expression) -> Kaal::rbs_any
+    def self.humanize_macro: (Kaal::rbs_any expression) -> Kaal::rbs_any
 
-    def self?.humanize_cron: (Kaal::rbs_any cron) -> Kaal::rbs_any
+    def self.humanize_cron: (Kaal::rbs_any cron) -> Kaal::rbs_any
 
-    def self?.every_minute_interval_phrase: (Kaal::rbs_any cron) -> (nil | Kaal::rbs_any)
+    def self.every_minute_interval_phrase: (Kaal::rbs_any cron) -> (nil | Kaal::rbs_any)
 
-    def self?.derive_interval: (Kaal::rbs_any minutes) -> (nil | Kaal::rbs_any)
+    def self.derive_interval: (Kaal::rbs_any minutes) -> (nil | Kaal::rbs_any)
 
-    def self?.at_time_weekday_phrase: (Kaal::rbs_any cron) -> (nil | ::String)
+    def self.at_time_weekday_phrase: (Kaal::rbs_any cron) -> (nil | ::String)
 
-    def self?.at_time_daily_phrase: (Kaal::rbs_any cron) -> (nil | ::String)
+    def self.at_time_daily_phrase: (Kaal::rbs_any cron) -> (nil | ::String)
 
-    def self?.single_time?: (Kaal::rbs_any cron) -> Kaal::rbs_any
+    def self.single_time?: (Kaal::rbs_any cron) -> Kaal::rbs_any
 
-    def self?.extract_weekday: (Kaal::rbs_any weekdays) -> (nil | Kaal::rbs_any)
+    def self.extract_weekday: (Kaal::rbs_any weekdays) -> (nil | Kaal::rbs_any)
 
-    def self?.weekday_name: (Kaal::rbs_any day) -> Kaal::rbs_any
+    def self.weekday_name: (Kaal::rbs_any day) -> Kaal::rbs_any
 
-    def self?.format_time: (Kaal::rbs_any hour, Kaal::rbs_any minute) -> Kaal::rbs_any
+    def self.format_time: (Kaal::rbs_any hour, Kaal::rbs_any minute) -> Kaal::rbs_any
 
-    def self?.interval_unit: (Kaal::rbs_any count, singular: Kaal::rbs_any, plural: Kaal::rbs_any) -> Kaal::rbs_any
+    def self.interval_unit: (Kaal::rbs_any count, singular: Kaal::rbs_any, plural: Kaal::rbs_any) -> Kaal::rbs_any
 
-    def self?.macro?: (Kaal::rbs_any expression) -> Kaal::rbs_any
+    def self.macro?: (Kaal::rbs_any expression) -> Kaal::rbs_any
 
-    def self?.translate_phrase: (Kaal::rbs_any key, **Kaal::rbs_any) -> Kaal::rbs_any
+    def self.translate_phrase: (Kaal::rbs_any key, **Kaal::rbs_any) -> Kaal::rbs_any
 
-    def self?.ensure_i18n_loaded!: () -> (nil | Kaal::rbs_any)
+    def self.ensure_i18n_loaded!: () -> (nil | Kaal::rbs_any)
   end
 end

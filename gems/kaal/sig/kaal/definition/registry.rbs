@@ -1,9 +1,9 @@
 module Kaal
   module Definition
     module AttributeHelpers
-      def self?.definition_attributes: (Kaal::rbs_any definition) -> { key: Kaal::rbs_any, cron: Kaal::rbs_any, source: Kaal::rbs_any, metadata: Kaal::rbs_any }
+      def self.definition_attributes: (Kaal::rbs_any definition) -> { key: Kaal::rbs_any, cron: Kaal::rbs_any, source: Kaal::rbs_any, metadata: Kaal::rbs_any }
 
-      def self?.persisted_definition_attributes: (Kaal::rbs_any definition) -> (::Hash[Kaal::rbs_any, Kaal::rbs_any] | { enabled: Kaal::rbs_any, metadata: Kaal::rbs_any })
+      def self.persisted_definition_attributes: (Kaal::rbs_any definition) -> (::Hash[Kaal::rbs_any, Kaal::rbs_any] | { enabled: Kaal::rbs_any, metadata: Kaal::rbs_any })
     end
 
     class Registry

@@ -1,27 +1,27 @@
 module Kaal
   module Support
     module HashTools
-      def self?.deep_dup: (Kaal::rbs_any value) -> Kaal::rbs_any
+      def self.deep_dup: (Kaal::rbs_any value) -> Kaal::rbs_any
 
-      def self?.stringify_keys: (Kaal::rbs_any value) -> Kaal::rbs_any
+      def self.stringify_keys: (Kaal::rbs_any value) -> Kaal::rbs_any
 
-      def self?.symbolize_keys: (Kaal::rbs_any value) -> Kaal::rbs_any
+      def self.symbolize_keys: (Kaal::rbs_any value) -> Kaal::rbs_any
 
-      def self?.deep_merge: (Kaal::rbs_any left, Kaal::rbs_any right) -> Kaal::rbs_any
+      def self.deep_merge: (Kaal::rbs_any left, Kaal::rbs_any right) -> Kaal::rbs_any
 
-      def self?.constantize: (Kaal::rbs_any name) -> Kaal::rbs_any
+      def self.constantize: (Kaal::rbs_any name) -> Kaal::rbs_any
 
-      def self?.duplicable?: (Kaal::rbs_any value) -> Kaal::rbs_any
+      def self.duplicable?: (Kaal::rbs_any value) -> Kaal::rbs_any
 
-      def self?.transform_keys: (Kaal::rbs_any value) { (?) -> Kaal::rbs_any } -> Kaal::rbs_any
+      def self.transform_keys: (Kaal::rbs_any value) { (Kaal::rbs_any) -> Kaal::rbs_any } -> Kaal::rbs_any
 
-      def self?.duplicate_child: (Kaal::rbs_any child) -> Kaal::rbs_any
+      def self.duplicate_child: (Kaal::rbs_any child) -> Kaal::rbs_any
 
-      def self?.transform_child_keys: (Kaal::rbs_any child) { (?) -> Kaal::rbs_any } -> Kaal::rbs_any
+      def self.transform_child_keys: (Kaal::rbs_any child) { (Kaal::rbs_any) -> Kaal::rbs_any } -> Kaal::rbs_any
 
-      def self?.transform_hash_keys: (Kaal::rbs_any value) { (Kaal::rbs_any) -> Kaal::rbs_any } -> Kaal::rbs_any
+      def self.transform_hash_keys: (Kaal::rbs_any value) { (Kaal::rbs_any) -> Kaal::rbs_any } -> Kaal::rbs_any
 
-      def self?.transform_array_keys: (Kaal::rbs_any value) { (?) -> Kaal::rbs_any } -> Kaal::rbs_any
+      def self.transform_array_keys: (Kaal::rbs_any value) { (Kaal::rbs_any) -> Kaal::rbs_any } -> Kaal::rbs_any
     end
   end
 end
