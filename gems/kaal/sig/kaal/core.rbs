@@ -1,0 +1,9 @@
+module Kaal
+  module Core
+    Coordinator: Kaal::rbs_any
+
+    OccurrenceFinder: Kaal::rbs_any
+
+    EnabledEntryEnumerator: Kaal::rbs_any
+  end
+end

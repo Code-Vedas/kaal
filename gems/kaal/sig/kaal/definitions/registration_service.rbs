@@ -1,0 +1,27 @@
+module Kaal
+  module Definitions
+    class RegistrationService
+      @configuration: Kaal::rbs_any
+
+      @definition_registry: Kaal::rbs_any
+
+      @registry: Kaal::rbs_any
+
+      include RegisterConflictSupport
+
+      attr_reader configuration: Kaal::rbs_any
+
+      attr_reader definition_registry: Kaal::rbs_any
+
+      attr_reader registry: Kaal::rbs_any
+
+      def initialize: (configuration: Kaal::rbs_any, definition_registry: Kaal::rbs_any, registry: Kaal::rbs_any) -> void
+
+      def call: (key: Kaal::rbs_any, cron: Kaal::rbs_any, enqueue: Kaal::rbs_any) -> Kaal::rbs_any
+
+      private
+
+      def rollback_registered_definition: (Kaal::rbs_any key, Kaal::rbs_any existing_definition) -> (Kaal::rbs_any | Kaal::rbs_any | nil)
+    end
+  end
+end

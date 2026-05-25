@@ -1,0 +1,23 @@
+module Kaal
+  module Backend
+    module DispatchLogging
+      @dispatch_attempt_logger: Kaal::rbs_any
+
+      def dispatch_registry: () -> nil
+
+      def log_dispatch_attempt: (Kaal::rbs_any key) -> Kaal::rbs_any
+
+      def parse_lock_key: (Kaal::rbs_any key) -> Kaal::rbs_any
+
+      def self.parse_lock_key: (Kaal::rbs_any key) -> ::Array[Kaal::rbs_any]
+
+      def self.validate_lock_key!: (Kaal::rbs_any valid, Kaal::rbs_any message) -> (Kaal::rbs_any | nil)
+
+      def self.invalid_dispatch_lock_key!: (Kaal::rbs_any message) -> Kaal::rbs_any
+
+      private
+
+      def dispatch_attempt_logger: () -> Kaal::rbs_any
+    end
+  end
+end

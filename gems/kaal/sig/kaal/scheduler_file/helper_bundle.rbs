@@ -1,0 +1,15 @@
+module Kaal
+  class SchedulerFileLoader
+    class HelperBundle
+      @loader: Kaal::rbs_any
+
+      def initialize: (loader: Kaal::rbs_any) -> void
+
+      def stringify_keys: (Kaal::rbs_any payload) -> Kaal::rbs_any
+
+      def resolve_placeholders: (Kaal::rbs_any value, Kaal::rbs_any context) -> Kaal::rbs_any
+
+      def validate_placeholders: (Kaal::rbs_any value, key: Kaal::rbs_any) -> Kaal::rbs_any
+    end
+  end
+end

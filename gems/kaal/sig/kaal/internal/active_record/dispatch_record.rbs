@@ -1,0 +1,8 @@
+module Kaal
+  module Internal
+    module ActiveRecord
+      class DispatchRecord < BaseRecord
+      end
+    end
+  end
+end

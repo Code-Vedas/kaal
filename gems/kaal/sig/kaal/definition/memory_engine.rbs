@@ -1,0 +1,23 @@
+module Kaal
+  module Definition
+    class MemoryEngine < Registry
+      @definitions: Kaal::rbs_any
+
+      @mutex: Kaal::rbs_any
+
+      include Kaal::Support::HashTools
+
+      def initialize: () -> void
+
+      def upsert_definition: (key: Kaal::rbs_any, cron: Kaal::rbs_any, ?enabled: bool, ?source: ::String, ?metadata: ::Hash[Kaal::rbs_any, Kaal::rbs_any]) -> Kaal::rbs_any
+
+      def remove_definition: (Kaal::rbs_any key) -> Kaal::rbs_any
+
+      def find_definition: (Kaal::rbs_any key) -> Kaal::rbs_any
+
+      def all_definitions: () -> Kaal::rbs_any
+
+      def clear: () -> Kaal::rbs_any
+    end
+  end
+end

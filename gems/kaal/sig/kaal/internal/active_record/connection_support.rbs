@@ -1,0 +1,25 @@
+module Kaal
+  module Internal
+    module ActiveRecord
+      module ConnectionSupport
+        CONFIGURE_MUTEX: Kaal::rbs_any
+
+        def self.configure!: (?Kaal::rbs_any? connection) -> Kaal::rbs_any
+
+        def self.normalize_connection_config: (Kaal::rbs_any connection) -> Kaal::rbs_any
+
+        def self.current_connection_config: () -> Kaal::rbs_any
+
+        def self.extract_connection_config: (Kaal::rbs_any connection) -> Kaal::rbs_any
+
+        def self.normalize_connection_value: (Kaal::rbs_any key, Kaal::rbs_any value) -> Kaal::rbs_any
+
+        def self.integer_like?: (Kaal::rbs_any value) -> Kaal::rbs_any
+
+        def self.configs_match?: (Kaal::rbs_any current_config, Kaal::rbs_any target_config) -> (true | Kaal::rbs_any)
+
+        def self.connection_active?: () -> Kaal::rbs_any
+      end
+    end
+  end
+end

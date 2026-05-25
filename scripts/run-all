@@ -19,5 +19,6 @@ run_phase() {
 
 run_phase "rubocop" "run-rubocop-all"
 run_phase "reek" "run-reek-all"
+run_phase "rbs" "run-rbs-all"
 run_phase "rspec-unit" "run-rspec-unit-all"
 run_phase "rspec-e2e" "run-rspec-e2e-all"

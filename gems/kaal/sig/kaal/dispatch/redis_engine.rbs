@@ -1,0 +1,25 @@
+module Kaal
+  module Dispatch
+    class RedisEngine < Registry
+      @redis: Kaal::rbs_any
+
+      @namespace: Kaal::rbs_any
+
+      @ttl: Kaal::rbs_any
+
+      DEFAULT_TTL: Kaal::rbs_any
+
+      def initialize: (Kaal::rbs_any redis, ?namespace: ::String, ?ttl: Kaal::rbs_any) -> void
+
+      def log_dispatch: (Kaal::rbs_any key, Kaal::rbs_any fire_time, Kaal::rbs_any node_id, ?::String status) -> Kaal::rbs_any
+
+      def find_dispatch: (Kaal::rbs_any key, Kaal::rbs_any fire_time) -> (nil | Kaal::rbs_any)
+
+      private
+
+      def build_redis_key: (Kaal::rbs_any key, Kaal::rbs_any fire_time) -> ::String
+
+      def convert_timestamps: (Kaal::rbs_any record) -> Kaal::rbs_any
+    end
+  end
+end

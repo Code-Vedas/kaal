@@ -1,0 +1,17 @@
+module Kaal
+  module Definitions
+    class RegistryAccessor
+      @configuration: Kaal::rbs_any
+
+      @fallback_registry_provider: Kaal::rbs_any
+
+      def initialize: (configuration: Kaal::rbs_any, fallback_registry_provider: Kaal::rbs_any) -> void
+
+      def call: () -> Kaal::rbs_any
+
+      private
+
+      def fallback_registry: () -> Kaal::rbs_any
+    end
+  end
+end

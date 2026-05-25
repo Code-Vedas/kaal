@@ -1,0 +1,23 @@
+module Kaal
+  class RuntimeContext
+    @root_path: Kaal::rbs_any
+
+    @environment_name: Kaal::rbs_any
+
+    DEFAULT_ENVIRONMENT_NAME: "development"
+
+    ENVIRONMENT_KEYS: ::Array["KAAL_ENV" | "RAILS_ENV" | "APP_ENV" | "RACK_ENV"]
+
+    attr_reader environment_name: Kaal::rbs_any
+
+    attr_reader root_path: Kaal::rbs_any
+
+    def self.default: (?env: Kaal::rbs_any, ?root_path: Kaal::rbs_any) -> Kaal::rbs_any
+
+    def self.environment_name_from: (Kaal::rbs_any env) -> Kaal::rbs_any
+
+    def initialize: (root_path: Kaal::rbs_any, environment_name: Kaal::rbs_any) -> void
+
+    def resolve_path: (Kaal::rbs_any path) -> Kaal::rbs_any
+  end
+end

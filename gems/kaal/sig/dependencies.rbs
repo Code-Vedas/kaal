@@ -1,0 +1,49 @@
+class Thor
+  class Error < StandardError
+  end
+
+  class Base
+    module Shell
+      def self.new: () -> Kaal::_RBSOpaque
+    end
+
+    def self.shell: () -> singleton(Shell)
+  end
+
+  def self.package_name: (String name) -> void
+  def self.class_option: (*Kaal::rbs_any args, **Kaal::rbs_any kwargs) -> void
+  def self.desc: (String usage, String description) -> void
+  def self.option: (*Kaal::rbs_any args, **Kaal::rbs_any kwargs) -> void
+  def self.no_commands: () { () -> Kaal::rbs_any } -> void
+end
+
+class Redis
+  def initialize: (*Kaal::rbs_any args, **Kaal::rbs_any kwargs) -> void
+end
+
+module Sequel
+  class Database
+    def connection: () -> Kaal::_RBSOpaque
+    def database_type: () -> String
+    def adapter_scheme: () -> String
+  end
+
+  def self.connect: (*Kaal::rbs_any args, **Kaal::rbs_any kwargs) -> Database
+end
+
+module ActiveSupport
+  module Inflector
+    def self.underscore: (String value) -> String
+  end
+end
+
+module ActiveRecord
+  class ConnectionNotEstablished < StandardError
+  end
+
+  class RecordNotUnique < StandardError
+  end
+
+  class Base
+  end
+end

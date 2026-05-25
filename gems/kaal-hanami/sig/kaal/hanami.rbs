@@ -1,0 +1,43 @@
+module Kaal
+  module Hanami
+    self.@shutdown_hook_mutex: ::Kaal::rbs_any
+
+    def self.configure!: (::Kaal::rbs_any app, **::Kaal::rbs_any) -> ::Kaal::rbs_any
+
+    def self.register!: (::Kaal::rbs_any app, ?backend: ::Kaal::rbs_any?, ?database: ::Kaal::rbs_any?, ?redis: ::Kaal::rbs_any?, ?scheduler_config_path: ::String, ?namespace: ::Kaal::rbs_any?, ?start_scheduler: bool, ?adapter: ::Kaal::rbs_any?, ?root: ::Kaal::rbs_any?, ?environment: ::Kaal::rbs_any?) -> ::Kaal::rbs_any
+
+    def self.configure_backend!: (?backend: ::Kaal::rbs_any?, ?database: ::Kaal::rbs_any?, ?redis: ::Kaal::rbs_any?, ?adapter: ::Kaal::rbs_any?, ?configuration: ::Kaal::rbs_any) -> ::Kaal::rbs_any
+
+    def self.load_config_file!: (root: ::Kaal::rbs_any, environment: ::Kaal::rbs_any, ?configuration: ::Kaal::rbs_any) -> ::Kaal::rbs_any
+
+    def self.detect_backend_name: (::Kaal::rbs_any database, ?adapter: ::Kaal::rbs_any?) -> ::Kaal::rbs_any
+
+    def self.load_scheduler_file!: (root: ::Kaal::rbs_any, ?environment: ::Kaal::rbs_any?) -> ::Kaal::rbs_any
+
+    def self.start!: () -> ::Kaal::rbs_any
+
+    def self.stop!: (?timeout: ::Integer) -> ::Kaal::rbs_any
+
+    private
+
+    def self.build_redis_backend: (::Kaal::rbs_any redis, ::Kaal::rbs_any configuration) -> ::Kaal::rbs_any
+
+    def self.build_backend: (::Kaal::rbs_any backend_name, ::Kaal::rbs_any database) -> ::Kaal::rbs_any
+
+    def self.apply_runtime_overrides: (configuration: ::Kaal::rbs_any, scheduler_config_path: ::Kaal::rbs_any, namespace: ::Kaal::rbs_any) -> ::Kaal::rbs_any
+
+    def self.database_adapter_name: (::Kaal::rbs_any database) -> (nil | ::Kaal::rbs_any)
+
+    def self.normalize_backend_name: (::Kaal::rbs_any adapter_name) -> (nil | "sqlite" | "postgres" | "mysql")
+
+    def self.root_path_for: (::Kaal::rbs_any app, ?root: ::Kaal::rbs_any?) -> ::Kaal::rbs_any
+
+    def self.environment_name_for: (::Kaal::rbs_any app, ?environment: ::Kaal::rbs_any?) -> ::Kaal::rbs_any
+
+    def self.runtime_environment_name: (::Kaal::rbs_any environment) -> ::Kaal::rbs_any
+
+    def self.start_managed_scheduler!: () -> (nil | ::Kaal::rbs_any)
+
+    def self.install_shutdown_hook: () -> (nil | ::Kaal::rbs_any)
+  end
+end

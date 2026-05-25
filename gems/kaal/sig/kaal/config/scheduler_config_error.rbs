@@ -1,0 +1,4 @@
+module Kaal
+  class SchedulerConfigError < StandardError
+  end
+end

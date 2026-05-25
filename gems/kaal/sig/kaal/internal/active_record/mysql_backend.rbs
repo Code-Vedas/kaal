@@ -1,0 +1,45 @@
+module Kaal
+  module Internal
+    module ActiveRecord
+      class MySQLBackend < Kaal::Backend::Adapter
+        @dispatch_registry: Kaal::rbs_any
+
+        @definition_registry: Kaal::rbs_any
+
+        @namespace: Kaal::rbs_any
+
+        @use_skip_locked: Kaal::rbs_any
+
+        @delayed_store: Kaal::rbs_any
+
+        include Kaal::Backend::DispatchLogging
+
+        MAX_LOCK_NAME_LENGTH: 64
+
+        UNSET_SKIP_LOCKED_SUPPORT: Kaal::rbs_any
+
+        def initialize: (?Kaal::rbs_any? connection, ?dispatch_registry: Kaal::rbs_any?, ?definition_registry: Kaal::rbs_any?, ?namespace: Kaal::rbs_any?, ?use_skip_locked: Kaal::rbs_any) -> void
+
+        def dispatch_registry: () -> Kaal::rbs_any
+
+        def definition_registry: () -> Kaal::rbs_any
+
+        def delayed_store: () -> Kaal::rbs_any
+
+        def acquire: (Kaal::rbs_any key, Kaal::rbs_any _ttl) -> Kaal::rbs_any
+
+        def release: (Kaal::rbs_any key) -> Kaal::rbs_any
+
+        def self.normalize_lock_name: (Kaal::rbs_any key) -> (Kaal::rbs_any | ::String)
+
+        private
+
+        def scalar: (Kaal::rbs_any sql, *Kaal::rbs_any binds) -> Kaal::rbs_any
+
+        def resolved_namespace: () -> Kaal::rbs_any
+
+        def supports_skip_locked?: () -> Kaal::rbs_any
+      end
+    end
+  end
+end

@@ -1,0 +1,9 @@
+module Kaal
+  class OccurrenceFinder
+    @configuration: Kaal::rbs_any
+
+    def initialize: (configuration: Kaal::rbs_any) -> void
+
+    def call: (cron: Kaal::rbs_any, start_time: Kaal::rbs_any, end_time: Kaal::rbs_any) -> Kaal::rbs_any
+  end
+end

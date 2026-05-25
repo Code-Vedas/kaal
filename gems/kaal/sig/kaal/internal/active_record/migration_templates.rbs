@@ -1,0 +1,17 @@
+module Kaal
+  module Internal
+    module ActiveRecord
+      module MigrationTemplates
+        def self.for_backend: (Kaal::rbs_any backend) -> Kaal::rbs_any
+
+        def self.dispatches_template: () -> "class CreateKaalDispatches < ActiveRecord::Migration[7.1]\n  def change\n    create_table :kaal_dispatches do |t|\n      t.string :key, null: false\n      t.datetime :fire_time, null: false\n      t.datetime :dispatched_at, null: false\n      t.string :node_id, null: false\n      t.string :status, null: false, default: 'dispatched', limit: 50\n    end\n\n    add_index :kaal_dispatches, [:key, :fire_time], unique: true\n    add_index :kaal_dispatches, :key\n    add_index :kaal_dispatches, :node_id\n    add_index :kaal_dispatches, :status\n    add_index :kaal_dispatches, :fire_time\n  end\nend\n"
+
+        def self.locks_template: () -> "class CreateKaalLocks < ActiveRecord::Migration[7.1]\n  def change\n    create_table :kaal_locks do |t|\n      t.string :key, null: false\n      t.datetime :acquired_at, null: false\n      t.datetime :expires_at, null: false\n    end\n\n    add_index :kaal_locks, :key, unique: true\n    add_index :kaal_locks, :expires_at\n  end\nend\n"
+
+        def self.definitions_template: (Kaal::rbs_any backend) -> ::String
+
+        def self.delayed_jobs_template: (Kaal::rbs_any backend) -> ::String
+      end
+    end
+  end
+end

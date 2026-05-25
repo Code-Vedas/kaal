@@ -1,0 +1,37 @@
+module Kaal
+  module DelayedJob
+    class DatabaseEngine < Registry
+      @database: Kaal::rbs_any
+
+      @use_skip_locked: Kaal::rbs_any
+
+      def initialize: (database: Kaal::rbs_any, ?use_skip_locked: bool) -> void
+
+      def enqueue: (job_id: Kaal::rbs_any, run_at: Kaal::rbs_any, job_class: Kaal::rbs_any, args: Kaal::rbs_any, ?queue: Kaal::rbs_any?, ?connection: Kaal::rbs_any?) -> Kaal::rbs_any
+
+      def pop_due: (now: Kaal::rbs_any, limit: Kaal::rbs_any) -> Kaal::rbs_any
+
+      def find_job: (Kaal::rbs_any job_id, ?connection: Kaal::rbs_any) -> Kaal::rbs_any
+
+      def all_jobs: () -> Kaal::rbs_any
+
+      def claim_strategy: () -> (:skip_locked | :delete_confirmation)
+
+      def self.normalize_row: (Kaal::rbs_any row) -> Kaal::rbs_any
+
+      private
+
+      def pop_due_with_skip_locked: (now: Kaal::rbs_any, limit: Kaal::rbs_any) -> Kaal::rbs_any
+
+      def pop_due_with_delete_confirmation: (now: Kaal::rbs_any, limit: Kaal::rbs_any) -> Kaal::rbs_any
+
+      def self.parse_args: (Kaal::rbs_any args_payload) -> Kaal::rbs_any
+
+      def dataset_for: (Kaal::rbs_any connection) -> Kaal::rbs_any
+
+      def dataset: () -> Kaal::rbs_any
+
+      def connection: () -> Kaal::rbs_any
+    end
+  end
+end

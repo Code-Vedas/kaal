@@ -1,0 +1,41 @@
+module Kaal
+  module Config
+    module BackendFactory
+      SUPPORTED_BACKENDS: ::Array["memory" | "redis" | "sqlite" | "postgres" | "mysql"]
+
+      def self.normalize_name: (Kaal::rbs_any name) -> (nil | Kaal::rbs_any)
+
+      def self.build: (Kaal::rbs_any name, backend_config: Kaal::rbs_any, namespace: Kaal::rbs_any, ?runtime_context: Kaal::rbs_any?) -> Kaal::rbs_any
+
+      def self.normalize_backend_config: (Kaal::rbs_any backend_config) -> Kaal::rbs_any
+
+      def self.build_redis_backend: (Kaal::rbs_any config, Kaal::rbs_any namespace) -> Kaal::rbs_any
+
+      def self.build_sqlite_backend: (Kaal::rbs_any config, Kaal::rbs_any namespace, Kaal::rbs_any runtime_context) -> Kaal::rbs_any
+
+      def self.build_postgres_backend: (Kaal::rbs_any config, Kaal::rbs_any namespace) -> Kaal::rbs_any
+
+      def self.build_mysql_backend: (Kaal::rbs_any config, Kaal::rbs_any namespace) -> Kaal::rbs_any
+
+      def self.build_sqlite_connection: (Kaal::rbs_any connection, Kaal::rbs_any runtime_context) -> Kaal::rbs_any
+
+      def self.normalize_connection_hash: (Kaal::rbs_any connection, Kaal::rbs_any default_adapter, Kaal::rbs_any runtime_context) -> Kaal::rbs_any
+
+      def self.resolve_sqlite_database_path: (Kaal::rbs_any database, Kaal::rbs_any runtime_context) -> Kaal::rbs_any
+
+      def self.sqlite_uri?: (Kaal::rbs_any value) -> Kaal::rbs_any
+
+      def self.sequel_sqlite_database: (Kaal::rbs_any target, Kaal::rbs_any runtime_context) -> Kaal::rbs_any
+
+      def self.ensure_sqlite_directory!: (Kaal::rbs_any database_path) -> Kaal::rbs_any
+
+      def self.adapter_name_for_error: (Kaal::rbs_any adapter) -> ("postgres" | "mysql")
+
+      def self.string_value: (Kaal::rbs_any value) -> Kaal::rbs_any
+
+      def self.require_redis!: () -> Kaal::rbs_any
+
+      def self.require_sequel!: () -> Kaal::rbs_any
+    end
+  end
+end

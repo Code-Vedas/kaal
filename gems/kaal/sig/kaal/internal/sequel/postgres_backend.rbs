@@ -1,0 +1,43 @@
+module Kaal
+  module Internal
+    module Sequel
+      class PostgresBackend < Kaal::Backend::Adapter
+        @database: Kaal::rbs_any
+
+        @namespace: Kaal::rbs_any
+
+        @dispatch_registry: Kaal::rbs_any
+
+        @definition_registry: Kaal::rbs_any
+
+        @delayed_store: Kaal::rbs_any
+
+        include Kaal::Backend::DispatchLogging
+
+        SIGNED_64_MAX: 9223372036854775807
+
+        UNSIGNED_64_RANGE: 18446744073709551616
+
+        def initialize: (Kaal::rbs_any database, ?namespace: Kaal::rbs_any?) -> void
+
+        def dispatch_registry: () -> Kaal::rbs_any
+
+        def definition_registry: () -> Kaal::rbs_any
+
+        def delayed_store: () -> Kaal::rbs_any
+
+        def acquire: (Kaal::rbs_any key, Kaal::rbs_any _ttl) -> Kaal::rbs_any
+
+        def release: (Kaal::rbs_any key) -> Kaal::rbs_any
+
+        def self.calculate_lock_id: (Kaal::rbs_any key) -> Kaal::rbs_any
+
+        private
+
+        def scalar: (Kaal::rbs_any sql, *Kaal::rbs_any binds) -> Kaal::rbs_any
+
+        def resolved_namespace: () -> Kaal::rbs_any
+      end
+    end
+  end
+end

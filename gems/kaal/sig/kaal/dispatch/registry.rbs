@@ -1,0 +1,11 @@
+module Kaal
+  module Dispatch
+    class Registry
+      def log_dispatch: (Kaal::rbs_any _key, Kaal::rbs_any _fire_time, Kaal::rbs_any _node_id, ?::String _status) -> Kaal::rbs_any
+
+      def find_dispatch: (Kaal::rbs_any _key, Kaal::rbs_any _fire_time) -> Kaal::rbs_any
+
+      def dispatched?: (Kaal::rbs_any key, Kaal::rbs_any fire_time) -> (true | false)
+    end
+  end
+end

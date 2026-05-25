@@ -1,0 +1,43 @@
+module Kaal
+  module CronUtils
+    MACRO_MAP: ::Hash[::String, ::String]
+
+    CANONICAL_MACROS: ::Hash[::String, ::String]
+
+    FIELD_SPECS: ::Array[Kaal::rbs_any]
+
+    def self.normalize_expression: (Kaal::rbs_any expression) -> Kaal::rbs_any
+
+    def self.safe_normalize_expression: (Kaal::rbs_any expression) -> Kaal::rbs_any
+
+    def self.unsupported_macro_error_message: (Kaal::rbs_any expression) -> ::String
+
+    def self.invalid_expression_error_message: (Kaal::rbs_any expression) -> ::String
+
+    def self.valid?: (Kaal::rbs_any expression) -> Kaal::rbs_any
+
+    def self.simplify: (Kaal::rbs_any expression) -> Kaal::rbs_any
+
+    def self.lint: (Kaal::rbs_any expression) -> (::Array[Kaal::rbs_any] | Kaal::rbs_any)
+
+    def self.lint_field: (Kaal::rbs_any field, Kaal::rbs_any spec) -> Kaal::rbs_any
+
+    def self.lint_segment: (Kaal::rbs_any segment, Kaal::rbs_any spec) -> (::Array[Kaal::rbs_any] | Kaal::rbs_any | ::Array[::String])
+
+    def self.lint_step_only: (Kaal::rbs_any step, Kaal::rbs_any spec) -> (::Array[Kaal::rbs_any] | ::Array[::String])
+
+    def self.lint_range_segment: (Kaal::rbs_any segment, Kaal::rbs_any start_value, Kaal::rbs_any end_value, Kaal::rbs_any step, Kaal::rbs_any spec) -> (::Array[::String] | ::Array[Kaal::rbs_any])
+
+    def self.lint_base_step_segment: (Kaal::rbs_any segment, Kaal::rbs_any base, Kaal::rbs_any step, Kaal::rbs_any spec) -> (::Array[::String] | ::Array[Kaal::rbs_any])
+
+    def self.parse_value: (Kaal::rbs_any token, Kaal::rbs_any spec) -> (Kaal::rbs_any | nil)
+
+    def self.macro?: (Kaal::rbs_any expression) -> Kaal::rbs_any
+
+    def self.five_fields?: (Kaal::rbs_any expression) -> Kaal::rbs_any
+
+    def self.canonical_macro_for: (Kaal::rbs_any macro) -> Kaal::rbs_any
+
+    def self.field_count_message: (Kaal::rbs_any expression) -> ::String
+  end
+end

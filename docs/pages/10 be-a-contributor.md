@@ -40,6 +40,7 @@ Run these from the repo root:
 ```bash
 scripts/run-rubocop-all
 scripts/run-reek-all
+scripts/run-rbs-all
 scripts/run-rspec-unit-all
 scripts/run-rspec-e2e-all
 scripts/run-multi-node-cli-all
@@ -63,9 +64,10 @@ bundle install
 bin/rspec-unit
 bin/rubocop
 bin/reek
+rbs -I sig validate
 ```
 
-Framework and adapter packages expose similar `bin/rspec-unit`, `bin/rspec-e2e`, `bin/rubocop`, and `bin/reek` entrypoints.
+Framework and adapter packages expose similar `bin/rspec-unit`, `bin/rspec-e2e`, `bin/rubocop`, and `bin/reek` entrypoints, and each gem validates its signatures with `rbs -I sig validate`.
 
 ## What to contribute
 

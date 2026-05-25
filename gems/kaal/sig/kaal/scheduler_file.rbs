@@ -1,0 +1,9 @@
+module Kaal
+  module SchedulerFile
+    Loader: Kaal::rbs_any
+
+    HashTransform: Kaal::rbs_any
+
+    PlaceholderSupport: Kaal::rbs_any
+  end
+end

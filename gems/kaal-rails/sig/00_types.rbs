@@ -1,0 +1,12 @@
+module Kaal
+  interface _RBSOpaque
+  end
+
+  interface _RBSCallable
+    def call: (*rbs_any args, **rbs_any kwargs) -> rbs_any
+  end
+
+  type rbs_scalar = nil | bool | Integer | Float | Rational | String | Symbol | Time
+  type rbs_hash_key = String | Symbol | Integer
+  type rbs_any = rbs_scalar | _RBSOpaque | _RBSCallable | Array[rbs_any] | Hash[rbs_hash_key, rbs_any]
+end

@@ -1,0 +1,103 @@
+module Kaal
+  class Coordinator
+    @configuration: Kaal::rbs_any
+
+    @registry: Kaal::rbs_any
+
+    @thread: Kaal::rbs_any
+
+    @running: Kaal::rbs_any
+
+    @stop_requested: Kaal::rbs_any
+
+    @mutex: Kaal::rbs_any
+
+    @tick_cv: Kaal::rbs_any
+
+    @scheduler_time_zone_resolver: Kaal::rbs_any
+
+    @occurrence_finder: Kaal::rbs_any
+
+    @enabled_entry_enumerator: Kaal::rbs_any
+
+    DELAYED_JOB_BATCH_SIZE: 100
+
+    DELAYED_JOB_MAX_BATCHES_PER_TICK: 10
+
+    DELAYED_JOB_DELETE_CONFIRMATION_JITTER_MAX: ::Float
+
+    def initialize: (configuration: Kaal::rbs_any, registry: Kaal::rbs_any) -> void
+
+    def start!: () -> Kaal::rbs_any
+
+    def stop!: (?timeout: ::Integer) -> (false | true)
+
+    def running?: () -> Kaal::rbs_any
+
+    def restart!: () -> Kaal::rbs_any
+
+    def tick!: () -> Kaal::rbs_any
+
+    def reset!: () -> Kaal::rbs_any
+
+    private
+
+    def request_stop: () -> Kaal::rbs_any
+
+    def run_loop: () -> Kaal::rbs_any
+
+    def stop_requested?: () -> Kaal::rbs_any
+
+    def execute_tick: () -> Kaal::rbs_any
+
+    def calculate_and_dispatch_due_times: (Kaal::rbs_any entry) -> (nil | Kaal::rbs_any)
+
+    def parse_cron: (Kaal::rbs_any cron_expression) -> Kaal::rbs_any
+
+    def find_occurrences: (Kaal::rbs_any cron, Kaal::rbs_any start_time, Kaal::rbs_any end_time) -> Kaal::rbs_any
+
+    def dispatch_if_due: (Kaal::rbs_any entry, Kaal::rbs_any fire_time, Kaal::rbs_any now) -> Kaal::rbs_any
+
+    def recover_missed_runs: () -> Kaal::rbs_any
+
+    def recover_entry: (Kaal::rbs_any entry, Kaal::rbs_any start_time, Kaal::rbs_any end_time) -> Kaal::rbs_any
+
+    def cleanup_old_dispatch_records: (Kaal::rbs_any recovery_window) -> Kaal::rbs_any
+
+    def already_dispatched?: (Kaal::rbs_any key, Kaal::rbs_any fire_time) -> Kaal::rbs_any
+
+    def acquire_lock: (Kaal::rbs_any lock_key) -> Kaal::rbs_any
+
+    def each_enabled_entry: () { (Kaal::rbs_any) -> Kaal::rbs_any } -> Kaal::rbs_any
+
+    def dispatch_work: (Kaal::rbs_any entry, Kaal::rbs_any fire_time) -> Kaal::rbs_any
+
+    def dispatch_due_delayed_jobs: () -> Kaal::rbs_any
+
+    def dispatch_delayed_job: (Kaal::rbs_any job, Kaal::rbs_any delayed_store) -> Kaal::rbs_any
+
+    def delayed_store_for_tick: () -> Kaal::rbs_any
+
+    def stop_delayed_dispatch?: () -> Kaal::rbs_any
+
+    def apply_delayed_job_claim_jitter_if_needed: (Kaal::rbs_any delayed_store) -> (nil | Kaal::rbs_any)
+
+    def generate_idempotency_key: (Kaal::rbs_any cron_key, Kaal::rbs_any fire_time) -> Kaal::rbs_any
+
+    def generate_lock_key: (Kaal::rbs_any cron_key, Kaal::rbs_any fire_time) -> ::String
+
+    def generate_delayed_lock_key: (Kaal::rbs_any job_id) -> ::String
+
+    def sleep_until_next_tick: () -> Kaal::rbs_any
+
+    def scheduler_time_zone_resolver: () -> Kaal::rbs_any
+
+    def occurrence_finder: () -> Kaal::rbs_any
+
+    def enabled_entry_enumerator: () -> Kaal::rbs_any
+
+    def log_configuration_error: (Kaal::rbs_any prefix, Kaal::rbs_any error, ?logger: Kaal::rbs_any) -> Kaal::rbs_any
+
+    def log_runtime_error: (Kaal::rbs_any prefix, Kaal::rbs_any error, ?logger: Kaal::rbs_any) -> Kaal::rbs_any
+  end
+end

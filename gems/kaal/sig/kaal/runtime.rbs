@@ -1,0 +1,11 @@
+module Kaal
+  module Runtime
+    RuntimeContext: Kaal::rbs_any
+
+    SchedulerBootLoader: Kaal::rbs_any
+
+    SignalHandlerChain: Kaal::rbs_any
+
+    SignalHandlerInstaller: Kaal::rbs_any
+  end
+end

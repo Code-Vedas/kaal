@@ -367,6 +367,7 @@ Repo-level entrypoints live under `scripts/`:
 ```bash
 scripts/run-rubocop-all
 scripts/run-reek-all
+scripts/run-rbs-all
 scripts/run-rspec-unit-all
 scripts/run-rspec-e2e-all
 scripts/run-multi-node-cli-all
@@ -385,6 +386,7 @@ cd gems/kaal
 bin/rspec-unit
 bin/rubocop
 bin/reek
+rbs -I sig validate
 ```
 
 ## Documentation and contributing

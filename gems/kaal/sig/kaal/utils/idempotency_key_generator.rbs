@@ -1,0 +1,5 @@
+module Kaal
+  class IdempotencyKeyGenerator
+    def self.call: (Kaal::rbs_any cron_key, Kaal::rbs_any fire_time, configuration: Kaal::rbs_any) -> ::String
+  end
+end

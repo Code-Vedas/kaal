@@ -1,0 +1,35 @@
+module Kaal
+  module Config
+    class FileLoader
+      @configuration: Kaal::rbs_any
+
+      @runtime_context: Kaal::rbs_any
+
+      @env: Kaal::rbs_any
+
+      ENV_KEY_MAP: ::Hash[::String, ::Symbol]
+
+      def initialize: (configuration: Kaal::rbs_any, runtime_context: Kaal::rbs_any, ?env: Kaal::rbs_any) -> void
+
+      def load: (?path: ::String) -> Kaal::rbs_any
+
+      private
+
+      def parse_yaml: (Kaal::rbs_any path) -> Kaal::rbs_any
+
+      def merge_environment_config: (Kaal::rbs_any payload) -> Kaal::rbs_any
+
+      def hash_section: (Kaal::rbs_any value) -> (::Hash[Kaal::rbs_any, Kaal::rbs_any] | Kaal::rbs_any)
+
+      def apply_env_overrides: (Kaal::rbs_any config) -> Kaal::rbs_any
+
+      def coerce_env_value: (Kaal::rbs_any key, Kaal::rbs_any value) -> Kaal::rbs_any
+
+      def coerce_boolean_env: (Kaal::rbs_any key, Kaal::rbs_any value) -> (true | false | Kaal::rbs_any)
+
+      def env_name_for: (Kaal::rbs_any key) -> Kaal::rbs_any
+
+      def apply_configuration: (Kaal::rbs_any config) -> Kaal::rbs_any
+    end
+  end
+end

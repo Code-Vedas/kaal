@@ -30,7 +30,7 @@ Gem::Specification.new do |spec|
   spec.bindir = 'exe'
   spec.executables = ['kaal']
   spec.files = Dir.chdir(File.expand_path(__dir__)) do
-    Dir['{config,exe,lib}/**/*', 'LICENSE', 'Rakefile', 'README.md']
+    Dir['{config,exe,lib,sig}/**/*', 'LICENSE', 'Rakefile', 'README.md']
   end
 
   spec.add_dependency 'fugit', '~> 1.8'

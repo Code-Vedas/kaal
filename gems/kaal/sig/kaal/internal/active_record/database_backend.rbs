@@ -1,0 +1,37 @@
+module Kaal
+  module Internal
+    module ActiveRecord
+      class DatabaseBackend < Kaal::Backend::Adapter
+        @lock_model: Kaal::rbs_any
+
+        @dispatch_registry: Kaal::rbs_any
+
+        @definition_registry: Kaal::rbs_any
+
+        @namespace: Kaal::rbs_any
+
+        @delayed_store: Kaal::rbs_any
+
+        include Kaal::Backend::DispatchLogging
+
+        def initialize: (?Kaal::rbs_any? connection, ?lock_model: Kaal::rbs_any, ?dispatch_registry: Kaal::rbs_any?, ?definition_registry: Kaal::rbs_any?, ?namespace: Kaal::rbs_any?) -> void
+
+        def dispatch_registry: () -> Kaal::rbs_any
+
+        def definition_registry: () -> Kaal::rbs_any
+
+        def delayed_store: () -> Kaal::rbs_any
+
+        def acquire: (Kaal::rbs_any key, Kaal::rbs_any ttl) -> Kaal::rbs_any
+
+        def release: (Kaal::rbs_any key) -> Kaal::rbs_any
+
+        def cleanup_expired_locks: () -> Kaal::rbs_any
+
+        private
+
+        def resolved_namespace: () -> Kaal::rbs_any
+      end
+    end
+  end
+end

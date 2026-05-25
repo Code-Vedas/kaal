@@ -1,0 +1,9 @@
+class Roda
+  module RodaPlugins
+    module Kaal
+      module ClassMethods
+        def kaal: (**::Kaal::rbs_any) -> ::Kaal::rbs_any
+      end
+    end
+  end
+end

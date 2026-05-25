@@ -1,0 +1,46 @@
+#!/bin/sh
+set -eu
+
+if [ "${SCRIPT_DIR:-}" = "" ]; then
+  SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+fi
+. "${SCRIPT_DIR}/run-common"
+
+run_suite() {
+  suite_dir="$1"
+  suite_label="$(basename "${suite_dir}")"
+
+  if [ ! -d "${REPO_ROOT}/${suite_dir}/sig" ]; then
+    echo "Skipping ${suite_label} rbs: missing sig/"
+    return 0
+  fi
+
+  if grep -R -n -w -E 'untyped|top|Object|BasicObject' "${REPO_ROOT}/${suite_dir}/sig" >/dev/null 2>&1; then
+    echo "Strict RBS check failed for ${suite_label}: found forbidden broad types or placeholders in sig/ (untyped, top, Object, BasicObject)"
+    grep -R -n -w -E 'untyped|top|Object|BasicObject' "${REPO_ROOT}/${suite_dir}/sig"
+    return 1
+  fi
+
+  cd "${REPO_ROOT}/${suite_dir}"
+
+  gemfiles=$(suite_gemfiles "${suite_dir}" || true)
+  if [ "${gemfiles}" != "" ]; then
+    for gemfile in ${gemfiles}; do
+      RUN_ALL_EXPECT_RAILS=1 RUN_ALL_BUNDLE_GEMFILE="${REPO_ROOT}/${suite_dir}/${gemfile}" run_cmd_env \
+        "${suite_label}-$(gemfile_label "${gemfile}")-rbs" \
+        BUNDLE_GEMFILE="${REPO_ROOT}/${suite_dir}/${gemfile}" \
+        rbs -I sig validate
+    done
+    return 0
+  fi
+
+  run_cmd "${suite_label}-rbs" rbs -I sig validate
+}
+
+if [ "${0##*/}" = "run-rbs-all" ]; then
+  run_suite "gems/kaal"
+  run_suite "gems/kaal-hanami"
+  run_suite "gems/kaal-rails"
+  run_suite "gems/kaal-roda"
+  run_suite "gems/kaal-sinatra"
+fi

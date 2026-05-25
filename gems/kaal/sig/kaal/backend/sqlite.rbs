@@ -1,0 +1,19 @@
+module Kaal
+  module Backend
+    class SQLite < Adapter
+      @engine: Kaal::rbs_any
+
+      def initialize: (?database: Kaal::rbs_any?, ?connection: Kaal::rbs_any?, ?namespace: Kaal::rbs_any?, **Kaal::rbs_any) -> void
+
+      def dispatch_registry: () -> Kaal::rbs_any
+
+      def definition_registry: () -> Kaal::rbs_any
+
+      def delayed_store: () -> Kaal::rbs_any
+
+      def acquire: (Kaal::rbs_any key, Kaal::rbs_any ttl) -> Kaal::rbs_any
+
+      def release: (Kaal::rbs_any key) -> Kaal::rbs_any
+    end
+  end
+end
