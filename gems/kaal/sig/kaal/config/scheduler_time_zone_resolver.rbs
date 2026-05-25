@@ -1,0 +1,19 @@
+module Kaal
+  class SchedulerTimeZoneResolver
+    @configuration: Kaal::rbs_any
+
+    DEFAULT_TIME_ZONE: "UTC"
+
+    def initialize: (configuration: Kaal::rbs_any) -> void
+
+    def time_zone_identifier: () -> Kaal::rbs_any
+
+    private
+
+    def configured_time_zone: () -> Kaal::rbs_any
+
+    def normalized_time_zone_value: () -> Kaal::rbs_any
+
+    def raw_time_zone_value: () -> Kaal::rbs_any
+  end
+end

@@ -1,0 +1,8 @@
+module Kaal
+  module Internal
+    module ActiveRecord
+      class DefinitionRecord < BaseRecord
+      end
+    end
+  end
+end

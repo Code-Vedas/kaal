@@ -1,0 +1,43 @@
+module Kaal
+  class SchedulerFileLoader
+    class JobApplier
+      @configuration: Kaal::rbs_any
+
+      @definition_registry: Kaal::rbs_any
+
+      @registry: Kaal::rbs_any
+
+      @logger: Kaal::rbs_any
+
+      @helper_bundle: Kaal::rbs_any
+
+      include Kaal::Support::HashTools
+
+      def initialize: (configuration: Kaal::rbs_any, definition_registry: Kaal::rbs_any, registry: Kaal::rbs_any, logger: Kaal::rbs_any, helper_bundle: Kaal::rbs_any) -> void
+
+      def apply: (Kaal::rbs_any job) -> (nil | { key: Kaal::rbs_any, existing_definition: Kaal::rbs_any, existing_registry_entry: Kaal::rbs_any })
+
+      def rollback_jobs: (Kaal::rbs_any applied_job_contexts) -> Kaal::rbs_any
+
+      def callback_for: (key: Kaal::rbs_any, job_class_name: Kaal::rbs_any, queue: Kaal::rbs_any, args_template: Kaal::rbs_any, kwargs_template: Kaal::rbs_any) -> Kaal::rbs_any
+
+      def resolved_job_class: (job_class_name: Kaal::rbs_any, key: Kaal::rbs_any, ?queue: Kaal::rbs_any?) -> Kaal::rbs_any
+
+      def conflict?: (key: Kaal::rbs_any, existing_definition: Kaal::rbs_any) -> (false | Kaal::rbs_any)
+
+      def rollback_job: (key: Kaal::rbs_any, existing_definition: Kaal::rbs_any, existing_registry_entry: Kaal::rbs_any) -> Kaal::rbs_any
+
+      private
+
+      def persisted_metadata: (Kaal::rbs_any job, Kaal::rbs_any job_class) -> Kaal::rbs_any
+
+      def build_callback: (Kaal::rbs_any job, Kaal::rbs_any job_class) -> Kaal::rbs_any
+
+      def validate_keyword_keys: (Kaal::rbs_any raw_kwargs, Kaal::rbs_any key) -> nil
+
+      def dispatch_job: (Kaal::rbs_any job_class, Kaal::rbs_any queue, Kaal::rbs_any args, Kaal::rbs_any kwargs, Kaal::rbs_any key) -> Kaal::rbs_any
+
+      def active_job_dispatch?: (Kaal::rbs_any job_class, Kaal::rbs_any queue) -> Kaal::rbs_any
+    end
+  end
+end

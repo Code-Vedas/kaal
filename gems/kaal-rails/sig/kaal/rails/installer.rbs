@@ -1,0 +1,47 @@
+module Kaal
+  module Rails
+    class Installer
+      @root: ::Kaal::rbs_any
+
+      @backend: ::Kaal::rbs_any
+
+      @time_source: ::Kaal::rbs_any
+
+      KAAL_TEMPLATE: "defaults:\n  namespace: kaal\n  tick_interval: 5\n  window_lookback: 120\n  window_lookahead: 0\n  lease_ttl: 125\n  scheduler_config_path: config/kaal-scheduler.yml\n  enable_dispatch_recovery: true\n  enable_log_dispatch_registry: false\n  delayed_job_allowed_class_prefixes: []\n  backend_config: {}\n"
+
+      SCHEDULER_TEMPLATE: "defaults:\n  jobs:\n    - key: \"example:heartbeat\"\n      cron: \"*/5 * * * *\"\n      job_class: \"ExampleHeartbeatJob\"\n      enabled: true\n      args:\n        - \"{{fire_time.iso8601}}\"\n      kwargs:\n        idempotency_key: \"{{idempotency_key}}\"\n"
+
+      def initialize: (root: ::Kaal::rbs_any, backend: ::Kaal::rbs_any, ?time_source: ::Kaal::rbs_any) -> void
+
+      def install_runtime_config: () -> ({ status: :exists, path: ::Kaal::rbs_any } | { status: :create, path: ::Kaal::rbs_any })
+
+      def install_scheduler_config: () -> ({ status: :exists, path: ::Kaal::rbs_any } | { status: :create, path: ::Kaal::rbs_any })
+
+      def install_migrations: () -> ::Kaal::rbs_any
+
+      private
+
+      attr_reader backend: ::Kaal::rbs_any
+
+      attr_reader root: ::Kaal::rbs_any
+
+      attr_reader time_source: ::Kaal::rbs_any
+
+      def validate_backend: (::Kaal::rbs_any backend_name) -> ::Kaal::rbs_any
+
+      def scheduler_config_path: () -> ::Kaal::rbs_any
+
+      def runtime_config_path: () -> ::Kaal::rbs_any
+
+      def scheduler_config_exists?: () -> ::Kaal::rbs_any
+
+      def runtime_config_exists?: () -> ::Kaal::rbs_any
+
+      def scheduler_config_path_string: () -> ::Kaal::rbs_any
+
+      def runtime_config_path_string: () -> ::Kaal::rbs_any
+
+      def ensure_config_dir: () -> ::Kaal::rbs_any
+    end
+  end
+end

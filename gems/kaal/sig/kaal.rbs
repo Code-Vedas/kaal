@@ -1,0 +1,145 @@
+module Kaal
+  self.@configuration: Kaal::rbs_any
+
+  self.@registry: Kaal::rbs_any
+
+  self.@coordinator: Kaal::rbs_any
+
+  self.@definition_registry: Kaal::rbs_any
+
+  self.@definitions_registry_accessor: Kaal::rbs_any
+
+  self.@dispatch_registry_accessor: Kaal::rbs_any
+
+  self.@risky_configuration_warnings_emitted: Kaal::rbs_any
+
+  self.@registration_service: Kaal::rbs_any
+
+  extend RegisterConflictSupport
+
+  def self.configuration: () -> Kaal::rbs_any
+
+  def self.registry: () -> Kaal::rbs_any
+
+  def self.coordinator: () -> Kaal::rbs_any
+
+  def self.reset_configuration!: () -> Kaal::rbs_any
+
+  def self.reset_registry!: () -> Kaal::rbs_any
+
+  def self.reset_coordinator!: () -> Kaal::rbs_any
+
+  def self.configure: () ?{ (Kaal::rbs_any) -> Kaal::rbs_any } -> (Kaal::rbs_any | nil)
+
+  def self.load_config_file!: (?path: ::String, ?runtime_context: Kaal::rbs_any) -> Kaal::rbs_any
+
+  def self.register: (key: Kaal::rbs_any, cron: Kaal::rbs_any, enqueue: Kaal::rbs_any) -> Kaal::rbs_any
+
+  def self.load_scheduler_file!: (?runtime_context: Kaal::rbs_any) -> Kaal::rbs_any
+
+  def self.unregister: (key: Kaal::rbs_any) -> Kaal::rbs_any
+
+  def self.registered: () -> Kaal::rbs_any
+
+  def self.registered?: (key: Kaal::rbs_any) -> Kaal::rbs_any
+
+  def self.enable: (key: Kaal::rbs_any) -> Kaal::rbs_any
+
+  def self.disable: (key: Kaal::rbs_any) -> Kaal::rbs_any
+
+  def self.start!: () -> Kaal::rbs_any
+
+  def self.stop!: (?timeout: ::Integer) -> Kaal::rbs_any
+
+  def self.running?: () -> Kaal::rbs_any
+
+  def self.restart!: () -> Kaal::rbs_any
+
+  def self.tick!: () -> Kaal::rbs_any
+
+  def self.enqueue_at: (at: Kaal::rbs_any, job_class: Kaal::rbs_any, args: Kaal::rbs_any, job_id: Kaal::rbs_any, ?queue: Kaal::rbs_any?, ?connection: Kaal::rbs_any?) -> Kaal::rbs_any
+
+  def self.with_idempotency: (Kaal::rbs_any key, Kaal::rbs_any fire_time) ?{ (Kaal::rbs_any) -> Kaal::rbs_any } -> Kaal::rbs_any
+
+  def self.dispatched?: (Kaal::rbs_any key, Kaal::rbs_any fire_time) -> Kaal::rbs_any
+
+  def self.dispatch_log_registry: () -> Kaal::rbs_any
+
+  def self.tick_interval: () -> Kaal::rbs_any
+
+  def self.window_lookback: () -> Kaal::rbs_any
+
+  def self.window_lookahead: () -> Kaal::rbs_any
+
+  def self.lease_ttl: () -> Kaal::rbs_any
+
+  def self.namespace: () -> Kaal::rbs_any
+
+  def self.backend: () -> Kaal::rbs_any
+
+  def self.logger: () -> Kaal::rbs_any
+
+  def self.time_zone: () -> Kaal::rbs_any
+
+  def self.tick_interval=: (Kaal::rbs_any value) -> Kaal::rbs_any
+
+  def self.window_lookback=: (Kaal::rbs_any value) -> Kaal::rbs_any
+
+  def self.window_lookahead=: (Kaal::rbs_any value) -> Kaal::rbs_any
+
+  def self.lease_ttl=: (Kaal::rbs_any value) -> Kaal::rbs_any
+
+  def self.namespace=: (Kaal::rbs_any value) -> Kaal::rbs_any
+
+  def self.backend=: (Kaal::rbs_any value) -> Kaal::rbs_any
+
+  def self.logger=: (Kaal::rbs_any value) -> Kaal::rbs_any
+
+  def self.time_zone=: (Kaal::rbs_any value) -> Kaal::rbs_any
+
+  def self.delayed_job_allowed_class_prefixes: () -> Kaal::rbs_any
+
+  def self.delayed_job_allowed_class_prefixes=: (Kaal::rbs_any value) -> Kaal::rbs_any
+
+  def self.definition_registry: () -> Kaal::rbs_any
+
+  def self.validate: () -> Kaal::rbs_any
+
+  def self.validate!: () -> Kaal::rbs_any
+
+  def self.validation_warnings: () -> Kaal::rbs_any
+
+  def self.warn_on_risky_configuration!: (?configuration: Kaal::rbs_any, ?logger: Kaal::rbs_any) -> (::Array[Kaal::rbs_any] | Kaal::rbs_any)
+
+  def self.valid?: (Kaal::rbs_any expression) -> Kaal::rbs_any
+
+  def self.simplify: (Kaal::rbs_any expression) -> Kaal::rbs_any
+
+  def self.lint: (Kaal::rbs_any expression) -> Kaal::rbs_any
+
+  def self.to_human: (Kaal::rbs_any expression, ?locale: Kaal::rbs_any?) -> Kaal::rbs_any
+
+  private
+
+  def self.rollback_registered_definition: (Kaal::rbs_any key, Kaal::rbs_any existing_definition) -> (Kaal::rbs_any | Kaal::rbs_any | nil)
+
+  def self.registration_service: () -> Kaal::rbs_any
+
+  def self.definitions_registry_accessor: () -> Kaal::rbs_any
+
+  def self.dispatch_registry_accessor: () -> Kaal::rbs_any
+
+  def self.delayed_store!: () -> Kaal::rbs_any
+
+  def self.normalize_delayed_run_at: (Kaal::rbs_any at) -> Kaal::rbs_any
+
+  def self.normalize_delayed_args: (Kaal::rbs_any args) -> Kaal::rbs_any
+
+  def self.normalize_delayed_queue: (Kaal::rbs_any queue) -> (nil | Kaal::rbs_any)
+
+  def self.normalize_delayed_job_id: (Kaal::rbs_any job_id) -> Kaal::rbs_any
+
+  def self.invalid_delayed_time_error: () -> Kaal::rbs_any
+
+  def self.ensure_delayed_time!: (Kaal::rbs_any time) -> (Kaal::rbs_any | nil)
+end

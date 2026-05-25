@@ -1,0 +1,20 @@
+module Kaal
+  module DelayedJob
+    class DuplicateJobError < StandardError
+    end
+
+    class Registry
+      def enqueue: (**Kaal::rbs_any) -> Kaal::rbs_any
+
+      def pop_due: (**Kaal::rbs_any) -> Kaal::rbs_any
+
+      def find_job: (Kaal::rbs_any _job_id) -> Kaal::rbs_any
+
+      def all_jobs: () -> Kaal::rbs_any
+
+      def claim_strategy: () -> Kaal::rbs_any
+
+      def requires_dispatch_lock?: () -> false
+    end
+  end
+end

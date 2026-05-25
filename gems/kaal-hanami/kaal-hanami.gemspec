@@ -28,7 +28,7 @@ Gem::Specification.new do |spec|
   spec.metadata['rubygems_uri'] = 'https://rubygems.org/gems/kaal-hanami'
   spec.metadata['rubygems_mfa_required'] = 'true'
   spec.files = Dir.chdir(File.expand_path(__dir__)) do
-    Dir['{bin,lib}/**/*', 'LICENSE', 'Rakefile', 'README.md']
+    Dir['{bin,lib,sig}/**/*', 'LICENSE', 'Rakefile', 'README.md']
   end
   spec.add_dependency 'hanami', '>= 2.0', '< 3.0'
   spec.add_dependency 'kaal', "= #{version}"

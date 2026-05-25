@@ -1,0 +1,26 @@
+module Kaal
+  module Backend
+    class Adapter
+      def acquire: (Kaal::rbs_any _key, Kaal::rbs_any _ttl) -> Kaal::rbs_any
+
+      def release: (Kaal::rbs_any _key) -> Kaal::rbs_any
+
+      def with_lock: (Kaal::rbs_any key, ttl: Kaal::rbs_any) { () -> Kaal::rbs_any } -> (nil | Kaal::rbs_any)
+
+      def definition_registry: () -> nil
+
+      def delayed_store: () -> nil
+    end
+
+    class NullAdapter < Adapter
+      def acquire: (Kaal::rbs_any _key, Kaal::rbs_any _ttl) -> true
+
+      def release: (Kaal::rbs_any _key) -> true
+
+      def with_lock: (Kaal::rbs_any _key, **Kaal::rbs_any) { () -> Kaal::rbs_any } -> Kaal::rbs_any
+    end
+
+    class LockAdapterError < StandardError
+    end
+  end
+end

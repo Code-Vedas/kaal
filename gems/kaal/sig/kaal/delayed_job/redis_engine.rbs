@@ -1,0 +1,31 @@
+module Kaal
+  module DelayedJob
+    class RedisEngine < Registry
+      @redis: Kaal::rbs_any
+
+      @namespace: Kaal::rbs_any
+
+      def initialize: (Kaal::rbs_any redis, ?namespace: ::String) -> void
+
+      def enqueue: (job_id: Kaal::rbs_any, run_at: Kaal::rbs_any, job_class: Kaal::rbs_any, args: Kaal::rbs_any, ?queue: Kaal::rbs_any?, **Kaal::rbs_any) -> Kaal::rbs_any
+
+      def pop_due: (now: Kaal::rbs_any, limit: Kaal::rbs_any) -> Kaal::rbs_any
+
+      def find_job: (Kaal::rbs_any job_id) -> Kaal::rbs_any
+
+      def all_jobs: () -> Kaal::rbs_any
+
+      def claim_strategy: () -> :atomic_pop
+
+      def self.deserialize: (Kaal::rbs_any raw) -> Kaal::rbs_any
+
+      def self.parse_time: (Kaal::rbs_any value) -> Kaal::rbs_any
+
+      private
+
+      def payloads_key: () -> ::String
+
+      def schedule_key: () -> ::String
+    end
+  end
+end

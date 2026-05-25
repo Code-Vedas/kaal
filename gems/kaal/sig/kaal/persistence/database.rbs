@@ -1,0 +1,19 @@
+module Kaal
+  module Persistence
+    class Database
+      @connection: Kaal::rbs_any
+
+      attr_reader connection: Kaal::rbs_any
+
+      def initialize: (Kaal::rbs_any connection) -> void
+
+      def definitions_dataset: () -> Kaal::rbs_any
+
+      def dispatches_dataset: () -> Kaal::rbs_any
+
+      def locks_dataset: () -> Kaal::rbs_any
+
+      def delayed_jobs_dataset: () -> Kaal::rbs_any
+    end
+  end
+end

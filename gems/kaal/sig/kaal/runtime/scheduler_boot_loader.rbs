@@ -1,0 +1,23 @@
+module Kaal
+  class SchedulerBootLoader
+    @configuration_provider: Kaal::rbs_any
+
+    @logger: Kaal::rbs_any
+
+    @runtime_context: Kaal::rbs_any
+
+    @load_scheduler_file: Kaal::rbs_any
+
+    def initialize: (configuration_provider: Kaal::rbs_any, logger: Kaal::rbs_any, runtime_context: Kaal::rbs_any, load_scheduler_file: Kaal::rbs_any) -> void
+
+    def load_on_boot: () -> Kaal::rbs_any
+
+    def load_on_boot!: () -> (nil | Kaal::rbs_any)
+
+    private
+
+    def load_scheduler_file: () -> Kaal::rbs_any
+
+    def fetch_configuration: () -> Kaal::rbs_any
+  end
+end

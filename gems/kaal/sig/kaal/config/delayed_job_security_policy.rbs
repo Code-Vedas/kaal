@@ -1,0 +1,19 @@
+module Kaal
+  module Config
+    module DelayedJobSecurityPolicy
+      NON_SHARED_BACKEND_CLASS_NAMES: ::Array["NilClass" | "Kaal::Backend::MemoryAdapter" | "Kaal::Backend::NullAdapter"]
+
+      WARNING_MESSAGE: "Delayed jobs resolve stored job_class values at dispatch time. delayed_job_allowed_class_prefixes is empty, so class resolution is unrestricted on this shared backend. Configure a restrictive delayed_job_allowed_class_prefixes list for production deployments."
+
+      def self.warning_for: (Kaal::rbs_any configuration) -> (nil | Kaal::rbs_any)
+
+      def self.production_like_environment?: (?env: Kaal::rbs_any, ?rails: Kaal::rbs_any) -> Kaal::rbs_any
+
+      def self.shared_delayed_job_backend?: (Kaal::rbs_any backend) -> Kaal::rbs_any
+
+      def self.current_rails: () -> (nil | Kaal::rbs_any)
+
+      def self.rails_environment: (Kaal::rbs_any rails) -> Kaal::rbs_any
+    end
+  end
+end

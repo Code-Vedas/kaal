@@ -1,0 +1,29 @@
+module Kaal
+  module DelayedJob
+    class MemoryEngine < Registry
+      @jobs: Kaal::rbs_any
+
+      @mutex: Kaal::rbs_any
+
+      include Kaal::Support::HashTools
+
+      def initialize: () -> void
+
+      def enqueue: (job_id: Kaal::rbs_any, run_at: Kaal::rbs_any, job_class: Kaal::rbs_any, args: Kaal::rbs_any, ?queue: Kaal::rbs_any?, **Kaal::rbs_any) -> Kaal::rbs_any
+
+      def pop_due: (now: Kaal::rbs_any, limit: Kaal::rbs_any) -> Kaal::rbs_any
+
+      def find_job: (Kaal::rbs_any job_id) -> Kaal::rbs_any
+
+      def all_jobs: () -> Kaal::rbs_any
+
+      def clear: () -> Kaal::rbs_any
+
+      def claim_strategy: () -> :atomic_pop
+
+      private
+
+      def build_job: (job_id: Kaal::rbs_any, run_at: Kaal::rbs_any, job_class: Kaal::rbs_any, args: Kaal::rbs_any, queue: Kaal::rbs_any) -> { job_id: Kaal::rbs_any, run_at: Kaal::rbs_any, job_class: Kaal::rbs_any, args: Kaal::rbs_any, queue: Kaal::rbs_any, created_at: Kaal::rbs_any }
+    end
+  end
+end

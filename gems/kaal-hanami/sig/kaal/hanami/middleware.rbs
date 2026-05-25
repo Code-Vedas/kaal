@@ -1,0 +1,11 @@
+module Kaal
+  module Hanami
+    class Middleware
+      @app: ::Kaal::rbs_any
+
+      def initialize: (::Kaal::rbs_any app, hanami_app: ::Kaal::rbs_any, ?backend: ::Kaal::rbs_any?, ?database: ::Kaal::rbs_any?, ?redis: ::Kaal::rbs_any?, ?scheduler_config_path: ::String, ?namespace: ::Kaal::rbs_any?, ?start_scheduler: bool, ?adapter: ::Kaal::rbs_any?, ?root: ::Kaal::rbs_any?, ?environment: ::Kaal::rbs_any?) -> void
+
+      def call: (::Kaal::rbs_any env) -> ::Kaal::rbs_any
+    end
+  end
+end

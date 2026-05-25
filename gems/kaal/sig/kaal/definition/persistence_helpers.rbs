@@ -1,0 +1,9 @@
+module Kaal
+  module Definition
+    module PersistenceHelpers
+      def self.disabled_at_for: (Kaal::rbs_any existing, Kaal::rbs_any enabled, Kaal::rbs_any now) -> (nil | Kaal::rbs_any)
+
+      def self.parse_metadata: (Kaal::rbs_any value) -> Kaal::rbs_any
+    end
+  end
+end

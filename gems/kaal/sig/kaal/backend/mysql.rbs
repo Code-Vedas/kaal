@@ -1,0 +1,25 @@
+module Kaal
+  module Backend
+    class MySQL < Adapter
+      @engine: Kaal::rbs_any
+
+      UNSET_SKIP_LOCKED_SUPPORT: Kaal::rbs_any
+
+      def initialize: (?database: Kaal::rbs_any?, ?connection: Kaal::rbs_any?, ?namespace: Kaal::rbs_any?, ?use_skip_locked: Kaal::rbs_any) -> void
+
+      def dispatch_registry: () -> Kaal::rbs_any
+
+      def definition_registry: () -> Kaal::rbs_any
+
+      def delayed_store: () -> Kaal::rbs_any
+
+      def acquire: (Kaal::rbs_any key, Kaal::rbs_any ttl) -> Kaal::rbs_any
+
+      def release: (Kaal::rbs_any key) -> Kaal::rbs_any
+
+      def self.build_sequel_backend: (Kaal::rbs_any database, Kaal::rbs_any namespace, Kaal::rbs_any use_skip_locked) -> Kaal::rbs_any
+
+      def self.build_active_record_backend: (Kaal::rbs_any connection, Kaal::rbs_any namespace, Kaal::rbs_any use_skip_locked) -> Kaal::rbs_any
+    end
+  end
+end

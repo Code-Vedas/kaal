@@ -1,0 +1,25 @@
+module Kaal
+  module Definition
+    class DatabaseEngine < Registry
+      @database: Kaal::rbs_any
+
+      def initialize: (database: Kaal::rbs_any) -> void
+
+      def upsert_definition: (key: Kaal::rbs_any, cron: Kaal::rbs_any, ?enabled: bool, ?source: ::String, ?metadata: ::Hash[Kaal::rbs_any, Kaal::rbs_any]) -> Kaal::rbs_any
+
+      def remove_definition: (Kaal::rbs_any key) -> (nil | Kaal::rbs_any)
+
+      def find_definition: (Kaal::rbs_any key) -> Kaal::rbs_any
+
+      def all_definitions: () -> Kaal::rbs_any
+
+      def enabled_definitions: () -> Kaal::rbs_any
+
+      def self.normalize_row: (Kaal::rbs_any row) -> (nil | { key: Kaal::rbs_any, cron: Kaal::rbs_any, enabled: Kaal::rbs_any, source: Kaal::rbs_any, metadata: Kaal::rbs_any, created_at: Kaal::rbs_any, updated_at: Kaal::rbs_any, disabled_at: Kaal::rbs_any })
+
+      private
+
+      def dataset: () -> Kaal::rbs_any
+    end
+  end
+end

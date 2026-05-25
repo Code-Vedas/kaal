@@ -1,0 +1,70 @@
+module Kaal
+  class Configuration
+    @values: Kaal::rbs_any
+
+    @backend_name: Kaal::rbs_any
+
+    @backend_runtime_context: Kaal::rbs_any
+
+    DEFAULTS: { tick_interval: 5, window_lookback: 120, window_lookahead: 0, lease_ttl: 125, namespace: "kaal", backend: nil, backend_config: ::Hash[Kaal::rbs_any, Kaal::rbs_any], logger: nil, time_zone: nil, enable_log_dispatch_registry: false, enable_dispatch_recovery: true, recovery_window: 86400, recovery_startup_jitter: 5, scheduler_config_path: "config/kaal-scheduler.yml", scheduler_conflict_policy: :error, scheduler_missing_file_policy: :warn, delayed_job_allowed_class_prefixes: ::Array[Kaal::rbs_any] }
+
+    def initialize: () -> void
+
+    def method_missing: (Kaal::rbs_any method_name, *Kaal::rbs_any args) -> Kaal::rbs_any
+
+    def respond_to_missing?: (Kaal::rbs_any method_name, ?bool include_private) -> Kaal::rbs_any
+
+    def validate: () -> Kaal::rbs_any
+
+    attr_accessor backend_runtime_context: Kaal::rbs_any
+
+    def validation_warnings: () -> Kaal::rbs_any
+
+    def validate!: () -> self
+
+    def to_h: () -> { tick_interval: Kaal::rbs_any, window_lookback: Kaal::rbs_any, window_lookahead: Kaal::rbs_any, lease_ttl: Kaal::rbs_any, namespace: Kaal::rbs_any, backend: Kaal::rbs_any, backend_config: Kaal::rbs_any, logger: Kaal::rbs_any, time_zone: Kaal::rbs_any, enable_log_dispatch_registry: Kaal::rbs_any, enable_dispatch_recovery: Kaal::rbs_any, recovery_window: Kaal::rbs_any, recovery_startup_jitter: Kaal::rbs_any, scheduler_config_path: Kaal::rbs_any, scheduler_conflict_policy: Kaal::rbs_any, scheduler_missing_file_policy: Kaal::rbs_any, delayed_job_allowed_class_prefixes: Kaal::rbs_any }
+
+    private
+
+    def validation_errors: () -> Kaal::rbs_any
+
+    def add_tick_interval_error: (Kaal::rbs_any errors) -> (nil | Kaal::rbs_any)
+
+    def add_window_lookback_error: (Kaal::rbs_any errors) -> (nil | Kaal::rbs_any)
+
+    def add_window_lookahead_error: (Kaal::rbs_any errors) -> (nil | Kaal::rbs_any)
+
+    def add_lease_ttl_error: (Kaal::rbs_any errors) -> (nil | Kaal::rbs_any)
+
+    def add_namespace_error: (Kaal::rbs_any errors) -> (nil | Kaal::rbs_any)
+
+    def add_backend_config_error: (Kaal::rbs_any errors) -> (nil | Kaal::rbs_any)
+
+    def add_lease_ttl_window_error: (Kaal::rbs_any errors) -> (nil | Kaal::rbs_any)
+
+    def add_scheduler_config_path_error: (Kaal::rbs_any errors) -> (nil | Kaal::rbs_any)
+
+    def add_scheduler_conflict_policy_error: (Kaal::rbs_any errors) -> (nil | Kaal::rbs_any)
+
+    def add_scheduler_missing_file_policy_error: (Kaal::rbs_any errors) -> (nil | Kaal::rbs_any)
+
+    def add_delayed_job_security_warning: (Kaal::rbs_any warnings) -> (nil | Kaal::rbs_any)
+
+    def handle_known_key: (Kaal::rbs_any method_name) { (Kaal::rbs_any, Kaal::rbs_any) -> Kaal::rbs_any } -> (::Array[false | nil] | ::Array[true | Kaal::rbs_any])
+
+    def set_value: (Kaal::rbs_any key, Kaal::rbs_any value) -> Kaal::rbs_any
+
+    def normalize_value: (Kaal::rbs_any key, Kaal::rbs_any value) -> Kaal::rbs_any
+
+    def normalize_backend: (Kaal::rbs_any value) -> Kaal::rbs_any
+
+    def normalize_backend_config: (Kaal::rbs_any value) -> Kaal::rbs_any
+
+    def rebuild_symbolic_backend_if_needed: (Kaal::rbs_any key) -> (nil | Kaal::rbs_any)
+
+    def normalize_delayed_job_allowed_class_prefixes: (Kaal::rbs_any value) -> Kaal::rbs_any
+  end
+
+  class ConfigurationError < StandardError
+  end
+end

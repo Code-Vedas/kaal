@@ -1,0 +1,33 @@
+module Kaal
+  class SchedulerFileLoader
+    class PayloadLoader
+      @configuration: Kaal::rbs_any
+
+      @runtime_context: Kaal::rbs_any
+
+      @logger: Kaal::rbs_any
+
+      @hash_transform: Kaal::rbs_any
+
+      def initialize: (configuration: Kaal::rbs_any, runtime_context: Kaal::rbs_any, logger: Kaal::rbs_any, hash_transform: Kaal::rbs_any) -> void
+
+      def load: () -> (::Array[Kaal::rbs_any | nil] | ::Array[Kaal::rbs_any])
+
+      def handle_missing_file: (Kaal::rbs_any path) -> ::Array[Kaal::rbs_any]
+
+      def extract_jobs: (Kaal::rbs_any payload) -> Kaal::rbs_any
+
+      def validate_unique_keys: (Kaal::rbs_any jobs) -> (nil | Kaal::rbs_any)
+
+      private
+
+      def scheduler_file_path: () -> Kaal::rbs_any
+
+      def parse_yaml: (Kaal::rbs_any path) -> Kaal::rbs_any
+
+      def render_yaml_erb: (Kaal::rbs_any path) -> Kaal::rbs_any
+
+      def fetch_hash: (Kaal::rbs_any payload, Kaal::rbs_any key) -> Kaal::rbs_any
+    end
+  end
+end

@@ -1,0 +1,15 @@
+module Kaal
+  module Rails
+    DETECT_BACKEND_DEFAULT: ::Kaal::rbs_any
+
+    def self.detect_backend_name: (?::Kaal::rbs_any db_config) -> ::Kaal::rbs_any
+
+    def self.build_backend: (?::Kaal::rbs_any backend_name) -> ::Kaal::rbs_any
+
+    def self.configure_backend!: (?configuration: ::Kaal::rbs_any, ?backend: ::Kaal::rbs_any) -> (nil | ::Kaal::rbs_any)
+
+    def self.load_config_file!: (?configuration: ::Kaal::rbs_any, ?root: ::Kaal::rbs_any, ?environment: ::Kaal::rbs_any) -> ::Kaal::rbs_any
+
+    def self.install!: (?root: ::Kaal::rbs_any, ?backend: ::Kaal::rbs_any) -> { runtime_config: ::Kaal::rbs_any, scheduler_config: ::Kaal::rbs_any, migrations: ::Kaal::rbs_any }
+  end
+end

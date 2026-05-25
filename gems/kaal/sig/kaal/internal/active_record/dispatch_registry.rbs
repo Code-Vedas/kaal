@@ -1,0 +1,43 @@
+module Kaal
+  module Internal
+    module ActiveRecord
+      class DispatchRegistry < Kaal::Dispatch::Registry
+        @model: Kaal::rbs_any
+
+        @namespace: Kaal::rbs_any
+
+        def initialize: (?connection: Kaal::rbs_any?, ?model: Kaal::rbs_any, ?namespace: Kaal::rbs_any?) -> void
+
+        def log_dispatch: (Kaal::rbs_any key, Kaal::rbs_any fire_time, Kaal::rbs_any node_id, ?::String status) -> Kaal::rbs_any
+
+        def find_dispatch: (Kaal::rbs_any key, Kaal::rbs_any fire_time) -> Kaal::rbs_any
+
+        def find_by_key: (Kaal::rbs_any key) -> Kaal::rbs_any
+
+        def find_by_node: (Kaal::rbs_any node_id) -> Kaal::rbs_any
+
+        def find_by_status: (Kaal::rbs_any status) -> Kaal::rbs_any
+
+        def cleanup: (?recovery_window: ::Integer) -> Kaal::rbs_any
+
+        private
+
+        def query: (Kaal::rbs_any filters) -> Kaal::rbs_any
+
+        def namespaced_key: (Kaal::rbs_any key) -> ::String
+
+        def normalize: (Kaal::rbs_any record) -> (nil | { key: Kaal::rbs_any, fire_time: Kaal::rbs_any, dispatched_at: Kaal::rbs_any, node_id: Kaal::rbs_any, status: Kaal::rbs_any })
+
+        def strip_namespace: (Kaal::rbs_any key) -> Kaal::rbs_any
+
+        def query_scope: (Kaal::rbs_any filters) -> Kaal::rbs_any
+
+        def cleanup_scope: () -> Kaal::rbs_any
+
+        def namespace_scope: (Kaal::rbs_any relation) -> Kaal::rbs_any
+
+        def namespace_prefix: () -> ("" | ::String)
+      end
+    end
+  end
+end

@@ -1,0 +1,17 @@
+module Kaal
+  module Backend
+    class DispatchRegistryAccessor
+      @configuration: Kaal::rbs_any
+
+      def initialize: (configuration: Kaal::rbs_any) -> void
+
+      def dispatched?: (Kaal::rbs_any key, Kaal::rbs_any fire_time) -> Kaal::rbs_any
+
+      def registry: () -> Kaal::rbs_any
+
+      private
+
+      def fetch_registry: () -> (nil | Kaal::rbs_any)
+    end
+  end
+end

@@ -1,0 +1,33 @@
+module Kaal
+  module Definition
+    class RedisEngine < Registry
+      @redis: Kaal::rbs_any
+
+      @namespace: Kaal::rbs_any
+
+      include Kaal::Support::HashTools
+
+      def initialize: (Kaal::rbs_any redis, ?namespace: ::String) -> void
+
+      def upsert_definition: (key: Kaal::rbs_any, cron: Kaal::rbs_any, ?enabled: bool, ?source: ::String, ?metadata: ::Hash[Kaal::rbs_any, Kaal::rbs_any]) -> Kaal::rbs_any
+
+      def remove_definition: (Kaal::rbs_any key) -> Kaal::rbs_any
+
+      def find_definition: (Kaal::rbs_any key) -> Kaal::rbs_any
+
+      def all_definitions: () -> Kaal::rbs_any
+
+      private
+
+      def storage_key: () -> ::String
+
+      def deserialize: (Kaal::rbs_any raw) -> Kaal::rbs_any
+
+      def self.serialize_payload: (Kaal::rbs_any payload) -> Kaal::rbs_any
+
+      def self.deserialize_payload: (Kaal::rbs_any raw) -> Kaal::rbs_any
+
+      def self.parse_time: (Kaal::rbs_any value) -> Kaal::rbs_any
+    end
+  end
+end
