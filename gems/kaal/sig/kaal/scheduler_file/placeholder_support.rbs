@@ -1,0 +1,19 @@
+module Kaal
+  module SchedulerPlaceholderSupport
+    @placeholder_token_anchors: Kaal::rbs_any
+
+    private
+
+    def validate_placeholders: (Kaal::rbs_any input, key: Kaal::rbs_any) -> Kaal::rbs_any
+
+    def resolve_placeholders: (Kaal::rbs_any template, Kaal::rbs_any context) -> Kaal::rbs_any
+
+    def replace_placeholders: (Kaal::rbs_any text, Kaal::rbs_any context) -> Kaal::rbs_any
+
+    def validate_placeholder_key: (Kaal::rbs_any hash_key, key: Kaal::rbs_any) -> (nil | Kaal::rbs_any)
+
+    def validate_placeholder_syntax: (Kaal::rbs_any input, key: Kaal::rbs_any) -> Kaal::rbs_any
+
+    def placeholder_token_anchors: () -> Kaal::rbs_any
+  end
+end

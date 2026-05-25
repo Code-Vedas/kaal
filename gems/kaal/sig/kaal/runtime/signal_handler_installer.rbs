@@ -1,0 +1,19 @@
+module Kaal
+  class SignalHandlerInstaller
+    @signal_module: Kaal::rbs_any
+
+    SIGNALS: ::Array["TERM" | "INT"]
+
+    IGNORE_HANDLER: "IGNORE"
+
+    def initialize: (?signal_module: Kaal::rbs_any) -> void
+
+    def install: (?signals: Kaal::rbs_any) { (Kaal::rbs_any, Kaal::rbs_any) -> Kaal::rbs_any } -> Kaal::rbs_any
+
+    private
+
+    def capture_previous_handler: (Kaal::rbs_any signal) -> Kaal::rbs_any
+
+    def restore_previous_handler: (Kaal::rbs_any signal, Kaal::rbs_any previous_handler) -> (nil | Kaal::rbs_any)
+  end
+end

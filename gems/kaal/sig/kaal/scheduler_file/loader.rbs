@@ -1,0 +1,69 @@
+module Kaal
+  class SchedulerFileLoader
+    @configuration: Kaal::rbs_any
+
+    @definition_registry: Kaal::rbs_any
+
+    @registry: Kaal::rbs_any
+
+    @logger: Kaal::rbs_any
+
+    @runtime_context: Kaal::rbs_any
+
+    @placeholder_resolvers: Kaal::rbs_any
+
+    @payload_loader: Kaal::rbs_any
+
+    @job_normalizer: Kaal::rbs_any
+
+    @job_applier: Kaal::rbs_any
+
+    @helper_bundle: Kaal::rbs_any
+
+    include SchedulerHashTransform
+
+    include SchedulerPlaceholderSupport
+
+    include Kaal::Support::HashTools
+
+    PLACEHOLDER_PATTERN: ::Regexp
+
+    ALLOWED_PLACEHOLDERS: { "fire_time.iso8601" => Kaal::rbs_any, "fire_time.unix" => Kaal::rbs_any, "idempotency_key" => Kaal::rbs_any, "key" => Kaal::rbs_any }
+
+    def initialize: (configuration: Kaal::rbs_any, definition_registry: Kaal::rbs_any, registry: Kaal::rbs_any, logger: Kaal::rbs_any, ?runtime_context: Kaal::rbs_any) -> void
+
+    def load: () -> Kaal::rbs_any
+
+    private
+
+    def handle_missing_file: (Kaal::rbs_any path) -> Kaal::rbs_any
+
+    def extract_jobs: (Kaal::rbs_any payload) -> Kaal::rbs_any
+
+    def validate_unique_keys: (Kaal::rbs_any jobs) -> Kaal::rbs_any
+
+    def normalize_job: (Kaal::rbs_any job_payload) -> Kaal::rbs_any
+
+    def extract_job_options: (Kaal::rbs_any payload, key: Kaal::rbs_any) -> Kaal::rbs_any
+
+    def apply_job: (Kaal::rbs_any job) -> Kaal::rbs_any
+
+    def rollback_applied_jobs: (?Kaal::rbs_any applied_job_contexts) -> Kaal::rbs_any
+
+    def rollback_applied_job: (key: Kaal::rbs_any, existing_definition: Kaal::rbs_any, existing_registry_entry: Kaal::rbs_any) -> Kaal::rbs_any
+
+    def skip_due_to_conflict?: (key: Kaal::rbs_any, existing_definition: Kaal::rbs_any) -> Kaal::rbs_any
+
+    def build_callback: (key: Kaal::rbs_any, job_class_name: Kaal::rbs_any, queue: Kaal::rbs_any, args_template: Kaal::rbs_any, kwargs_template: Kaal::rbs_any) -> Kaal::rbs_any
+
+    def resolve_job_class: (job_class_name: Kaal::rbs_any, key: Kaal::rbs_any, ?queue: Kaal::rbs_any?) -> Kaal::rbs_any
+
+    def payload_loader: () -> Kaal::rbs_any
+
+    def job_normalizer: () -> Kaal::rbs_any
+
+    def job_applier: () -> Kaal::rbs_any
+
+    def helper_bundle: () -> Kaal::rbs_any
+  end
+end

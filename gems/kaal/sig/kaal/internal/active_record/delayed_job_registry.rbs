@@ -1,0 +1,39 @@
+module Kaal
+  module Internal
+    module ActiveRecord
+      class DelayedJobRegistry < Kaal::DelayedJob::Registry
+        @model: Kaal::rbs_any
+
+        @use_skip_locked: Kaal::rbs_any
+
+        def initialize: (?connection: Kaal::rbs_any?, ?model: Kaal::rbs_any, ?use_skip_locked: bool) -> void
+
+        def enqueue: (job_id: Kaal::rbs_any, run_at: Kaal::rbs_any, job_class: Kaal::rbs_any, args: Kaal::rbs_any, ?queue: Kaal::rbs_any?, ?connection: Kaal::rbs_any?) -> Kaal::rbs_any
+
+        def pop_due: (now: Kaal::rbs_any, limit: Kaal::rbs_any) -> Kaal::rbs_any
+
+        private
+
+        def pop_due_with_skip_locked: (now: Kaal::rbs_any, limit: Kaal::rbs_any) -> Kaal::rbs_any
+
+        def pop_due_with_delete_confirmation: (now: Kaal::rbs_any, limit: Kaal::rbs_any) -> Kaal::rbs_any
+
+        public
+
+        def find_job: (Kaal::rbs_any job_id) -> Kaal::rbs_any
+
+        def all_jobs: () -> Kaal::rbs_any
+
+        def claim_strategy: () -> (:skip_locked | :delete_confirmation)
+
+        def self.normalize: (Kaal::rbs_any record) -> Kaal::rbs_any
+
+        private
+
+        def insert_with_connection: (Kaal::rbs_any connection, Kaal::rbs_any attributes) -> Kaal::rbs_any
+
+        def self.parse_args: (Kaal::rbs_any args_payload) -> Kaal::rbs_any
+      end
+    end
+  end
+end

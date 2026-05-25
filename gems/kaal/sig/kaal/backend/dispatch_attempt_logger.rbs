@@ -1,0 +1,17 @@
+module Kaal
+  module Backend
+    class DispatchAttemptLogger
+      @configuration: Kaal::rbs_any
+
+      @dispatch_registry_provider: Kaal::rbs_any
+
+      @logger: Kaal::rbs_any
+
+      @node_id_provider: Kaal::rbs_any
+
+      def initialize: (configuration: Kaal::rbs_any, dispatch_registry_provider: Kaal::rbs_any, ?logger: Kaal::rbs_any?, ?node_id_provider: Kaal::rbs_any) -> void
+
+      def call: (Kaal::rbs_any lock_key) -> Kaal::rbs_any
+    end
+  end
+end

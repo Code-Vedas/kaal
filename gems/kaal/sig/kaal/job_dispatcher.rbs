@@ -1,0 +1,19 @@
+module Kaal
+  module JobDispatcher
+    def self?.resolve_job_class: (job_class_name: Kaal::rbs_any, key: Kaal::rbs_any, ?queue: Kaal::rbs_any?, ?apply_delayed_job_allow_list: bool) -> Kaal::rbs_any
+
+    def self?.normalized_job_class_name: (job_class_name: Kaal::rbs_any, key: Kaal::rbs_any, ?apply_delayed_job_allow_list: bool) -> Kaal::rbs_any
+
+    def self?.dispatch: (job_class: Kaal::rbs_any, queue: Kaal::rbs_any, args: Kaal::rbs_any, ?key: Kaal::rbs_any?) -> Kaal::rbs_any
+
+    def self?.active_job_dispatch?: (Kaal::rbs_any job_class, Kaal::rbs_any queue) -> Kaal::rbs_any
+
+    def self?.normalize_job_class_name: (Kaal::rbs_any job_class) -> Kaal::rbs_any
+
+    def self?.normalize_job_class: (Kaal::rbs_any job_class_name, Kaal::rbs_any key, ?apply_delayed_job_allow_list: bool) -> Kaal::rbs_any
+
+    def self?.validate_allowed_job_class_name!: (job_class_name: Kaal::rbs_any, key: Kaal::rbs_any) -> (nil | Kaal::rbs_any)
+
+    def self?.validate_dispatch_interface: (Kaal::rbs_any job_class, Kaal::rbs_any key, Kaal::rbs_any queue) -> Kaal::rbs_any
+  end
+end

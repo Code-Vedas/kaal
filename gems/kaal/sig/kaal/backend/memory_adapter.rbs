@@ -1,0 +1,33 @@
+module Kaal
+  module Backend
+    class MemoryAdapter < Adapter
+      @locks: Kaal::rbs_any
+
+      @mutex: Kaal::rbs_any
+
+      @dispatch_registry: Kaal::rbs_any
+
+      @definition_registry: Kaal::rbs_any
+
+      @delayed_store: Kaal::rbs_any
+
+      include DispatchLogging
+
+      def initialize: () -> void
+
+      def dispatch_registry: () -> Kaal::rbs_any
+
+      def definition_registry: () -> Kaal::rbs_any
+
+      def delayed_store: () -> Kaal::rbs_any
+
+      def acquire: (Kaal::rbs_any key, Kaal::rbs_any ttl) -> Kaal::rbs_any
+
+      def release: (Kaal::rbs_any key) -> Kaal::rbs_any
+
+      private
+
+      def prune_expired_locks: () -> Kaal::rbs_any
+    end
+  end
+end

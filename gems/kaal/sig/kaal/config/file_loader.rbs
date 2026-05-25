@@ -1,0 +1,35 @@
+module Kaal
+  module Config
+    class FileLoader
+      @configuration: Kaal::rbs_any
+
+      @runtime_context: Kaal::rbs_any
+
+      @env: Kaal::rbs_any
+
+      ENV_KEY_MAP: { "KAAL_BACKEND" => :backend, "KAAL_NAMESPACE" => :namespace, "KAAL_TICK_INTERVAL" => :tick_interval, "KAAL_WINDOW_LOOKBACK" => :window_lookback, "KAAL_WINDOW_LOOKAHEAD" => :window_lookahead, "KAAL_LEASE_TTL" => :lease_ttl, "KAAL_SCHEDULER_CONFIG_PATH" => :scheduler_config_path, "KAAL_ENABLE_LOG_DISPATCH_REGISTRY" => :enable_log_dispatch_registry, "KAAL_ENABLE_DISPATCH_RECOVERY" => :enable_dispatch_recovery, "KAAL_RECOVERY_WINDOW" => :recovery_window, "KAAL_RECOVERY_STARTUP_JITTER" => :recovery_startup_jitter, "KAAL_TIME_ZONE" => :time_zone, "KAAL_SCHEDULER_CONFLICT_POLICY" => :scheduler_conflict_policy, "KAAL_SCHEDULER_MISSING_FILE_POLICY" => :scheduler_missing_file_policy, "KAAL_DELAYED_JOB_ALLOWED_CLASS_PREFIXES" => :delayed_job_allowed_class_prefixes }
+
+      def initialize: (configuration: Kaal::rbs_any, runtime_context: Kaal::rbs_any, ?env: Kaal::rbs_any) -> void
+
+      def load: (?path: ::String) -> Kaal::rbs_any
+
+      private
+
+      def parse_yaml: (Kaal::rbs_any path) -> Kaal::rbs_any
+
+      def merge_environment_config: (Kaal::rbs_any payload) -> Kaal::rbs_any
+
+      def hash_section: (Kaal::rbs_any value) -> (::Hash[Kaal::rbs_any, Kaal::rbs_any] | Kaal::rbs_any)
+
+      def apply_env_overrides: (Kaal::rbs_any config) -> Kaal::rbs_any
+
+      def coerce_env_value: (Kaal::rbs_any key, Kaal::rbs_any value) -> Kaal::rbs_any
+
+      def coerce_boolean_env: (Kaal::rbs_any key, Kaal::rbs_any value) -> (true | false | Kaal::rbs_any)
+
+      def env_name_for: (Kaal::rbs_any key) -> Kaal::rbs_any
+
+      def apply_configuration: (Kaal::rbs_any config) -> Kaal::rbs_any
+    end
+  end
+end

@@ -1,0 +1,19 @@
+module Kaal
+  class SignalHandlerChain
+    @signal: Kaal::rbs_any
+
+    @previous_handler: Kaal::rbs_any
+
+    @logger: Kaal::rbs_any
+
+    RESERVED_COMMAND_HANDLERS: ::Array["DEFAULT" | "IGNORE"]
+
+    def initialize: (signal: Kaal::rbs_any, previous_handler: Kaal::rbs_any, logger: Kaal::rbs_any) -> void
+
+    def call: (*Kaal::rbs_any, **Kaal::rbs_any) ?{ (?) -> Kaal::rbs_any } -> (nil | Kaal::rbs_any)
+
+    private
+
+    def invoke_callable: (*Kaal::rbs_any args) -> Kaal::rbs_any
+  end
+end

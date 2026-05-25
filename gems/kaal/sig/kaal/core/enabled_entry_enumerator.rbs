@@ -1,0 +1,21 @@
+module Kaal
+  class EnabledEntryEnumerator
+    @configuration: Kaal::rbs_any
+
+    @registry: Kaal::rbs_any
+
+    @definition_registry_provider: Kaal::rbs_any
+
+    def initialize: (configuration: Kaal::rbs_any, registry: Kaal::rbs_any, ?definition_registry_provider: Kaal::rbs_any) -> void
+
+    def each: () { (?) -> Kaal::rbs_any } -> Kaal::rbs_any
+
+    private
+
+    def yield_registry_entries: () { (?) -> Kaal::rbs_any } -> Kaal::rbs_any
+
+    def resolve_entries: () -> Kaal::rbs_any
+
+    def build_entry: (Kaal::rbs_any definition) -> (nil | Kaal::rbs_any)
+  end
+end

@@ -1,0 +1,25 @@
+module Kaal
+  module Sequel
+    def self?.install_postgres_migration: (target_dir: Kaal::rbs_any, ?migration_name: ::String) -> Kaal::rbs_any
+
+    def self?.install_mysql_migration: (target_dir: Kaal::rbs_any, ?migration_name: ::String) -> Kaal::rbs_any
+
+    def self?.install_sqlite_migration: (target_dir: Kaal::rbs_any, ?migration_name: ::String) -> Kaal::rbs_any
+
+    def self?.install_migrations: (target_dir: Kaal::rbs_any, backend: Kaal::rbs_any, ?migration_name: Kaal::rbs_any?) -> Kaal::rbs_any
+
+    def self?.require_sequel!: () -> Kaal::rbs_any
+
+    def self?.normalize_migration_name: (Kaal::rbs_any name, fallback: Kaal::rbs_any) -> Kaal::rbs_any
+
+    def self?.default_migration_name_for: (Kaal::rbs_any backend) -> ::String
+
+    def self?.migration_suffixes_for: (Kaal::rbs_any backend) -> (::Array["dispatches" | "locks" | "definitions" | "delayed_jobs"] | ::Array["dispatches" | "definitions" | "delayed_jobs"])
+
+    def self?.timestamp: (?::Integer offset) -> Kaal::rbs_any
+
+    def self?.letter?: (Kaal::rbs_any char) -> Kaal::rbs_any
+
+    def self?.digit?: (Kaal::rbs_any char) -> Kaal::rbs_any
+  end
+end

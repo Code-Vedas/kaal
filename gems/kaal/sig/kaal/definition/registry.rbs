@@ -1,0 +1,29 @@
+module Kaal
+  module Definition
+    module AttributeHelpers
+      def self?.definition_attributes: (Kaal::rbs_any definition) -> { key: Kaal::rbs_any, cron: Kaal::rbs_any, source: Kaal::rbs_any, metadata: Kaal::rbs_any }
+
+      def self?.persisted_definition_attributes: (Kaal::rbs_any definition) -> (::Hash[Kaal::rbs_any, Kaal::rbs_any] | { enabled: Kaal::rbs_any, metadata: Kaal::rbs_any })
+    end
+
+    class Registry
+      def upsert_definition: (**Kaal::rbs_any) -> Kaal::rbs_any
+
+      def remove_definition: (Kaal::rbs_any _key) -> Kaal::rbs_any
+
+      def find_definition: (Kaal::rbs_any _key) -> Kaal::rbs_any
+
+      def all_definitions: () -> Kaal::rbs_any
+
+      def enabled_definitions: () -> Kaal::rbs_any
+
+      def enable_definition: (Kaal::rbs_any key) -> Kaal::rbs_any
+
+      def disable_definition: (Kaal::rbs_any key) -> Kaal::rbs_any
+
+      private
+
+      def update_definition_enabled_state: (Kaal::rbs_any key, enabled: Kaal::rbs_any) -> (nil | Kaal::rbs_any)
+    end
+  end
+end

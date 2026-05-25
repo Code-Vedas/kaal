@@ -1,0 +1,11 @@
+module Kaal
+  module Config
+    Configuration: Kaal::rbs_any
+
+    ConfigurationError: Kaal::rbs_any
+
+    SchedulerConfigError: Kaal::rbs_any
+
+    SchedulerTimeZoneResolver: Kaal::rbs_any
+  end
+end

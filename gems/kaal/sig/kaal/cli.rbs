@@ -1,0 +1,41 @@
+module Kaal
+  class CLI < Thor
+    module Helpers
+      private
+
+      def load_project!: () -> Kaal::rbs_any
+
+      def root_path: () -> Kaal::rbs_any
+
+      def config_path: () -> Kaal::rbs_any
+
+      def scheduler_path: () -> Kaal::rbs_any
+
+      def render_config_template: (Kaal::rbs_any backend) -> Kaal::rbs_any
+
+      def scheduler_template: () -> "defaults:\n  jobs:\n    - key: \"example:heartbeat\"\n      cron: \"*/5 * * * *\"\n      job_class: \"ExampleHeartbeatJob\"\n      enabled: true\n      args:\n        - \"{{fire_time.iso8601}}\"\n      kwargs:\n        idempotency_key: \"{{idempotency_key}}\"\n      metadata:\n        owner: \"ops\"\n"
+    end
+
+    def init: () -> Kaal::rbs_any
+
+    def start: () -> Kaal::rbs_any
+
+    def status: () -> Kaal::rbs_any
+
+    def tick: () -> Kaal::rbs_any
+
+    def explain: (Kaal::rbs_any expression) -> Kaal::rbs_any
+
+    def next: (Kaal::rbs_any expression) -> Kaal::rbs_any
+
+    def self.exit_on_failure?: () -> true
+
+    def self.write_file: (Kaal::rbs_any path, Kaal::rbs_any contents) -> (nil | Kaal::rbs_any)
+
+    def self.install_foreground_signal_handlers: (Kaal::rbs_any signal_state) -> Kaal::rbs_any
+
+    def self.restore_signal_handlers: (Kaal::rbs_any previous_handlers) -> Kaal::rbs_any
+
+    def self.shutdown_scheduler: (signal: Kaal::rbs_any, signal_state: Kaal::rbs_any, ?previous_handler: Kaal::rbs_any?, ?shell: Kaal::rbs_any?) -> Kaal::rbs_any
+  end
+end

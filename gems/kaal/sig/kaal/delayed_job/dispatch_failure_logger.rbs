@@ -1,0 +1,7 @@
+module Kaal
+  module DelayedJob
+    module DispatchFailureLogger
+      def self?.log_claimed_dispatch_failure: (logger: Kaal::rbs_any, job: Kaal::rbs_any, error: Kaal::rbs_any) -> (nil | Kaal::rbs_any)
+    end
+  end
+end

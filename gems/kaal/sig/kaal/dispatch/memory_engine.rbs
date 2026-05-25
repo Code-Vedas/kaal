@@ -1,0 +1,23 @@
+module Kaal
+  module Dispatch
+    class MemoryEngine < Registry
+      @dispatches: Kaal::rbs_any
+
+      @mutex: Kaal::rbs_any
+
+      def initialize: () -> void
+
+      def log_dispatch: (Kaal::rbs_any key, Kaal::rbs_any fire_time, Kaal::rbs_any node_id, ?::String status) -> Kaal::rbs_any
+
+      def find_dispatch: (Kaal::rbs_any key, Kaal::rbs_any fire_time) -> Kaal::rbs_any
+
+      def clear: () -> Kaal::rbs_any
+
+      def size: () -> Kaal::rbs_any
+
+      private
+
+      def build_key: (Kaal::rbs_any key, Kaal::rbs_any fire_time) -> ::String
+    end
+  end
+end

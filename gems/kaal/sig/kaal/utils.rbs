@@ -1,0 +1,9 @@
+module Kaal
+  module Utils
+    CronUtils: Kaal::rbs_any
+
+    CronHumanizer: Kaal::rbs_any
+
+    IdempotencyKeyGenerator: Kaal::rbs_any
+  end
+end

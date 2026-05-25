@@ -1,0 +1,65 @@
+module Kaal
+  module Backend
+    class SQLite
+      def initialize: (*rbs_any args, **rbs_any kwargs) -> void
+    end
+
+    class Postgres
+      def initialize: (*rbs_any args, **rbs_any kwargs) -> void
+    end
+
+    class MySQL
+      def initialize: (*rbs_any args, **rbs_any kwargs) -> void
+    end
+  end
+
+  def self.configuration: () -> rbs_any
+  def self.warn_on_risky_configuration!: (*rbs_any args, **rbs_any kwargs) -> rbs_any
+
+  class RuntimeContext
+    def self.new: (*rbs_any args, **rbs_any kwargs) -> RuntimeContext
+  end
+
+  module Config
+    class FileLoader
+      def initialize: (*rbs_any args, **rbs_any kwargs) -> void
+      def load: (*rbs_any args, **rbs_any kwargs) -> rbs_any
+    end
+  end
+
+  module Internal
+    module ActiveRecord
+      module MigrationTemplates
+        def self.for_backend: (rbs_any backend) -> Array[[String, String]]
+      end
+    end
+  end
+end
+
+module ActiveRecord
+  class ConnectionNotEstablished < StandardError
+  end
+
+  class Base
+    def self.connection_db_config: () -> Kaal::rbs_any
+  end
+end
+
+module Rails
+  def self.root: () -> Kaal::rbs_any
+  def self.env: () -> String
+
+  module Generators
+    class Base
+      def self.argument: (*Kaal::rbs_any args, **Kaal::rbs_any kwargs) -> void
+      def self.class_option: (*Kaal::rbs_any args, **Kaal::rbs_any kwargs) -> void
+      def self.desc: (*Kaal::rbs_any args, **Kaal::rbs_any kwargs) -> void
+      def self.namespace: (*Kaal::rbs_any args, **Kaal::rbs_any kwargs) -> void
+    end
+  end
+
+  class Railtie
+    def self.initializer: (*Kaal::rbs_any args, **Kaal::rbs_any kwargs) { () -> Kaal::rbs_any } -> void
+    def self.rake_tasks: () { () -> Kaal::rbs_any } -> void
+  end
+end

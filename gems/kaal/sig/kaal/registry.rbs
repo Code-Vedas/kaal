@@ -1,0 +1,44 @@
+module Kaal
+  class Registry
+    @entries: Kaal::rbs_any
+
+    @mutex: Kaal::rbs_any
+
+    include Enumerable[Kaal::rbs_any]
+
+    Entry: Kaal::rbs_any
+
+    def initialize: () -> void
+
+    def add: (key: Kaal::rbs_any, cron: Kaal::rbs_any, enqueue: Kaal::rbs_any) -> Kaal::rbs_any
+
+    def upsert: (key: Kaal::rbs_any, cron: Kaal::rbs_any, enqueue: Kaal::rbs_any) -> Kaal::rbs_any
+
+    def remove: (Kaal::rbs_any key) -> Kaal::rbs_any
+
+    def find: (Kaal::rbs_any key) -> Kaal::rbs_any
+
+    def all: () -> Kaal::rbs_any
+
+    def size: () -> Kaal::rbs_any
+
+    alias count size
+
+    def registered?: (Kaal::rbs_any key) -> Kaal::rbs_any
+
+    def clear: () -> Kaal::rbs_any
+
+    def each: () ?{ (?) -> Kaal::rbs_any } -> Kaal::rbs_any
+
+    def to_a: () -> Kaal::rbs_any
+
+    def inspect: () -> Kaal::rbs_any
+
+    private
+
+    def validate_entry: (Kaal::rbs_any key, Kaal::rbs_any cron, Kaal::rbs_any enqueue) -> Kaal::rbs_any
+  end
+
+  class RegistryError < StandardError
+  end
+end

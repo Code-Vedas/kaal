@@ -1,0 +1,39 @@
+module Kaal
+  module Dispatch
+    class DatabaseEngine < Registry
+      @database: Kaal::rbs_any
+
+      @namespace: Kaal::rbs_any
+
+      def initialize: (database: Kaal::rbs_any, ?namespace: Kaal::rbs_any?) -> void
+
+      def log_dispatch: (Kaal::rbs_any key, Kaal::rbs_any fire_time, Kaal::rbs_any node_id, ?::String status) -> Kaal::rbs_any
+
+      def find_dispatch: (Kaal::rbs_any key, Kaal::rbs_any fire_time) -> Kaal::rbs_any
+
+      def find_by_key: (Kaal::rbs_any key) -> Kaal::rbs_any
+
+      def find_by_node: (Kaal::rbs_any node_id) -> Kaal::rbs_any
+
+      def find_by_status: (Kaal::rbs_any status) -> Kaal::rbs_any
+
+      def cleanup: (?recovery_window: ::Integer) -> Kaal::rbs_any
+
+      def self.normalize_row: (Kaal::rbs_any row, ?namespace: Kaal::rbs_any?) -> (nil | { key: Kaal::rbs_any, fire_time: Kaal::rbs_any, dispatched_at: Kaal::rbs_any, node_id: Kaal::rbs_any, status: Kaal::rbs_any })
+
+      def self.strip_namespace: (Kaal::rbs_any key, namespace: Kaal::rbs_any) -> Kaal::rbs_any
+
+      private
+
+      def dataset: () -> Kaal::rbs_any
+
+      def namespaced_key: (Kaal::rbs_any key) -> (Kaal::rbs_any | ::String)
+
+      def query: (Kaal::rbs_any filters) -> Kaal::rbs_any
+
+      def query_dataset: (Kaal::rbs_any filters) -> Kaal::rbs_any
+
+      def cleanup_dataset: () -> Kaal::rbs_any
+    end
+  end
+end

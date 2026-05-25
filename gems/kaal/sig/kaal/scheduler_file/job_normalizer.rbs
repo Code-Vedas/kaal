@@ -1,0 +1,27 @@
+module Kaal
+  class SchedulerFileLoader
+    class JobNormalizer
+      @hash_transform: Kaal::rbs_any
+
+      @placeholder_support: Kaal::rbs_any
+
+      @cron_validator: Kaal::rbs_any
+
+      include Kaal::Support::HashTools
+
+      def initialize: (hash_transform: Kaal::rbs_any, placeholder_support: Kaal::rbs_any, cron_validator: Kaal::rbs_any) -> void
+
+      def call: (Kaal::rbs_any job_payload) -> ::Hash[:key | :cron | :job_class_name | Kaal::rbs_any, Kaal::rbs_any]
+
+      private
+
+      def required_string: (Kaal::rbs_any payload, field: Kaal::rbs_any, error_prefix: Kaal::rbs_any) -> Kaal::rbs_any
+
+      def validate_cron: (key: Kaal::rbs_any, cron: Kaal::rbs_any) -> (nil | Kaal::rbs_any)
+
+      def extract_job_options: (Kaal::rbs_any payload, key: Kaal::rbs_any) -> { queue: Kaal::rbs_any, args: Kaal::rbs_any, kwargs: Kaal::rbs_any, enabled: Kaal::rbs_any, metadata: Kaal::rbs_any }
+
+      def validate_job_option_types: (key: Kaal::rbs_any, args: Kaal::rbs_any, kwargs: Kaal::rbs_any, queue: Kaal::rbs_any) -> (nil | Kaal::rbs_any)
+    end
+  end
+end

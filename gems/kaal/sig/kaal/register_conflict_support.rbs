@@ -1,0 +1,11 @@
+module Kaal
+  module RegisterConflictSupport
+    private
+
+    def resolve_register_conflict: (key: Kaal::rbs_any, cron: Kaal::rbs_any, enqueue: Kaal::rbs_any, existing_definition: Kaal::rbs_any, existing_entry: Kaal::rbs_any) -> (nil | Kaal::rbs_any)
+
+    def replace_file_registered_definition: (key: Kaal::rbs_any, cron: Kaal::rbs_any, enqueue: Kaal::rbs_any, existing_definition: Kaal::rbs_any) -> Kaal::rbs_any
+
+    def with_registered_definition_rollback: (Kaal::rbs_any key, Kaal::rbs_any existing_definition) { () -> Kaal::rbs_any } -> Kaal::rbs_any
+  end
+end

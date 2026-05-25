@@ -1,0 +1,9 @@
+module Kaal
+  module SchedulerHashTransform
+    private
+
+    def stringify_keys: (Kaal::rbs_any object) -> Kaal::rbs_any
+
+    def symbolize_keys_deep: (Kaal::rbs_any object) -> Kaal::rbs_any
+  end
+end

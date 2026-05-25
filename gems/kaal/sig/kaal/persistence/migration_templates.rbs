@@ -1,0 +1,15 @@
+module Kaal
+  module Persistence
+    module MigrationTemplates
+      def self?.for_backend: (Kaal::rbs_any backend) -> Kaal::rbs_any
+
+      def self?.dispatches_template: () -> "Sequel.migration do\n  change do\n    create_table?(:kaal_dispatches) do\n      primary_key :id\n      String :key, null: false\n      Time :fire_time, null: false\n      Time :dispatched_at, null: false\n      String :node_id, null: false\n      String :status, null: false, default: 'dispatched', size: 50\n    end\n\n    add_index :kaal_dispatches, [:key, :fire_time], unique: true\n    add_index :kaal_dispatches, :key\n    add_index :kaal_dispatches, :node_id\n    add_index :kaal_dispatches, :status\n    add_index :kaal_dispatches, :fire_time\n  end\nend\n"
+
+      def self?.locks_template: () -> "Sequel.migration do\n  change do\n    create_table?(:kaal_locks) do\n      primary_key :id\n      String :key, null: false\n      Time :acquired_at, null: false\n      Time :expires_at, null: false\n    end\n\n    add_index :kaal_locks, :key, unique: true\n    add_index :kaal_locks, :expires_at\n  end\nend\n"
+
+      def self?.definitions_template: () -> "Sequel.migration do\n  change do\n    create_table?(:kaal_definitions) do\n      primary_key :id\n      String :key, null: false\n      String :cron, null: false\n      TrueClass :enabled, null: false, default: true\n      String :source, null: false\n      String :metadata, text: true, null: false, default: '{}'\n      Time :disabled_at\n      Time :created_at, null: false\n      Time :updated_at, null: false\n    end\n\n    add_index :kaal_definitions, :key, unique: true\n    add_index :kaal_definitions, :enabled\n    add_index :kaal_definitions, :source\n  end\nend\n"
+
+      def self?.delayed_jobs_template: (Kaal::rbs_any backend) -> ::String
+    end
+  end
+end

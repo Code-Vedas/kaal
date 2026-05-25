@@ -1,0 +1,55 @@
+module Kaal
+  module Backend
+    class MemoryAdapter
+      def initialize: (*rbs_any args, **rbs_any kwargs) -> void
+    end
+
+    class RedisAdapter
+      def initialize: (*rbs_any args, **rbs_any kwargs) -> void
+    end
+
+    class SQLite
+      def initialize: (*rbs_any args, **rbs_any kwargs) -> void
+    end
+
+    class Postgres
+      def initialize: (*rbs_any args, **rbs_any kwargs) -> void
+    end
+
+    class MySQL
+      def initialize: (*rbs_any args, **rbs_any kwargs) -> void
+    end
+  end
+
+  def self.configuration: () -> rbs_any
+  def self.running?: () -> bool
+  def self.start!: () -> rbs_any
+  def self.stop!: (*rbs_any args, **rbs_any kwargs) -> rbs_any
+  def self.load_scheduler_file!: (*rbs_any args, **rbs_any kwargs) -> rbs_any
+
+  module Runtime
+    class RuntimeContext
+      def self.new: (*rbs_any args, **rbs_any kwargs) -> RuntimeContext
+      def self.environment_name_from: (Hash[String, String] env) -> String
+    end
+
+    class SchedulerBootLoader
+      def initialize: (*rbs_any args, **rbs_any kwargs) -> void
+      def load_on_boot!: () -> rbs_any
+    end
+  end
+
+  module Config
+    class FileLoader
+      def initialize: (*rbs_any args, **rbs_any kwargs) -> void
+      def load: (*rbs_any args, **rbs_any kwargs) -> rbs_any
+    end
+  end
+end
+
+module Hanami
+  def self.env: () -> String
+
+  class App
+  end
+end
