@@ -29,7 +29,7 @@ If you use SQL persistence, create the Kaal tables using Sequel migrations. `kaa
 - PostgreSQL: `kaal_dispatches`, `kaal_definitions`, `kaal_delayed_jobs`
 - MySQL: `kaal_dispatches`, `kaal_definitions`, `kaal_delayed_jobs`
 
-Your app should also provide `config/scheduler.yml`.
+Your app should also provide `config/kaal-scheduler.yml`.
 
 ## What It Provides
 
@@ -55,8 +55,7 @@ end
 class App < Roda
   plugin :kaal
 
-  kaal backend: Kaal::Backend::MemoryAdapter.new,
-       scheduler_config_path: 'config/scheduler.yml',
+  kaal scheduler_config_path: 'config/kaal-scheduler.yml',
        namespace: 'my-app',
        start_scheduler: false
 
@@ -74,12 +73,12 @@ require 'redis'
 require 'kaal/roda'
 
 class App < Roda
-  REDIS = Redis.new(url: ENV.fetch('REDIS_URL'))
+  REDIS = Redis.new(url: "redis://127.0.0.1:6379/0")
 
   plugin :kaal
 
   kaal redis: REDIS,
-       scheduler_config_path: 'config/scheduler.yml',
+       scheduler_config_path: 'config/kaal-scheduler.yml',
        namespace: 'my-app',
        start_scheduler: false
 end
@@ -99,7 +98,7 @@ class App < Roda
 
   kaal database: database,
        adapter: 'postgres', # optional when Sequel can infer it
-       scheduler_config_path: 'config/scheduler.yml'
+       scheduler_config_path: 'config/kaal-scheduler.yml'
 end
 ```
 
@@ -128,7 +127,7 @@ Preferred deployment model:
 
 ## Public API
 
-- `Kaal::Roda.register!(app, backend: nil, database: nil, redis: nil, scheduler_config_path: 'config/scheduler.yml', namespace: nil, start_scheduler: false, adapter: nil, root: nil, environment: nil)`
+- `Kaal::Roda.register!(app, backend: nil, database: nil, redis: nil, scheduler_config_path: 'config/kaal-scheduler.yml', namespace: nil, start_scheduler: false, adapter: nil, root: nil, environment: nil)`
 - `Kaal::Roda.configure_backend!(backend: nil, database: nil, redis: nil, adapter: nil, configuration: Kaal.configuration)`
 - `Kaal::Roda.detect_backend_name(database, adapter: nil)`
 - `Kaal::Roda.load_scheduler_file!(root:, environment: nil)`

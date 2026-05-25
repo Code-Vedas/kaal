@@ -12,7 +12,8 @@ module Kaal
   # @example Basic configuration
   #   Kaal.configure do |config|
   #     config.tick_interval = 5
-  #     config.backend = Kaal::Backend::RedisAdapter.new(Redis.new(url: ENV["REDIS_URL"]))
+  #     config.backend_config = { url: ENV['KAAL_BACKEND_URL'] }
+  #     config.backend = :redis
   #   end
   class Configuration
     # Default values for all configuration options
@@ -23,13 +24,14 @@ module Kaal
       lease_ttl: 125, # Must be >= window_lookback + tick_interval (120 + 5 = 125)
       namespace: 'kaal',
       backend: nil,
+      backend_config: {},
       logger: nil,
       time_zone: nil,
       enable_log_dispatch_registry: false,
       enable_dispatch_recovery: true,
       recovery_window: 86_400, # 24 hours in seconds
       recovery_startup_jitter: 5, # max random delay in seconds
-      scheduler_config_path: 'config/scheduler.yml',
+      scheduler_config_path: 'config/kaal-scheduler.yml',
       scheduler_conflict_policy: :error,
       scheduler_missing_file_policy: :warn,
       delayed_job_allowed_class_prefixes: []
@@ -41,6 +43,8 @@ module Kaal
     # @return [Configuration] a new instance with all defaults set
     def initialize
       @values = DEFAULTS.dup
+      @backend_name = nil
+      @backend_runtime_context = nil
     end
 
     ##
@@ -111,6 +115,7 @@ module Kaal
         lease_ttl: @values[:lease_ttl],
         namespace: @values[:namespace],
         backend: backend&.class&.name,
+        backend_config: Kaal::Support::HashTools.deep_dup(@values[:backend_config]),
         logger: logger&.class&.name,
         time_zone: @values[:time_zone],
         enable_log_dispatch_registry: @values[:enable_log_dispatch_registry],
@@ -133,6 +138,7 @@ module Kaal
       add_window_lookahead_error(errors)
       add_lease_ttl_error(errors)
       add_namespace_error(errors)
+      add_backend_config_error(errors)
       add_lease_ttl_window_error(errors)
       add_scheduler_config_path_error(errors)
       add_scheduler_conflict_policy_error(errors)
@@ -172,6 +178,12 @@ module Kaal
       return unless @values[:namespace].to_s.strip.empty?
 
       errors << 'namespace cannot be blank'
+    end
+
+    def add_backend_config_error(errors)
+      return if @values[:backend_config].is_a?(Hash)
+
+      errors << 'backend_config must be a hash'
     end
 
     def add_lease_ttl_window_error(errors)
@@ -224,22 +236,25 @@ module Kaal
 
     def set_value(key, value)
       @values[key] = normalize_value(key, value)
+      rebuild_symbolic_backend_if_needed(key)
     end
 
     def normalize_value(key, value)
-      return value unless @values.key?(key)
-
       case key
+      when :backend
+        normalize_backend(value)
+      when :backend_config
+        value.is_a?(Hash) ? Kaal::Support::HashTools.symbolize_keys(Kaal::Support::HashTools.deep_dup(value)) : (value || {})
       when :tick_interval, :window_lookback, :window_lookahead, :lease_ttl
         value.to_i
       when :namespace, :scheduler_config_path
         value.to_s
       when :time_zone
-        value&.to_s
+        normalize_optional_string(value)
       when :enable_log_dispatch_registry
-        value ? true : false
+        !!value
       when :scheduler_conflict_policy, :scheduler_missing_file_policy
-        value&.to_sym
+        normalize_optional_symbol(value)
       when :delayed_job_allowed_class_prefixes
         normalize_delayed_job_allowed_class_prefixes(value)
       else
@@ -247,11 +262,53 @@ module Kaal
       end
     end
 
+    def normalize_backend(value)
+      unless value.is_a?(String) || value.is_a?(Symbol)
+        @backend_name = nil
+        return value
+      end
+
+      normalized_backend_name = Kaal::Config::BackendFactory.normalize_name(value)
+      @backend_name = normalized_backend_name
+      Kaal::Config::BackendFactory.build(
+        normalized_backend_name,
+        backend_config: @values[:backend_config],
+        namespace: @values[:namespace],
+        runtime_context: @backend_runtime_context
+      )
+    end
+
+    def apply_backend_runtime_context(runtime_context)
+      @backend_runtime_context = runtime_context
+    end
+    public :apply_backend_runtime_context
+
+    def rebuild_symbolic_backend_if_needed(key)
+      return unless @backend_name
+      return unless %i[backend_config namespace backend].include?(key)
+      return if key == :backend
+
+      @values[:backend] = Kaal::Config::BackendFactory.build(
+        @backend_name,
+        backend_config: @values[:backend_config],
+        namespace: @values[:namespace],
+        runtime_context: @backend_runtime_context
+      )
+    end
+
     def normalize_delayed_job_allowed_class_prefixes(value)
       Array(value).filter_map do |entry|
         normalized_entry = entry.to_s.strip
         normalized_entry unless normalized_entry.empty?
       end
+    end
+
+    def normalize_optional_string(value)
+      value&.to_s
+    end
+
+    def normalize_optional_symbol(value)
+      value&.to_sym
     end
   end
 

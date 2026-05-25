@@ -24,7 +24,7 @@ Metrics/ParameterLists:
 RSpec/MultipleExpectations:
   Max: 30
 RSpec/ExampleLength:
-  Max: 50
+  Max: 80
 Layout/LineLength:
   Max: 160
 Metrics/ClassLength:

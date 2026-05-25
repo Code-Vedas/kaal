@@ -12,6 +12,20 @@ module Kaal
   module Rails
     # Installs scheduler config and Active Record migrations into a Rails app.
     class Installer
+      KAAL_TEMPLATE = <<~YAML
+        defaults:
+          namespace: kaal
+          tick_interval: 5
+          window_lookback: 120
+          window_lookahead: 0
+          lease_ttl: 125
+          scheduler_config_path: config/kaal-scheduler.yml
+          enable_dispatch_recovery: true
+          enable_log_dispatch_registry: false
+          delayed_job_allowed_class_prefixes: []
+          backend_config: {}
+      YAML
+
       SCHEDULER_TEMPLATE = <<~YAML
         defaults:
           jobs:
@@ -31,8 +45,16 @@ module Kaal
         @time_source = time_source
       end
 
+      def install_runtime_config
+        ensure_config_dir
+        return { status: :exists, path: runtime_config_path_string } if runtime_config_exists?
+
+        File.write(runtime_config_path, KAAL_TEMPLATE)
+        { status: :create, path: runtime_config_path_string }
+      end
+
       def install_scheduler_config
-        ensure_scheduler_config_dir
+        ensure_config_dir
         return { status: :exists, path: scheduler_config_path_string } if scheduler_config_exists?
 
         File.write(scheduler_config_path, SCHEDULER_TEMPLATE)
@@ -71,18 +93,30 @@ module Kaal
       end
 
       def scheduler_config_path
-        root.join('config', 'scheduler.yml')
+        root.join('config', 'kaal-scheduler.yml')
+      end
+
+      def runtime_config_path
+        root.join('config', 'kaal.yml')
       end
 
       def scheduler_config_exists?
         scheduler_config_path.exist?
       end
 
+      def runtime_config_exists?
+        runtime_config_path.exist?
+      end
+
       def scheduler_config_path_string
         scheduler_config_path.to_s
       end
 
-      def ensure_scheduler_config_dir
+      def runtime_config_path_string
+        runtime_config_path.to_s
+      end
+
+      def ensure_config_dir
         FileUtils.mkdir_p(scheduler_config_path.dirname)
       end
     end

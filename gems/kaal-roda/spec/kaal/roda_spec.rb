@@ -118,7 +118,7 @@ RSpec.describe Kaal::Roda do
       FileUtils.mkdir_p(File.dirname(database_path))
       FileUtils.mkdir_p(File.join(root, 'config'))
       File.write(
-        File.join(root, 'config', 'scheduler.yml'),
+        File.join(root, 'config', 'kaal-scheduler.yml'),
         YAML.dump(
           'defaults' => {
             'jobs' => [
@@ -145,7 +145,7 @@ RSpec.describe Kaal::Roda do
       expect(described_class.register!(fake_app_class, database:, namespace: 'roda-spec')).to eq(fake_app_class)
 
       expect(Kaal.configuration.namespace).to eq('roda-spec')
-      expect(Kaal.configuration.scheduler_config_path).to eq('config/scheduler.yml')
+      expect(Kaal.configuration.scheduler_config_path).to eq('config/kaal-scheduler.yml')
       expect(Kaal.configuration.backend).to be_a(Kaal::Backend::SQLite)
       expect(Kaal.registered?(key: 'roda:test')).to be(true)
       expect(Kaal.running?).to be(false)
@@ -160,7 +160,7 @@ RSpec.describe Kaal::Roda do
 
     described_class.register!(fake_app_class, scheduler_config_path: nil)
 
-    expect(Kaal.configuration.scheduler_config_path).to eq('config/scheduler.yml')
+    expect(Kaal.configuration.scheduler_config_path).to eq('config/kaal-scheduler.yml')
   end
 
   it 'preserves the default scheduler path when register! is called with blank scheduler_config_path' do
@@ -169,7 +169,7 @@ RSpec.describe Kaal::Roda do
 
     described_class.register!(fake_app_class, scheduler_config_path: '   ')
 
-    expect(Kaal.configuration.scheduler_config_path).to eq('config/scheduler.yml')
+    expect(Kaal.configuration.scheduler_config_path).to eq('config/kaal-scheduler.yml')
   end
 
   it 'preserves the default namespace when register! is called with a blank namespace' do
@@ -195,7 +195,7 @@ RSpec.describe Kaal::Roda do
     Dir.mktmpdir('kaal-roda-load-') do |root|
       FileUtils.mkdir_p(File.join(root, 'config'))
       File.write(
-        File.join(root, 'config', 'scheduler.yml'),
+        File.join(root, 'config', 'kaal-scheduler.yml'),
         YAML.dump(
           'defaults' => {
             'jobs' => [
@@ -247,7 +247,7 @@ RSpec.describe Kaal::Roda do
     Dir.mktmpdir('kaal-roda-start-') do |root|
       fake_app_class.opts[:root] = root
       FileUtils.mkdir_p(File.join(root, 'config'))
-      File.write(File.join(root, 'config', 'scheduler.yml'), YAML.dump('defaults' => { 'jobs' => [] }))
+      File.write(File.join(root, 'config', 'kaal-scheduler.yml'), YAML.dump('defaults' => { 'jobs' => [] }))
 
       allow(described_class).to receive(:install_shutdown_hook)
       allow(Kaal).to receive(:start!).and_return(Thread.current)
@@ -263,7 +263,7 @@ RSpec.describe Kaal::Roda do
     Dir.mktmpdir('kaal-roda-running-') do |root|
       fake_app_class.opts[:root] = root
       FileUtils.mkdir_p(File.join(root, 'config'))
-      File.write(File.join(root, 'config', 'scheduler.yml'), YAML.dump('defaults' => { 'jobs' => [] }))
+      File.write(File.join(root, 'config', 'kaal-scheduler.yml'), YAML.dump('defaults' => { 'jobs' => [] }))
 
       allow(described_class).to receive(:install_shutdown_hook)
       allow(Kaal).to receive_messages(start!: nil, running?: true)

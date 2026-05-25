@@ -51,16 +51,38 @@ module KaalIntegrationSupport
       }
     }
 
-    File.write(File.join(root, 'config', 'scheduler.yml'), YAML.dump(scheduler))
+    File.write(File.join(root, 'config', 'kaal-scheduler.yml'), YAML.dump(scheduler))
   end
 
   def write_config(root, body)
-    File.write(File.join(root, 'config', 'kaal.rb'), body)
+    File.write(File.join(root, 'config', 'kaal.yml'), body)
+  end
+
+  def write_runtime_config(root, backend:, namespace:, backend_config: {}, overrides: {})
+    config = {
+      'defaults' => {
+        'backend' => backend.to_s,
+        'namespace' => namespace,
+        'tick_interval' => 5,
+        'window_lookback' => 65,
+        'window_lookahead' => 0,
+        'lease_ttl' => 120,
+        'scheduler_config_path' => 'config/kaal-scheduler.yml',
+        'enable_dispatch_recovery' => false,
+        'enable_log_dispatch_registry' => true,
+        'recovery_startup_jitter' => 0,
+        'delayed_job_allowed_class_prefixes' => [],
+        'backend_config' => backend_config
+      }
+    }
+
+    merged = Kaal::Support::HashTools.deep_merge(config, overrides)
+    File.write(File.join(root, 'config', 'kaal.yml'), YAML.dump(Kaal::Support::HashTools.stringify_keys(merged)))
   end
 
   def perform_tick_flow(root, key:)
     reset_job_calls!
-    load File.join(root, 'config', 'kaal.rb')
+    Kaal.load_config_file!(runtime_context: runtime_context(root))
     Kaal.load_scheduler_file!(runtime_context: runtime_context(root))
     raise "scheduler key #{key} was not registered" unless Kaal.registered?(key: key)
 

@@ -640,8 +640,8 @@ RSpec.describe Kaal::Registry do
       context = described_class.default(env: { 'APP_ENV' => 'production' }, root_path: '/tmp/app')
 
       expect(context.environment_name).to eq('production')
-      expect(context.resolve_path('config/kaal.rb')).to eq('/tmp/app/config/kaal.rb')
-      expect(context.resolve_path('/etc/kaal.rb')).to eq('/etc/kaal.rb')
+      expect(context.resolve_path('config/kaal.yml')).to eq('/tmp/app/config/kaal.yml')
+      expect(context.resolve_path('/etc/kaal.yml')).to eq('/etc/kaal.yml')
       expect(described_class.environment_name_from({})).to eq('development')
       expect(described_class.environment_name_from({ 'RAILS_ENV' => 'test' })).to eq('test')
     end
@@ -673,9 +673,9 @@ RSpec.describe Kaal::Registry do
     it 'loads an existing scheduler file and swallows configuration lookup name errors' do
       root = Dir.mktmpdir
       FileUtils.mkdir_p(File.join(root, 'config'))
-      File.write(File.join(root, 'config', 'scheduler.yml'), "defaults:\n  jobs: []\n")
+      File.write(File.join(root, 'config', 'kaal-scheduler.yml'), "defaults:\n  jobs: []\n")
       configuration = Kaal::Configuration.new
-      configuration.scheduler_config_path = 'config/scheduler.yml'
+      configuration.scheduler_config_path = 'config/kaal-scheduler.yml'
       context = Kaal::RuntimeContext.new(root_path: root, environment_name: 'development')
       load_calls = []
 
