@@ -24,21 +24,12 @@ RSpec.describe Kaal::ActiveRecord, integration: :pg do
       KaalActiveRecordSupport.create_schema!(locks: false)
 
       KaalIntegrationSupport.write_scheduler(root, key:)
-      KaalIntegrationSupport.write_config(root, <<~RUBY)
-        require 'kaal'
-
-        Kaal.configure do |config|
-          config.backend = Kaal::Backend::Postgres.new(connection: ENV.fetch('DATABASE_URL'))
-          config.namespace = '#{namespace}'
-          config.window_lookback = 65
-          config.window_lookahead = 0
-          config.lease_ttl = 120
-          config.enable_log_dispatch_registry = true
-          config.enable_dispatch_recovery = false
-          config.recovery_startup_jitter = 0
-          config.scheduler_config_path = 'config/scheduler.yml'
-        end
-      RUBY
+      KaalIntegrationSupport.write_runtime_config(
+        root,
+        backend: :postgres,
+        namespace:,
+        backend_config: { url: ENV.fetch('DATABASE_URL') }
+      )
 
       job_calls = KaalIntegrationSupport.perform_tick_flow(root, key:)
 

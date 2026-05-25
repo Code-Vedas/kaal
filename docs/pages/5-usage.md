@@ -10,7 +10,7 @@ For the exact multi-node claim, assumptions, and evidence, see [At-Most-Once Dis
 
 ## Register recurring jobs
 
-Define jobs in `config/scheduler.yml`:
+Define jobs in `config/kaal-scheduler.yml`:
 
 ```yaml
 defaults:
@@ -29,7 +29,7 @@ For Redis, Postgres, and MySQL-backed deployments, the same `(key, fire_time)` y
 
 ## Runtime API
 
-Recurring jobs come from `config/scheduler.yml`. Delayed jobs use `Kaal.enqueue_at`:
+Recurring jobs come from `config/kaal-scheduler.yml`. Delayed jobs use `Kaal.enqueue_at`:
 
 ```ruby
 Kaal.enqueue_at(
@@ -43,7 +43,7 @@ Kaal.enqueue_at(
 
 Delayed-job behavior:
 
-- recurring schedules are defined in `config/scheduler.yml`; delayed jobs are enqueued directly through the runtime API
+- recurring schedules are defined in `config/kaal-scheduler.yml`; delayed jobs are enqueued directly through the runtime API
 - `job_id` is the delayed-job identity and must be unique while the job is pending
 - `args` are positional only
 - `queue` uses the same dispatch rules as recurring jobs
@@ -51,94 +51,52 @@ Delayed-job behavior:
 
 ## Configure the backend
 
-The registration model stays the same across adapters. What changes is the configured backend.
+The registration model stays the same across adapters. What changes is `config/kaal.yml`.
 
 ### Plain Ruby with memory
 
-```ruby
-require "kaal"
-
-Kaal.configure do |config|
-  config.backend = Kaal::Backend::MemoryAdapter.new
-  config.scheduler_config_path = "config/scheduler.yml"
-end
+```yaml
+defaults:
+  backend: memory
+  scheduler_config_path: config/kaal-scheduler.yml
+  backend_config: {}
 ```
 
 ### Plain Ruby with Redis
 
-```ruby
-require "kaal"
-require "redis"
-
-redis = Redis.new(url: ENV.fetch("REDIS_URL"))
-
-Kaal.configure do |config|
-  config.backend = Kaal::Backend::RedisAdapter.new(redis)
-  config.scheduler_config_path = "config/scheduler.yml"
-end
+```yaml
+defaults:
+  backend: redis
+  scheduler_config_path: config/kaal-scheduler.yml
+  backend_config:
+    url: redis://127.0.0.1:6379/0
 ```
 
 ### Plain Ruby with Sequel-backed SQL
 
-```ruby
-require "kaal"
-require "sequel"
-
-database = Sequel.connect(adapter: "sqlite", database: "db/kaal.sqlite3")
-
-Kaal.configure do |config|
-  config.backend = Kaal::Backend::SQLite.new(database: database)
-  config.scheduler_config_path = "config/scheduler.yml"
-end
+```yaml
+defaults:
+  backend: sqlite
+  scheduler_config_path: config/kaal-scheduler.yml
+  backend_config:
+    url: db/kaal.sqlite3
 ```
 
-For PostgreSQL or MySQL, replace the backend line inside `Kaal.configure` with one of:
-
-```ruby
-Kaal.configure do |config|
-  config.backend = Kaal::Backend::Postgres.new(database: database)
-  config.scheduler_config_path = "config/scheduler.yml"
-end
-```
-
-```ruby
-Kaal.configure do |config|
-  config.backend = Kaal::Backend::MySQL.new(database: database)
-  config.scheduler_config_path = "config/scheduler.yml"
-end
-```
+For PostgreSQL or MySQL, replace `backend: sqlite` with `backend: postgres` or `backend: mysql`, and set `backend_config.url`.
 
 ### Plain Ruby with Active Record-backed SQL
 
-```ruby
-require "kaal"
-
-Kaal.configure do |config|
-  config.backend = Kaal::Backend::SQLite.new(
-    connection: {
-      adapter: "sqlite3",
-      database: "db/kaal.sqlite3"
-    }
-  )
-  config.scheduler_config_path = "config/scheduler.yml"
-end
+```yaml
+defaults:
+  backend: sqlite
+  scheduler_config_path: config/kaal-scheduler.yml
+  backend_config:
+    connection:
+      adapter: sqlite3
+      database: db/kaal.sqlite3
 ```
 
-For PostgreSQL or MySQL, replace the backend line inside `Kaal.configure` with one of:
-
-```ruby
-Kaal.configure do |config|
-  config.backend = Kaal::Backend::Postgres.new(connection: ENV.fetch("DATABASE_URL"))
-  config.scheduler_config_path = "config/scheduler.yml"
-end
-```
-
-```ruby
-Kaal.configure do |config|
-  config.backend = Kaal::Backend::MySQL.new(connection: ENV.fetch("DATABASE_URL"))
-  config.scheduler_config_path = "config/scheduler.yml"
-end
-```
+For PostgreSQL or MySQL, replace `backend: sqlite` with `backend: postgres` or `backend: mysql`, and set `backend_config.url` or `KAAL_BACKEND_URL`.
 
 ### Rails
 
@@ -151,7 +109,7 @@ bundle exec rails generate kaal:install --backend=sqlite
 bundle exec rails db:migrate
 ```
 
-Rails auto-selects the matching `Kaal::Backend::*` class from the configured database unless you override `Kaal.configuration.backend` yourself.
+Rails installs `config/kaal.yml` and auto-selects the matching backend from the configured database when `backend` is omitted from that file.
 
 When using delayed jobs in Rails, run the generated Kaal migrations before enqueueing or dispatching work.
 
@@ -173,8 +131,7 @@ require "kaal/sinatra"
 class App < Sinatra::Base
   register Kaal::Sinatra::Extension
 
-  kaal backend: Kaal::Backend::MemoryAdapter.new,
-       scheduler_config_path: "config/scheduler.yml",
+  kaal scheduler_config_path: "config/kaal-scheduler.yml",
        namespace: "my-app",
        start_scheduler: false
 end
@@ -188,12 +145,12 @@ require "redis"
 require "kaal/sinatra"
 
 class App < Sinatra::Base
-  REDIS = Redis.new(url: ENV.fetch("REDIS_URL"))
+  REDIS = Redis.new(url: "redis://127.0.0.1:6379/0")
 
   register Kaal::Sinatra::Extension
 
   kaal redis: REDIS,
-       scheduler_config_path: "config/scheduler.yml",
+       scheduler_config_path: "config/kaal-scheduler.yml",
        namespace: "my-app",
        start_scheduler: false
 end
@@ -213,7 +170,7 @@ class App < Sinatra::Base
 
   kaal database: database,
        adapter: "postgres",
-       scheduler_config_path: "config/scheduler.yml",
+       scheduler_config_path: "config/kaal-scheduler.yml",
        namespace: "my-app",
        start_scheduler: false
 end
@@ -230,8 +187,7 @@ require "kaal/roda"
 class App < Roda
   plugin :kaal
 
-  kaal backend: Kaal::Backend::MemoryAdapter.new,
-       scheduler_config_path: "config/scheduler.yml",
+  kaal scheduler_config_path: "config/kaal-scheduler.yml",
        namespace: "my-app",
        start_scheduler: false
 end
@@ -245,12 +201,12 @@ require "redis"
 require "kaal/roda"
 
 class App < Roda
-  REDIS = Redis.new(url: ENV.fetch("REDIS_URL"))
+  REDIS = Redis.new(url: "redis://127.0.0.1:6379/0")
 
   plugin :kaal
 
   kaal redis: REDIS,
-       scheduler_config_path: "config/scheduler.yml",
+       scheduler_config_path: "config/kaal-scheduler.yml",
        namespace: "my-app",
        start_scheduler: false
 end
@@ -270,7 +226,7 @@ class App < Roda
 
   kaal database: database,
        adapter: "postgres",
-       scheduler_config_path: "config/scheduler.yml",
+       scheduler_config_path: "config/kaal-scheduler.yml",
        namespace: "my-app",
        start_scheduler: false
 end
@@ -288,8 +244,7 @@ module MyApp
   class App < Hanami::App
     Kaal::Hanami.configure!(
       self,
-      backend: Kaal::Backend::MemoryAdapter.new,
-      scheduler_config_path: "config/scheduler.yml",
+      scheduler_config_path: "config/kaal-scheduler.yml",
       namespace: "my-app",
       start_scheduler: false
     )
@@ -306,12 +261,12 @@ require "kaal/hanami"
 
 module MyApp
   class App < Hanami::App
-    REDIS = Redis.new(url: ENV.fetch("REDIS_URL"))
+    REDIS = Redis.new(url: "redis://127.0.0.1:6379/0")
 
     Kaal::Hanami.configure!(
       self,
       redis: REDIS,
-      scheduler_config_path: "config/scheduler.yml",
+      scheduler_config_path: "config/kaal-scheduler.yml",
       namespace: "my-app",
       start_scheduler: false
     )
@@ -334,7 +289,7 @@ module MyApp
       self,
       database: database,
       adapter: "postgres",
-      scheduler_config_path: "config/scheduler.yml",
+      scheduler_config_path: "config/kaal-scheduler.yml",
       namespace: "my-app",
       start_scheduler: false
     )

@@ -75,14 +75,17 @@ RSpec.describe Kaal::Rails do
       result = described_class.install!(root:, backend: 'sqlite')
       second_result = described_class.install!(root:, backend: 'sqlite')
 
+      expect(result.fetch(:runtime_config).fetch(:status)).to eq(:create)
+      expect(File).to exist(File.join(root, 'config', 'kaal.yml'))
       expect(result.fetch(:scheduler_config).fetch(:status)).to eq(:create)
-      expect(File).to exist(File.join(root, 'config', 'scheduler.yml'))
+      expect(File).to exist(File.join(root, 'config', 'kaal-scheduler.yml'))
       expect(
         result.fetch(:migrations).map { |migration| File.basename(migration.fetch(:path)).sub(/^\d+_/, '') }.sort
       ).to eq(
         %w[create_kaal_definitions.rb create_kaal_delayed_jobs.rb create_kaal_dispatches.rb create_kaal_locks.rb]
       )
       expect(second_result.fetch(:scheduler_config).fetch(:status)).to eq(:exists)
+      expect(second_result.fetch(:runtime_config).fetch(:status)).to eq(:exists)
       expect(second_result.fetch(:migrations).map { |migration| migration.fetch(:status) }).to all(eq(:exists))
       expect { described_class.install!(root:, backend: 'memory') }.to raise_error(ArgumentError, /Unsupported Rails datastore backend/)
       expect { described_class.install!(root:, backend: nil) }.to raise_error(
@@ -110,7 +113,8 @@ RSpec.describe Kaal::Rails do
     Rails.application.load_tasks
 
     install_results = {
-      scheduler_config: { status: :create, path: '/tmp/config/scheduler.yml' },
+      runtime_config: { status: :create, path: '/tmp/config/kaal.yml' },
+      scheduler_config: { status: :create, path: '/tmp/config/kaal-scheduler.yml' },
       migrations: [{ status: :create, path: '/tmp/db/migrate/1_create_kaal_dispatches.rb' }]
     }
     installer = instance_double(Kaal::Rails::Installer, install_migrations: install_results.fetch(:migrations))
@@ -119,7 +123,7 @@ RSpec.describe Kaal::Rails do
     allow(Kaal::Rails::Installer).to receive(:new).and_return(installer)
 
     expect { Rake::Task['kaal:install:all'].invoke }.to output(
-      "create /tmp/config/scheduler.yml\ncreate /tmp/db/migrate/1_create_kaal_dispatches.rb\n"
+      "create /tmp/config/kaal.yml\ncreate /tmp/config/kaal-scheduler.yml\ncreate /tmp/db/migrate/1_create_kaal_dispatches.rb\n"
     ).to_stdout
     expect { Rake::Task['kaal:install:migrations'].invoke }.to output(
       "create /tmp/db/migrate/1_create_kaal_dispatches.rb\n"
@@ -134,7 +138,8 @@ RSpec.describe Kaal::Rails do
 
       silence_stdout { generator.invoke_all }
 
-      expect(File).to exist(File.join(root, 'config', 'scheduler.yml'))
+      expect(File).to exist(File.join(root, 'config', 'kaal.yml'))
+      expect(File).to exist(File.join(root, 'config', 'kaal-scheduler.yml'))
       expect(Dir[File.join(root, 'db/migrate/*.rb')].map { |path| File.basename(path).sub(/^\d+_/, '') }.sort).to eq(
         %w[create_kaal_definitions.rb create_kaal_delayed_jobs.rb create_kaal_dispatches.rb]
       )

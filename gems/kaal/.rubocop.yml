@@ -25,7 +25,7 @@ Metrics/ParameterLists:
 RSpec/MultipleExpectations:
   Max: 30
 RSpec/ExampleLength:
-  Max: 50
+  Max: 80
 Layout/LineLength:
   Max: 160
 Metrics/ClassLength:
@@ -35,7 +35,7 @@ Metrics/AbcSize:
 RSpec/MultipleMemoizedHelpers:
   Max: 15
 Metrics/CyclomaticComplexity:
-  Max: 10
+  Max: 15
 RSpec/NestedGroups:
   Max: 5
 Metrics/PerceivedComplexity:

@@ -15,21 +15,7 @@ RSpec.describe Kaal, integration: :memory do
 
     KaalIntegrationSupport.with_project_root('memory') do |root|
       KaalIntegrationSupport.write_scheduler(root, key:)
-      KaalIntegrationSupport.write_config(root, <<~RUBY)
-        require 'kaal'
-
-        Kaal.configure do |config|
-          config.backend = Kaal::Backend::MemoryAdapter.new
-          config.namespace = '#{namespace}'
-          config.window_lookback = 65
-          config.window_lookahead = 0
-          config.lease_ttl = 120
-          config.enable_log_dispatch_registry = true
-          config.enable_dispatch_recovery = false
-          config.recovery_startup_jitter = 0
-          config.scheduler_config_path = 'config/scheduler.yml'
-        end
-      RUBY
+      KaalIntegrationSupport.write_runtime_config(root, backend: :memory, namespace:)
 
       job_calls = KaalIntegrationSupport.perform_tick_flow(root, key:)
 

@@ -14,6 +14,8 @@ module Kaal
 
       def install_kaal
         results = Kaal::Rails.install!(root: destination_root, backend: selected_backend)
+        runtime_config = results.fetch(:runtime_config)
+        say_status(runtime_config.fetch(:status), runtime_config.fetch(:path))
         scheduler_config = results.fetch(:scheduler_config)
         say_status(scheduler_config.fetch(:status), scheduler_config.fetch(:path))
         results.fetch(:migrations).each do |migration|

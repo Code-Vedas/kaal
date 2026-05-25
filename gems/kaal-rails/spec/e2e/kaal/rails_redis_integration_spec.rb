@@ -11,6 +11,8 @@ RSpec.describe Kaal::Rails, integration: :redis do
   include RailsIntegrationHelpers
 
   it 'boots the dummy app with a redis backend override and loads scheduler definitions into redis' do
+    skip 'REDIS_URL not set' if ENV['REDIS_URL'].to_s.empty?
+
     namespace = nil
     redis = nil
 
@@ -18,9 +20,27 @@ RSpec.describe Kaal::Rails, integration: :redis do
       namespace = "kaal-rails-test:#{File.basename(app_root)}"
       redis = Redis.new(url: ENV.fetch('REDIS_URL'))
       redis.scan_each(match: "#{namespace}:*") { |key| redis.del(key) }
+      File.write(
+        File.join(app_root, 'config', 'kaal.yml'),
+        <<~YAML
+          defaults:
+            backend: redis
+            namespace: #{namespace}
+            tick_interval: 5
+            window_lookback: 120
+            window_lookahead: 0
+            lease_ttl: 125
+            scheduler_config_path: config/kaal-scheduler.yml
+            enable_dispatch_recovery: true
+            enable_log_dispatch_registry: false
+            delayed_job_allowed_class_prefixes: []
+            backend_config:
+              url: "#{ENV.fetch('REDIS_URL')}"
+        YAML
+      )
 
       File.write(
-        File.join(app_root, 'config', 'scheduler.yml'),
+        File.join(app_root, 'config', 'kaal-scheduler.yml'),
         <<~YAML
           defaults:
             jobs:
@@ -34,7 +54,6 @@ RSpec.describe Kaal::Rails, integration: :redis do
       output = runner_output(
         app_root,
         env.merge(
-          'KAAL_TEST_BACKEND' => 'redis',
           'KAAL_TEST_NAMESPACE' => namespace,
           'REDIS_URL' => ENV.fetch('REDIS_URL')
         ),

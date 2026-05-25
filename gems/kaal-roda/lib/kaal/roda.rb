@@ -18,7 +18,7 @@ module Kaal
         backend: nil,
         database: nil,
         redis: nil,
-        scheduler_config_path: 'config/scheduler.yml',
+        scheduler_config_path: 'config/kaal-scheduler.yml',
         namespace: nil,
         start_scheduler: false,
         adapter: nil,
@@ -26,11 +26,12 @@ module Kaal
         environment: nil
       )
         configuration = Kaal.configuration
-        normalized_scheduler_config_path = scheduler_config_path.to_s.strip
-        normalized_namespace = namespace.to_s.strip
-        configuration.scheduler_config_path = normalized_scheduler_config_path unless normalized_scheduler_config_path.empty?
-        configuration.namespace = normalized_namespace unless normalized_namespace.empty?
-
+        load_config_file!(
+          root: root_path_for(app, root:),
+          environment: environment_name_for(app, environment:),
+          configuration:
+        )
+        apply_runtime_overrides(configuration:, scheduler_config_path:, namespace:)
         configure_backend!(backend:, database:, redis:, adapter:, configuration:)
         load_scheduler_file!(
           root: root_path_for(app, root:),
@@ -64,6 +65,11 @@ module Kaal
         raise ArgumentError, 'Unsupported Roda datastore backend; use memory, redis, sqlite, postgres, or mysql' unless backend_name
 
         configuration.backend = build_backend(backend_name, database)
+      end
+
+      def load_config_file!(root:, environment:, configuration: Kaal.configuration)
+        runtime_context = Kaal::Runtime::RuntimeContext.new(root_path: root, environment_name: environment.to_s)
+        Kaal::Config::FileLoader.new(configuration:, runtime_context:).load
       end
 
       def detect_backend_name(database, adapter: nil)
@@ -111,6 +117,13 @@ module Kaal
         when 'mysql'
           Kaal::Backend::MySQL.new(database:)
         end
+      end
+
+      def apply_runtime_overrides(configuration:, scheduler_config_path:, namespace:)
+        normalized_scheduler_config_path = scheduler_config_path.to_s.strip
+        normalized_namespace = namespace.to_s.strip
+        configuration.scheduler_config_path = normalized_scheduler_config_path unless normalized_scheduler_config_path.empty?
+        configuration.namespace = normalized_namespace unless normalized_namespace.empty?
       end
 
       def database_adapter_name(database)

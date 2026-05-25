@@ -14,7 +14,7 @@ module Kaal
         backend: nil,
         database: nil,
         redis: nil,
-        scheduler_config_path: 'config/scheduler.yml',
+        scheduler_config_path: 'config/kaal-scheduler.yml',
         namespace: nil,
         start_scheduler: false,
         adapter: nil,

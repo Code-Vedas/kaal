@@ -5,7 +5,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 module Kaal
-  # Loads scheduler.yml at framework boot time while respecting missing-file policy.
+  # Loads kaal-scheduler.yml at framework boot time while respecting missing-file policy.
   class SchedulerBootLoader
     def initialize(configuration_provider:, logger:, runtime_context:, load_scheduler_file:)
       @configuration_provider = configuration_provider

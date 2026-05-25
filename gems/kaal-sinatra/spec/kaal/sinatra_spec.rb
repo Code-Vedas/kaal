@@ -130,7 +130,7 @@ RSpec.describe Kaal::Sinatra do
       FileUtils.mkdir_p(File.dirname(database_path))
       FileUtils.mkdir_p(File.join(root, 'config'))
       File.write(
-        File.join(root, 'config', 'scheduler.yml'),
+        File.join(root, 'config', 'kaal-scheduler.yml'),
         YAML.dump(
           'defaults' => {
             'jobs' => [
@@ -156,7 +156,7 @@ RSpec.describe Kaal::Sinatra do
       expect(described_class.register!(fake_app_class, database:, namespace: 'sinatra-spec')).to eq(fake_app_class)
 
       expect(Kaal.configuration.namespace).to eq('sinatra-spec')
-      expect(Kaal.configuration.scheduler_config_path).to eq('config/scheduler.yml')
+      expect(Kaal.configuration.scheduler_config_path).to eq('config/kaal-scheduler.yml')
       expect(Kaal.configuration.backend).to be_a(Kaal::Backend::SQLite)
       expect(Kaal.registered?(key: 'sinatra:test')).to be(true)
       expect(Kaal.running?).to be(false)
@@ -171,7 +171,7 @@ RSpec.describe Kaal::Sinatra do
 
     described_class.register!(fake_app_class, scheduler_config_path: nil)
 
-    expect(Kaal.configuration.scheduler_config_path).to eq('config/scheduler.yml')
+    expect(Kaal.configuration.scheduler_config_path).to eq('config/kaal-scheduler.yml')
   end
 
   it 'preserves the default scheduler path when register! is called with blank scheduler_config_path' do
@@ -180,7 +180,7 @@ RSpec.describe Kaal::Sinatra do
 
     described_class.register!(fake_app_class, scheduler_config_path: '   ')
 
-    expect(Kaal.configuration.scheduler_config_path).to eq('config/scheduler.yml')
+    expect(Kaal.configuration.scheduler_config_path).to eq('config/kaal-scheduler.yml')
   end
 
   it 'preserves the default namespace when register! is called with a blank namespace' do
@@ -206,7 +206,7 @@ RSpec.describe Kaal::Sinatra do
     Dir.mktmpdir('kaal-sinatra-load-') do |root|
       FileUtils.mkdir_p(File.join(root, 'config'))
       File.write(
-        File.join(root, 'config', 'scheduler.yml'),
+        File.join(root, 'config', 'kaal-scheduler.yml'),
         YAML.dump(
           'defaults' => {
             'jobs' => [
@@ -257,7 +257,7 @@ RSpec.describe Kaal::Sinatra do
     Dir.mktmpdir('kaal-sinatra-start-') do |root|
       fake_app_class.root = root
       FileUtils.mkdir_p(File.join(root, 'config'))
-      File.write(File.join(root, 'config', 'scheduler.yml'), YAML.dump('defaults' => { 'jobs' => [] }))
+      File.write(File.join(root, 'config', 'kaal-scheduler.yml'), YAML.dump('defaults' => { 'jobs' => [] }))
 
       allow(described_class).to receive(:install_shutdown_hook)
       allow(Kaal).to receive(:start!).and_return(Thread.current)
@@ -273,7 +273,7 @@ RSpec.describe Kaal::Sinatra do
     Dir.mktmpdir('kaal-sinatra-running-') do |root|
       fake_app_class.root = root
       FileUtils.mkdir_p(File.join(root, 'config'))
-      File.write(File.join(root, 'config', 'scheduler.yml'), YAML.dump('defaults' => { 'jobs' => [] }))
+      File.write(File.join(root, 'config', 'kaal-scheduler.yml'), YAML.dump('defaults' => { 'jobs' => [] }))
 
       allow(described_class).to receive(:install_shutdown_hook)
       allow(Kaal).to receive_messages(start!: nil, running?: true)

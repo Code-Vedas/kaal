@@ -41,6 +41,7 @@ module Kaal
       end
 
       def configure_backend!(configuration: Kaal.configuration, backend: build_backend)
+        load_config_file!(configuration:)
         logger = configuration.logger
         current_backend = configuration.backend
         selected_backend = current_backend || backend
@@ -51,9 +52,15 @@ module Kaal
         selected_backend
       end
 
+      def load_config_file!(configuration: Kaal.configuration, root: ::Rails.root, environment: ::Rails.env)
+        runtime_context = Kaal::Runtime::RuntimeContext.new(root_path: root, environment_name: environment.to_s)
+        Kaal::Config::FileLoader.new(configuration:, runtime_context:).load
+      end
+
       def install!(root: ::Rails.root, backend: detect_backend_name)
         installer = Installer.new(root:, backend:)
         {
+          runtime_config: installer.install_runtime_config,
           scheduler_config: installer.install_scheduler_config,
           migrations: installer.install_migrations
         }

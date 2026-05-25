@@ -29,7 +29,7 @@ If you use SQL persistence, create the Kaal tables using Sequel migrations. `kaa
 - PostgreSQL: `kaal_dispatches`, `kaal_definitions`, `kaal_delayed_jobs`
 - MySQL: `kaal_dispatches`, `kaal_definitions`, `kaal_delayed_jobs`
 
-Your app should also provide `config/scheduler.yml`.
+Your app should also provide `config/kaal-scheduler.yml`.
 
 ## What It Provides
 
@@ -56,8 +56,7 @@ register Kaal::Sinatra::Extension
 
 Kaal::Sinatra.register!(
   settings,
-  backend: Kaal::Backend::MemoryAdapter.new,
-  scheduler_config_path: 'config/scheduler.yml',
+  scheduler_config_path: 'config/kaal-scheduler.yml',
   namespace: 'my-app',
   start_scheduler: false
 )
@@ -77,12 +76,12 @@ class ExampleHeartbeatJob
 end
 
 class App < Sinatra::Base
-  REDIS = Redis.new(url: ENV.fetch('REDIS_URL'))
+  REDIS = Redis.new(url: "redis://127.0.0.1:6379/0")
 
   register Kaal::Sinatra::Extension
 
   kaal redis: REDIS,
-       scheduler_config_path: 'config/scheduler.yml',
+       scheduler_config_path: 'config/kaal-scheduler.yml',
        namespace: 'my-app',
        start_scheduler: false
 end
@@ -101,7 +100,7 @@ Kaal::Sinatra.register!(
   settings,
   database: database,
   adapter: 'postgres', # optional when Sequel can infer it
-  scheduler_config_path: 'config/scheduler.yml'
+  scheduler_config_path: 'config/kaal-scheduler.yml'
 )
 ```
 
@@ -130,7 +129,7 @@ Preferred deployment model:
 
 ## Public API
 
-- `Kaal::Sinatra.register!(app, backend: nil, database: nil, redis: nil, scheduler_config_path: 'config/scheduler.yml', namespace: nil, start_scheduler: false, adapter: nil)`
+- `Kaal::Sinatra.register!(app, backend: nil, database: nil, redis: nil, scheduler_config_path: 'config/kaal-scheduler.yml', namespace: nil, start_scheduler: false, adapter: nil)`
 - `Kaal::Sinatra.configure_backend!(backend: nil, database: nil, redis: nil, adapter: nil, configuration: Kaal.configuration)`
 - `Kaal::Sinatra.load_scheduler_file!(root:, environment: nil)`
 - `Kaal::Sinatra.start!`

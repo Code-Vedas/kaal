@@ -88,6 +88,13 @@ module Kaal
       yield(configuration) if block_given?
     end
 
+    def load_config_file!(path: 'config/kaal.yml', runtime_context: RuntimeContext.default)
+      Config::FileLoader.new(
+        configuration: configuration,
+        runtime_context:
+      ).load(path:)
+    end
+
     def register(key:, cron:, enqueue:)
       registration_service.call(key:, cron:, enqueue:)
     end

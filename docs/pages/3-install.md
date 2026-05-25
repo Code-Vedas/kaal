@@ -29,8 +29,8 @@ bundle exec kaal init --backend=redis
 
 `kaal init` writes:
 
-- `config/kaal.rb`
-- `config/scheduler.yml`
+- `config/kaal.yml`
+- `config/kaal-scheduler.yml`
 
 Use this path when you want:
 
@@ -52,18 +52,14 @@ Typical choices:
 - PostgreSQL for distributed advisory-lock coordination
 - MySQL for named-lock coordination
 
-Example:
+Example `config/kaal.yml`:
 
-```ruby
-require "kaal"
-require "sequel"
-
-database = Sequel.connect(adapter: "sqlite", database: "db/kaal.sqlite3")
-
-Kaal.configure do |config|
-  config.backend = Kaal::Backend::SQLite.new(database: database)
-  config.scheduler_config_path = "config/scheduler.yml"
-end
+```yaml
+defaults:
+  backend: sqlite
+  scheduler_config_path: config/kaal-scheduler.yml
+  backend_config:
+    url: db/kaal.sqlite3
 ```
 
 You are responsible for creating the Kaal tables through the Sequel adapter path.
@@ -77,20 +73,16 @@ gem "activerecord"
 
 Use this when you want Active Record-backed SQL persistence outside Rails.
 
-Example:
+Example `config/kaal.yml`:
 
-```ruby
-require "kaal"
-
-Kaal.configure do |config|
-  config.backend = Kaal::Backend::SQLite.new(
-    connection: {
-      adapter: "sqlite3",
-      database: "db/kaal.sqlite3"
-    }
-  )
-  config.scheduler_config_path = "config/scheduler.yml"
-end
+```yaml
+defaults:
+  backend: sqlite
+  scheduler_config_path: config/kaal-scheduler.yml
+  backend_config:
+    connection:
+      adapter: sqlite3
+      database: db/kaal.sqlite3
 ```
 
 You are responsible for creating the Kaal tables through the Active Record adapter path.
@@ -135,7 +127,7 @@ Use `kaal-sinatra` when you want supported Sinatra wiring across memory, Redis, 
 Typical setup:
 
 - choose one backend path: `backend:`, `redis:`, or `database:`
-- provide `config/scheduler.yml`
+- provide `config/kaal-scheduler.yml`
 - wire the app with `Kaal::Sinatra.register!` or the Sinatra extension
 - start the scheduler explicitly only when you want the web process to host it
 
@@ -152,7 +144,7 @@ Use `kaal-roda` when you want supported Roda wiring across memory, Redis, or Seq
 Typical setup:
 
 - choose one backend path: `backend:`, `redis:`, or `database:`
-- provide `config/scheduler.yml`
+- provide `config/kaal-scheduler.yml`
 - wire the app with `plugin :kaal` and `kaal(...)`
 - start the scheduler explicitly only when you want the web process to host it
 
@@ -169,7 +161,7 @@ Use `kaal-hanami` when you want supported Hanami wiring across memory, Redis, or
 Typical setup:
 
 - choose one backend path: `backend:`, `redis:`, or `database:`
-- provide `config/scheduler.yml`
+- provide `config/kaal-scheduler.yml`
 - wire the app with `Kaal::Hanami.configure!(self, ...)`
 - start the scheduler explicitly only when you want the web process to host it
 
@@ -180,7 +172,7 @@ For SQL persistence, create the Kaal tables through Sequel migrations.
 Use the scheduler CLI against your configured project:
 
 ```bash
-bundle exec kaal status --config config/kaal.rb
+bundle exec kaal status --config config/kaal.yml
 ```
 
 If the app is configured correctly, `status` will print the current runtime settings and loaded job keys.

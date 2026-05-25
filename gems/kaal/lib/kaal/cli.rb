@@ -19,10 +19,10 @@ module Kaal
       def load_project!
         Kaal.reset_configuration!
         Kaal.reset_registry!
-        load config_path
-        Kaal.warn_on_risky_configuration!
         runtime_context = RuntimeContext.default(root_path: root_path)
-        Kaal.load_scheduler_file!(runtime_context: runtime_context) if File.exist?(scheduler_path)
+        Kaal.load_config_file!(path: config_path, runtime_context:)
+        Kaal.warn_on_risky_configuration!
+        Kaal.load_scheduler_file!(runtime_context: runtime_context)
       end
 
       def root_path
@@ -33,42 +33,46 @@ module Kaal
         config = options[:config]
         return File.expand_path(config) if config
 
-        File.join(root_path, 'config', 'kaal.rb')
+        File.join(root_path, 'config', 'kaal.yml')
       end
 
       def scheduler_path
-        File.join(root_path, 'config', 'scheduler.yml')
+        File.join(root_path, 'config', 'kaal-scheduler.yml')
       end
 
       def render_config_template(backend)
         case backend
         when 'memory'
-          <<~RUBY
-            require 'kaal'
-
-            Kaal.configure do |config|
-              config.backend = Kaal::Backend::MemoryAdapter.new
-              config.tick_interval = 5
-              config.window_lookback = 120
-              config.lease_ttl = 125
-              config.scheduler_config_path = 'config/scheduler.yml'
-            end
-          RUBY
+          <<~YAML
+            defaults:
+              backend: memory
+              namespace: kaal
+              tick_interval: 5
+              window_lookback: 120
+              window_lookahead: 0
+              lease_ttl: 125
+              scheduler_config_path: config/kaal-scheduler.yml
+              enable_dispatch_recovery: true
+              enable_log_dispatch_registry: false
+              delayed_job_allowed_class_prefixes: []
+              backend_config: {}
+          YAML
         when 'redis'
-          <<~RUBY
-            require 'kaal'
-            require 'redis'
-
-            redis = Redis.new(url: ENV.fetch('REDIS_URL'))
-
-            Kaal.configure do |config|
-              config.backend = Kaal::Backend::RedisAdapter.new(redis, namespace: 'kaal')
-              config.tick_interval = 5
-              config.window_lookback = 120
-              config.lease_ttl = 125
-              config.scheduler_config_path = 'config/scheduler.yml'
-            end
-          RUBY
+          <<~YAML
+            defaults:
+              backend: redis
+              namespace: kaal
+              tick_interval: 5
+              window_lookback: 120
+              window_lookahead: 0
+              lease_ttl: 125
+              scheduler_config_path: config/kaal-scheduler.yml
+              enable_dispatch_recovery: true
+              enable_log_dispatch_registry: false
+              delayed_job_allowed_class_prefixes: []
+              backend_config:
+                url: redis://127.0.0.1:6379/0
+          YAML
         else
           raise Thor::Error, "Unsupported backend '#{backend}'"
         end
@@ -95,9 +99,9 @@ module Kaal
     package_name 'kaal'
 
     class_option :root, type: :string, default: Dir.pwd, desc: 'Project root'
-    class_option :config, type: :string, desc: 'Path to config/kaal.rb'
+    class_option :config, type: :string, desc: 'Path to config/kaal.yml'
 
-    desc 'init', 'Generate config/kaal.rb and config/scheduler.yml'
+    desc 'init', 'Generate config/kaal.yml and config/kaal-scheduler.yml'
     option :backend, type: :string, default: 'memory', enum: %w[memory redis]
     def init
       root = File.expand_path(options[:root])
@@ -105,8 +109,8 @@ module Kaal
       writer = self.class
       FileUtils.mkdir_p(File.join(root, 'config'))
 
-      writer.write_file(File.join(root, 'config', 'kaal.rb'), render_config_template(backend))
-      writer.write_file(File.join(root, 'config', 'scheduler.yml'), scheduler_template)
+      writer.write_file(File.join(root, 'config', 'kaal.yml'), render_config_template(backend))
+      writer.write_file(File.join(root, 'config', 'kaal-scheduler.yml'), scheduler_template)
 
       say("Initialized Kaal project for #{backend} backend")
     end

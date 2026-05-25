@@ -73,8 +73,8 @@ class MultiNodeCliCheck
   end
 
   def write_runtime_project
-    File.write(File.join(project_root, 'config', 'scheduler.yml'), YAML.dump(scheduler_config))
-    File.write(File.join(project_root, 'config', 'kaal.rb'), config_rb)
+    File.write(File.join(project_root, 'config', 'kaal-scheduler.yml'), YAML.dump(scheduler_config))
+    File.write(File.join(project_root, 'config', 'kaal.yml'), YAML.dump(kaal_config))
     File.write(File.join(project_root, 'lib', 'multi_node_recording_job.rb'), job_rb)
   end
 
@@ -180,42 +180,22 @@ class MultiNodeCliCheck
     ].join(' ')
   end
 
-  def config_rb
-    <<~RUBY
-      require 'kaal'
-      require 'redis'
-      require_relative '../lib/multi_node_recording_job'
-
-      backend_name = ENV.fetch('KAAL_MULTI_NODE_BACKEND')
-      namespace = ENV.fetch('KAAL_MULTI_NODE_NAMESPACE')
-
-      backend = case backend_name
-      when 'redis'
-        redis = Redis.new(url: ENV.fetch('KAAL_MULTI_NODE_REDIS_URL'))
-        Kaal::Backend::RedisAdapter.new(redis, namespace: namespace)
-      when 'postgres'
-        database = Sequel.connect(ENV.fetch('KAAL_MULTI_NODE_DATABASE_URL'))
-        Kaal::Backend::Postgres.new(database: database)
-      when 'mysql'
-        database = Sequel.connect(ENV.fetch('KAAL_MULTI_NODE_DATABASE_URL'))
-        Kaal::Backend::MySQL.new(database: database)
-      else
-        raise "Unsupported backend: \#{backend_name}"
-      end
-
-      Kaal.configure do |config|
-        config.backend = backend
-        config.namespace = namespace
-        config.tick_interval = 1
-        config.window_lookback = 65
-        config.window_lookahead = 0
-        config.lease_ttl = 66
-        config.enable_log_dispatch_registry = true
-        config.enable_dispatch_recovery = false
-        config.recovery_startup_jitter = 0
-        config.scheduler_config_path = 'config/scheduler.yml'
-      end
-    RUBY
+  def kaal_config
+    {
+      'defaults' => {
+        'backend' => backend,
+        'backend_config' => runtime_backend_config,
+        'namespace' => namespace,
+        'tick_interval' => 1,
+        'window_lookback' => 65,
+        'window_lookahead' => 0,
+        'lease_ttl' => 66,
+        'enable_log_dispatch_registry' => true,
+        'enable_dispatch_recovery' => false,
+        'recovery_startup_jitter' => 0,
+        'scheduler_config_path' => 'config/kaal-scheduler.yml'
+      }
+    }
   end
 
   def job_rb
@@ -269,7 +249,9 @@ class MultiNodeCliCheck
       'BUNDLE_GEMFILE' => File.join(bundle_root, 'Gemfile'),
       'KAAL_MULTI_NODE_BACKEND' => backend,
       'KAAL_MULTI_NODE_NAMESPACE' => namespace,
-      'KAAL_MULTI_NODE_RUNS_KEY' => runs_key
+      'KAAL_MULTI_NODE_RUNS_KEY' => runs_key,
+      'RUBYLIB' => rubylib_for_process,
+      'RUBYOPT' => rubyopt_for_process
     }
 
     case backend
@@ -280,6 +262,31 @@ class MultiNodeCliCheck
     end
 
     env
+  end
+
+  def runtime_backend_config
+    case backend
+    when 'redis'
+      { 'url' => redis_url }
+    when 'postgres', 'mysql'
+      { 'url' => database_url }
+    else
+      raise "Unsupported backend: #{backend}"
+    end
+  end
+
+  def rubylib_for_process
+    append_env_path(ENV['RUBYLIB'], File.join(project_root, 'lib'))
+  end
+
+  def rubyopt_for_process
+    [ENV['RUBYOPT'], '-rmulti_node_recording_job'].compact.reject(&:empty?).join(' ')
+  end
+
+  def append_env_path(existing_value, path)
+    return path if existing_value.to_s.empty?
+
+    [path, existing_value].join(File::PATH_SEPARATOR)
   end
 
   def next_target_time

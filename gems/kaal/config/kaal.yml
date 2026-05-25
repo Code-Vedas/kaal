@@ -1,0 +1,12 @@
+defaults:
+  backend: memory
+  namespace: kaal
+  tick_interval: 5
+  window_lookback: 120
+  window_lookahead: 0
+  lease_ttl: 125
+  scheduler_config_path: config/kaal-scheduler.yml
+  enable_dispatch_recovery: true
+  enable_log_dispatch_registry: false
+  delayed_job_allowed_class_prefixes: []
+  backend_config: {}

@@ -21,43 +21,43 @@ bundle exec kaal init --backend=memory
 
 `kaal init` creates:
 
-- `config/kaal.rb`
-- `config/scheduler.yml`
+- `config/kaal.yml`
+- `config/kaal-scheduler.yml`
 
 Supported backends:
 
 - `memory`
 - `redis`
 
-If you want SQL persistence instead, add the runtime libraries your app uses, such as `sequel`, `activerecord`, `sqlite3`, `pg`, or `mysql2`, then configure one of the explicit `Kaal::Backend::*` SQL backends.
+If you want SQL persistence instead, add the runtime libraries your app uses, such as `sequel`, `activerecord`, `sqlite3`, `pg`, or `mysql2`, then set `backend: sqlite/postgres/mysql` plus `backend_config` in `config/kaal.yml`.
 
 ## Configuration
 
-Generated `config/kaal.rb` is the primary entrypoint:
+Generated `config/kaal.yml` is the primary entrypoint:
 
-```ruby
-require 'kaal'
-
-Kaal.configure do |config|
-  config.backend = Kaal::Backend::MemoryAdapter.new
-  config.tick_interval = 5
-  config.window_lookback = 120
-  config.lease_ttl = 125
-  config.scheduler_config_path = 'config/scheduler.yml'
-end
+```yaml
+defaults:
+  backend: memory
+  namespace: kaal
+  tick_interval: 5
+  window_lookback: 120
+  window_lookahead: 0
+  lease_ttl: 125
+  scheduler_config_path: config/kaal-scheduler.yml
+  enable_dispatch_recovery: true
+  enable_log_dispatch_registry: false
+  delayed_job_allowed_class_prefixes: []
+  backend_config: {}
 ```
 
 Redis path:
 
-```ruby
-require 'redis'
-
-redis = Redis.new(url: ENV.fetch('REDIS_URL'))
-
-Kaal.configure do |config|
-  config.backend = Kaal::Backend::RedisAdapter.new(redis)
-  config.scheduler_config_path = 'config/scheduler.yml'
-end
+```yaml
+defaults:
+  backend: redis
+  scheduler_config_path: config/kaal-scheduler.yml
+  backend_config:
+    url: redis://127.0.0.1:6379/0
 ```
 
 Time zone behavior is explicit:
@@ -67,7 +67,7 @@ Time zone behavior is explicit:
 
 ## Scheduler File
 
-Default scheduler definitions live at `config/scheduler.yml`:
+Default scheduler definitions live at `config/kaal-scheduler.yml`:
 
 ```yaml
 defaults:

@@ -22,23 +22,12 @@ RSpec.describe Kaal, integration: :sqlite do
       KaalIntegrationSupport.create_sqlite_schema(database)
 
       KaalIntegrationSupport.write_scheduler(root, key:)
-      KaalIntegrationSupport.write_config(root, <<~RUBY)
-        require 'kaal'
-
-        database = Sequel.connect(adapter: 'sqlite', database: File.expand_path('../db/kaal.sqlite3', __dir__))
-
-        Kaal.configure do |config|
-          config.backend = Kaal::Backend::SQLite.new(database: database)
-          config.namespace = '#{namespace}'
-          config.window_lookback = 65
-          config.window_lookahead = 0
-          config.lease_ttl = 120
-          config.enable_log_dispatch_registry = true
-          config.enable_dispatch_recovery = false
-          config.recovery_startup_jitter = 0
-          config.scheduler_config_path = 'config/scheduler.yml'
-        end
-      RUBY
+      KaalIntegrationSupport.write_runtime_config(
+        root,
+        backend: :sqlite,
+        namespace:,
+        backend_config: { url: 'db/kaal.sqlite3' }
+      )
 
       job_calls = KaalIntegrationSupport.perform_tick_flow(root, key:)
 

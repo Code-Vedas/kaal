@@ -9,11 +9,14 @@ lib_path = ENV.fetch('KAAL_RODA_LIB_PATH', nil)
 $LOAD_PATH.unshift(lib_path) if lib_path && !$LOAD_PATH.include?(lib_path)
 
 require 'roda'
-require 'sequel'
 require 'kaal/roda'
-require 'redis'
 
 backend_name = ENV.fetch('KAAL_TEST_BACKEND', 'memory')
+backend_url = if backend_name == 'redis'
+                ENV.fetch('REDIS_URL')
+              elsif %w[sqlite postgres mysql].include?(backend_name)
+                ENV.fetch('DATABASE_URL')
+              end
 
 class ExampleHeartbeatJob
   def self.perform(*)
@@ -21,24 +24,25 @@ class ExampleHeartbeatJob
   end
 end
 
-Kaal.configure do |config|
-  config.enable_log_dispatch_registry = %w[redis sqlite postgres mysql].include?(backend_name)
-  config.enable_dispatch_recovery = false
-  config.recovery_startup_jitter = 0
-end
-
-case backend_name
-when 'memory'
-  BACKEND_OPTIONS = { backend: Kaal::Backend::MemoryAdapter.new }.freeze
-when 'redis'
-  redis = Redis.new(url: ENV.fetch('REDIS_URL'))
-  BACKEND_OPTIONS = { redis: redis }.freeze
-when 'sqlite', 'postgres', 'mysql'
-  database = Sequel.connect(ENV.fetch('DATABASE_URL'))
-  BACKEND_OPTIONS = { database: database, adapter: backend_name }.freeze
-else
-  raise "Unsupported KAAL_TEST_BACKEND=#{backend_name.inspect}"
-end
+File.write(
+  File.expand_path('config/kaal.yml', __dir__),
+  <<~YAML
+    defaults:
+      backend: #{backend_name}
+      namespace: #{ENV.fetch('KAAL_TEST_NAMESPACE', 'kaal-roda')}
+      tick_interval: 5
+      window_lookback: 120
+      window_lookahead: 0
+      lease_ttl: 125
+      scheduler_config_path: config/kaal-scheduler.yml
+      enable_log_dispatch_registry: #{%w[redis sqlite postgres mysql].include?(backend_name)}
+      enable_dispatch_recovery: false
+      recovery_startup_jitter: 0
+      delayed_job_allowed_class_prefixes: []
+      backend_config:
+  YAML
+)
+File.write(File.expand_path('config/kaal.yml', __dir__), backend_url ? "        url: \"#{backend_url}\"\n" : "        {}\n", mode: 'a')
 
 class RodaDummyApp < Roda
   opts[:root] = File.expand_path(__dir__)
@@ -47,7 +51,6 @@ class RodaDummyApp < Roda
   plugin :kaal
 
   kaal(
-    **BACKEND_OPTIONS,
     namespace: ENV.fetch('KAAL_TEST_NAMESPACE', 'kaal-roda'),
     start_scheduler: ENV.fetch('KAAL_START_SCHEDULER', '0') == '1'
   )

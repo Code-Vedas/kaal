@@ -19,8 +19,8 @@ RSpec.describe Kaal::CLI do
     allow($stdout).to receive(:puts)
     described_class.start(['init', '--backend=memory', "--root=#{root}"])
 
-    expect(File).to exist(File.join(root, 'config', 'kaal.rb'))
-    expect(File).to exist(File.join(root, 'config', 'scheduler.yml'))
+    expect(File).to exist(File.join(root, 'config', 'kaal.yml'))
+    expect(File).to exist(File.join(root, 'config', 'kaal-scheduler.yml'))
     expect(Dir[File.join(root, 'db', 'migrate', '*.rb')]).to be_empty
   end
 
