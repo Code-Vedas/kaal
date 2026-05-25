@@ -14,7 +14,7 @@ require_relative 'job_normalizer'
 require_relative 'job_applier'
 
 module Kaal
-  # Loads scheduler definitions from config/scheduler.yml and registers them.
+  # Loads scheduler definitions from config/kaal-scheduler.yml and registers them.
   class SchedulerFileLoader
     include SchedulerHashTransform
     include SchedulerPlaceholderSupport

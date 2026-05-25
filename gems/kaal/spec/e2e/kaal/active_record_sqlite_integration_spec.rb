@@ -24,26 +24,17 @@ RSpec.describe Kaal::ActiveRecord, integration: :sqlite do
       KaalActiveRecordSupport.create_schema!(locks: true)
 
       KaalIntegrationSupport.write_scheduler(root, key:)
-      KaalIntegrationSupport.write_config(root, <<~RUBY)
-        require 'kaal'
-
-        Kaal.configure do |config|
-          config.backend = Kaal::Backend::SQLite.new(
-            connection: {
-              adapter: 'sqlite3',
-              database: File.expand_path('../db/kaal.sqlite3', __dir__)
-            }
-          )
-          config.namespace = '#{namespace}'
-          config.window_lookback = 65
-          config.window_lookahead = 0
-          config.lease_ttl = 120
-          config.enable_log_dispatch_registry = true
-          config.enable_dispatch_recovery = false
-          config.recovery_startup_jitter = 0
-          config.scheduler_config_path = 'config/scheduler.yml'
-        end
-      RUBY
+      KaalIntegrationSupport.write_runtime_config(
+        root,
+        backend: :sqlite,
+        namespace:,
+        backend_config: {
+          connection: {
+            adapter: 'sqlite3',
+            database: 'db/kaal.sqlite3'
+          }
+        }
+      )
 
       job_calls = KaalIntegrationSupport.perform_tick_flow(root, key:)
 

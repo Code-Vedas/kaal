@@ -60,10 +60,10 @@ bundle exec kaal init --backend=memory
 
 `kaal init` creates:
 
-- `config/kaal.rb`
-- `config/scheduler.yml`
+- `config/kaal.yml`
+- `config/kaal-scheduler.yml`
 
-Register a recurring job in `config/scheduler.yml`:
+Register a recurring job in `config/kaal-scheduler.yml`:
 
 ```yaml
 defaults:
@@ -88,7 +88,7 @@ bundle exec kaal explain "*/15 * * * *"
 bundle exec kaal next "0 9 * * 1" --count 3
 ```
 
-`kaal init` only supports `memory` and `redis`. For SQL-backed setups, add the database libraries your app uses and configure the backend yourself, or use the framework-specific install surface.
+`kaal init` only supports `memory` and `redis`. For SQL-backed setups, add the database libraries your app uses, set `backend: sqlite/postgres/mysql` plus `backend_config` in `config/kaal.yml`, or use the framework-specific install surface.
 
 ## Installation paths
 
@@ -117,21 +117,27 @@ gem "kaal"
 gem "sequel"
 ```
 
-Example:
+Example `config/kaal.yml`:
 
-```ruby
-require "kaal"
-require "sequel"
-
-database = Sequel.connect(adapter: "sqlite", database: "db/kaal.sqlite3")
-
-Kaal.configure do |config|
-  config.backend = Kaal::Backend::SQLite.new(database: database)
-  config.scheduler_config_path = "config/scheduler.yml"
-end
+```yaml
+defaults:
+  backend: sqlite
+  scheduler_config_path: config/kaal-scheduler.yml
+  backend_config:
+    url: db/kaal.sqlite3
 ```
 
-Use `Kaal::Backend::Postgres.new(database: database)` or `Kaal::Backend::MySQL.new(database: database)` for PostgreSQL and MySQL.
+Use `backend: postgres` or `backend: mysql` with `backend_config.url: <%= ENV.fetch("KAAL_BACKEND_URL", ENV.fetch("DATABASE_URL")) %>` for PostgreSQL and MySQL.
+
+Redis example `config/kaal.yml`:
+
+```yaml
+defaults:
+  backend: redis
+  scheduler_config_path: config/kaal-scheduler.yml
+  backend_config:
+    url: redis://127.0.0.1:6379/0
+```
 
 ### Plain Ruby with Active Record-backed SQL
 
@@ -140,23 +146,19 @@ gem "kaal"
 gem "activerecord"
 ```
 
-Example:
+Example `config/kaal.yml`:
 
-```ruby
-require "kaal"
-
-Kaal.configure do |config|
-  config.backend = Kaal::Backend::SQLite.new(
-    connection: {
-      adapter: "sqlite3",
-      database: "db/kaal.sqlite3"
-    }
-  )
-  config.scheduler_config_path = "config/scheduler.yml"
-end
+```yaml
+defaults:
+  backend: sqlite
+  scheduler_config_path: config/kaal-scheduler.yml
+  backend_config:
+    connection:
+      adapter: sqlite3
+      database: db/kaal.sqlite3
 ```
 
-Use `Kaal::Backend::Postgres.new(connection: ENV.fetch("DATABASE_URL"))` or `Kaal::Backend::MySQL.new(connection: ENV.fetch("DATABASE_URL"))` for PostgreSQL and MySQL.
+Use `backend: postgres` or `backend: mysql` with `backend_config.url` or `KAAL_BACKEND_URL` for PostgreSQL and MySQL.
 
 ### Rails
 
@@ -188,8 +190,7 @@ require "kaal/sinatra"
 class App < Sinatra::Base
   register Kaal::Sinatra::Extension
 
-  kaal backend: Kaal::Backend::MemoryAdapter.new,
-       scheduler_config_path: "config/scheduler.yml",
+  kaal scheduler_config_path: "config/kaal-scheduler.yml",
        start_scheduler: false
 end
 ```
@@ -209,8 +210,7 @@ require "kaal/roda"
 class App < Roda
   plugin :kaal
 
-  kaal backend: Kaal::Backend::MemoryAdapter.new,
-       scheduler_config_path: "config/scheduler.yml",
+  kaal scheduler_config_path: "config/kaal-scheduler.yml",
        start_scheduler: false
 end
 ```
@@ -231,8 +231,7 @@ module MyApp
   class App < Hanami::App
     Kaal::Hanami.configure!(
       self,
-      backend: Kaal::Backend::MemoryAdapter.new,
-      scheduler_config_path: "config/scheduler.yml",
+      scheduler_config_path: "config/kaal-scheduler.yml",
       start_scheduler: false
     )
   end
@@ -351,11 +350,11 @@ Kaal guarantees dispatch semantics, not exactly-once external side effects. Use 
 ## Troubleshooting
 
 - Bad backend configuration
-  Missing gems, invalid adapter setup, or an unset `REDIS_URL` / `DATABASE_URL` will prevent boot. Start by checking `config/kaal.rb` and the adapter-specific README.
+  Missing gems, invalid adapter setup, or an unset `KAAL_BACKEND_URL` / `REDIS_URL` / `DATABASE_URL` will prevent boot. Start by checking `config/kaal.yml` and the adapter-specific README.
 - Scheduler file loading issues
-  `bundle exec kaal status` and `bundle exec kaal start` load `config/kaal.rb` and then `config/scheduler.yml` relative to the configured root. Confirm both files exist and that `scheduler_config_path` matches your app layout.
+  `bundle exec kaal status` and `bundle exec kaal start` load `config/kaal.yml` and then `config/kaal-scheduler.yml` relative to the configured root. Confirm both files exist and that `scheduler_config_path` matches your app layout.
 - Duplicate job definitions
-  Job keys must be unique across the loaded scheduler definition set. Duplicate keys will cause load-time conflicts and must be resolved in `config/scheduler.yml`.
+  Job keys must be unique across the loaded scheduler definition set. Duplicate keys will cause load-time conflicts and must be resolved in `config/kaal-scheduler.yml`.
 - Backend outages or reconnect issues
   Redis and SQL-backed coordination depend on backend availability. A backend outage means ticks cannot coordinate safely; restore backend health before expecting normal dispatch behavior.
 - Guarantee assumptions not met

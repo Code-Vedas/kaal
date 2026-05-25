@@ -19,24 +19,12 @@ RSpec.describe Kaal, integration: :redis do
       redis.scan_each(match: "#{namespace}:*") { |redis_key| redis.del(redis_key) }
 
       KaalIntegrationSupport.write_scheduler(root, key:)
-      KaalIntegrationSupport.write_config(root, <<~RUBY)
-        require 'kaal'
-        require 'redis'
-
-        redis = KaalIntegrationSupport::RedisClientWrapper.new(Redis.new(url: ENV.fetch('REDIS_URL')))
-
-        Kaal.configure do |config|
-          config.backend = Kaal::Backend::RedisAdapter.new(redis, namespace: '#{namespace}')
-          config.namespace = '#{namespace}'
-          config.window_lookback = 65
-          config.window_lookahead = 0
-          config.lease_ttl = 120
-          config.enable_log_dispatch_registry = true
-          config.enable_dispatch_recovery = false
-          config.recovery_startup_jitter = 0
-          config.scheduler_config_path = 'config/scheduler.yml'
-        end
-      RUBY
+      KaalIntegrationSupport.write_runtime_config(
+        root,
+        backend: :redis,
+        namespace:,
+        backend_config: { url: ENV.fetch('REDIS_URL') }
+      )
 
       job_calls = KaalIntegrationSupport.perform_tick_flow(root, key:)
 

@@ -12,7 +12,24 @@ RSpec.describe Kaal::Rails, integration: :memory do
   it 'boots the dummy app with a memory backend override and executes a scheduled job' do
     KaalRailsDummyAppSupport.with_dummy_app do |app_root, env|
       File.write(
-        File.join(app_root, 'config', 'scheduler.yml'),
+        File.join(app_root, 'config', 'kaal.yml'),
+        <<~YAML
+          defaults:
+            backend: memory
+            namespace: kaal
+            tick_interval: 5
+            window_lookback: 120
+            window_lookahead: 0
+            lease_ttl: 125
+            scheduler_config_path: config/kaal-scheduler.yml
+            enable_dispatch_recovery: true
+            enable_log_dispatch_registry: false
+            delayed_job_allowed_class_prefixes: []
+            backend_config: {}
+        YAML
+      )
+      File.write(
+        File.join(app_root, 'config', 'kaal-scheduler.yml'),
         <<~YAML
           defaults:
             jobs:
@@ -25,7 +42,7 @@ RSpec.describe Kaal::Rails, integration: :memory do
 
       output = runner_output(
         app_root,
-        env.merge('KAAL_TEST_BACKEND' => 'memory'),
+        env,
         <<~RUBY
           class ExampleHeartbeatJob
             def self.perform(*)

@@ -10,6 +10,7 @@ namespace :kaal do
     desc 'Install Kaal scheduler config and Active Record migrations'
     task all: :environment do
       results = Kaal::Rails.install!
+      puts "#{results.fetch(:runtime_config).fetch(:status)} #{results.fetch(:runtime_config).fetch(:path)}"
       puts "#{results.fetch(:scheduler_config).fetch(:status)} #{results.fetch(:scheduler_config).fetch(:path)}"
       results.fetch(:migrations).each do |migration|
         puts "#{migration.fetch(:status)} #{migration.fetch(:path)}"

@@ -98,6 +98,10 @@ module Kaal
       def delayed_store
         nil
       end
+
+      def disconnect_for_fork
+        nil
+      end
     end
 
     ##

@@ -9,11 +9,14 @@ $LOAD_PATH.unshift(lib_path) if lib_path && !$LOAD_PATH.include?(lib_path)
 
 require 'hanami'
 require 'kaal/hanami'
-require 'redis'
-require 'sequel'
 require 'stringio'
 
 BACKEND_NAME = ENV.fetch('KAAL_TEST_BACKEND', 'memory')
+BACKEND_URL = if BACKEND_NAME == 'redis'
+                ENV.fetch('REDIS_URL')
+              elsif %w[sqlite postgres mysql].include?(BACKEND_NAME)
+                ENV.fetch('DATABASE_URL')
+              end
 
 class ExampleHeartbeatJob
   def self.perform(*)
@@ -21,32 +24,36 @@ class ExampleHeartbeatJob
   end
 end
 
-case BACKEND_NAME
-when 'memory'
-  BACKEND_OPTIONS = { backend: Kaal::Backend::MemoryAdapter.new }.freeze
-when 'redis'
-  redis = Redis.new(url: ENV.fetch('REDIS_URL'))
-  BACKEND_OPTIONS = { redis: redis }.freeze
-when 'sqlite', 'postgres', 'mysql'
-  database = Sequel.connect(ENV.fetch('DATABASE_URL'))
-  BACKEND_OPTIONS = { database: database, adapter: BACKEND_NAME }.freeze
-else
-  raise "Unsupported KAAL_TEST_BACKEND=#{BACKEND_NAME.inspect}"
-end
-
 module TestApp
   class App < Hanami::App
     config.logger.stream = StringIO.new
 
-    Kaal.configure do |config|
-      config.enable_log_dispatch_registry = %w[redis sqlite postgres mysql].include?(BACKEND_NAME)
-      config.enable_dispatch_recovery = false
-      config.recovery_startup_jitter = 0
-    end
+    File.write(
+      File.expand_path('kaal.yml', config.root.join('config')),
+      <<~YAML
+        defaults:
+          backend: #{BACKEND_NAME}
+          namespace: #{ENV.fetch('KAAL_TEST_NAMESPACE', 'kaal-hanami')}
+          tick_interval: 5
+          window_lookback: 120
+          window_lookahead: 0
+          lease_ttl: 125
+          scheduler_config_path: config/kaal-scheduler.yml
+          enable_log_dispatch_registry: #{%w[redis sqlite postgres mysql].include?(BACKEND_NAME)}
+          enable_dispatch_recovery: false
+          recovery_startup_jitter: 0
+          delayed_job_allowed_class_prefixes: []
+          backend_config:
+      YAML
+    )
+    File.write(
+      File.expand_path('kaal.yml', config.root.join('config')),
+      BACKEND_URL ? "            url: \"#{BACKEND_URL}\"\n" : "            {}\n",
+      mode: 'a'
+    )
 
     Kaal::Hanami.configure!(
       self,
-      **BACKEND_OPTIONS,
       namespace: ENV.fetch('KAAL_TEST_NAMESPACE', 'kaal-hanami'),
       start_scheduler: ENV.fetch('KAAL_START_SCHEDULER', '0') == '1'
     )

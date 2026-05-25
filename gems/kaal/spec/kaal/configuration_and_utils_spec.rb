@@ -83,6 +83,17 @@ RSpec.describe Kaal::Configuration do
       )
     end
 
+    it 'builds backends from symbolic configuration' do
+      configuration.backend_config = { url: 'tmp/kaal.sqlite3' }
+      configuration.backend = :sqlite
+
+      expect(configuration.backend).to be_a(Kaal::Backend::SQLite)
+      expect(configuration.to_h).to include(
+        backend: 'Kaal::Backend::SQLite',
+        backend_config: { url: 'tmp/kaal.sqlite3' }
+      )
+    end
+
     it 'keeps nil backend, logger, and time zone values in the exported hash' do
       expect(configuration.to_h).to include(backend: nil, logger: nil, time_zone: nil)
     end
@@ -101,6 +112,69 @@ RSpec.describe Kaal::Configuration do
         scheduler_missing_file_policy: nil,
         delayed_job_allowed_class_prefixes: []
       )
+    end
+
+    it 'loads config from yaml with environment and env overrides' do
+      Dir.mktmpdir('kaal-config-loader-') do |root|
+        FileUtils.mkdir_p(File.join(root, 'config'))
+        File.write(
+          File.join(root, 'config', 'kaal.yml'),
+          <<~YAML
+            defaults:
+              backend: memory
+              namespace: defaults
+              tick_interval: 5
+              backend_config: {}
+            test:
+              backend: sqlite
+              namespace: yaml-test
+              backend_config:
+                url: db/test.sqlite3
+          YAML
+        )
+
+        with_environment(
+          'KAAL_NAMESPACE' => 'env-test',
+          'KAAL_TICK_INTERVAL' => '12',
+          'KAAL_LEASE_TTL' => '132',
+          'KAAL_BACKEND_URL' => 'db/env.sqlite3'
+        ) do
+          Kaal::Config::FileLoader.new(
+            configuration: configuration,
+            runtime_context: Kaal::RuntimeContext.new(root_path: root, environment_name: 'test')
+          ).load
+        end
+
+        expect(configuration.namespace).to eq('env-test')
+        expect(configuration.tick_interval).to eq(12)
+        expect(configuration.backend).to be_a(Kaal::Backend::SQLite)
+        expect(configuration.to_h.fetch(:backend_config)).to include(url: 'db/env.sqlite3')
+      end
+    end
+
+    it 'raises for invalid env coercions while loading yaml config' do
+      Dir.mktmpdir('kaal-config-loader-invalid-') do |root|
+        FileUtils.mkdir_p(File.join(root, 'config'))
+        File.write(File.join(root, 'config', 'kaal.yml'), "defaults:\n  backend: memory\n  backend_config: {}\n")
+
+        with_environment('KAAL_ENABLE_DISPATCH_RECOVERY' => 'maybe') do
+          expect do
+            Kaal::Config::FileLoader.new(
+              configuration: configuration,
+              runtime_context: Kaal::RuntimeContext.new(root_path: root, environment_name: 'test')
+            ).load
+          end.to raise_error(Kaal::ConfigurationError, /KAAL_ENABLE_DISPATCH_RECOVERY/)
+        end
+      end
+    end
+
+    it 'does not retain symbolic backend state when backend build fails' do
+      configuration.backend_config = {}
+
+      expect { configuration.backend = :redis }.to raise_error(Kaal::ConfigurationError, /redis backend requires/)
+
+      configuration.namespace = 'after-failure'
+      expect(configuration.backend).to be_nil
     end
 
     it 'returns unknown keys unchanged in private normalization' do
@@ -280,6 +354,199 @@ RSpec.describe Kaal::Configuration do
         Kaal::ConfigurationError,
         %r{Invalid time_zone configuration: "Nope/Zone" \(normalized: "Nope/Zone"\)}
       )
+    end
+  end
+
+  describe Kaal::Config::BackendFactory do
+    let(:runtime_context) { instance_double(Kaal::RuntimeContext, resolve_path: '/tmp/kaal/spec.sqlite3') }
+
+    it 'normalizes backend names and rejects unsupported values' do
+      expect(described_class.normalize_name(nil)).to be_nil
+      expect(described_class.normalize_name('  ')).to be_nil
+      expect(described_class.normalize_name('postgresql')).to eq('postgres')
+      expect(described_class.normalize_name('trilogy')).to eq('mysql')
+      expect(described_class.normalize_name(:redis)).to eq('redis')
+      expect { described_class.normalize_name('oracle') }.to raise_error(Kaal::ConfigurationError, /Unsupported backend/)
+    end
+
+    it 'normalizes backend config inputs' do
+      expect(described_class.normalize_backend_config('bad')).to eq({})
+      expect(described_class.normalize_backend_config('nested' => { 'url' => 'redis://example' })).to eq(nested: { url: 'redis://example' })
+    end
+
+    it 'builds and validates redis backends' do
+      redis_client = Object.new
+      redis_class = Class.new
+      redis_class.define_singleton_method(:new) { |**| redis_client }
+      stub_const('Redis', redis_class)
+      allow(described_class).to receive(:require_redis!)
+      allow(Kaal::Backend::RedisAdapter).to receive(:new).and_return(:redis_backend)
+
+      expect(
+        described_class.build('redis', backend_config: { url: 'redis://127.0.0.1:6379/0' }, namespace: 'ops')
+      ).to eq(:redis_backend)
+
+      expect(Kaal::Backend::RedisAdapter).to have_received(:new).with(redis_client, namespace: 'ops')
+      expect do
+        described_class.build('redis', backend_config: {}, namespace: 'ops')
+      end.to raise_error(Kaal::ConfigurationError, /redis backend requires/)
+    end
+
+    it 'builds sqlite backends from connection, url, or database and validates missing targets' do
+      allow(described_class).to receive_messages(build_sqlite_connection: { adapter: 'sqlite3', database: '/tmp/one.sqlite3' },
+                                                 sequel_sqlite_database: :sqlite_db)
+      allow(described_class).to receive(:require_sequel!)
+      allow(Kaal::Backend::SQLite).to receive(:new) { |**kwargs| kwargs }
+
+      connection_backend = described_class.build('sqlite', backend_config: { connection: { database: 'db/one.sqlite3' } }, namespace: 'ops', runtime_context:)
+      url_backend = described_class.build('sqlite', backend_config: { url: 'db/two.sqlite3' }, namespace: 'ops', runtime_context:)
+      database_backend = described_class.build('sqlite', backend_config: { database: 'db/three.sqlite3' }, namespace: 'ops', runtime_context:)
+
+      expect(connection_backend).to eq(connection: { adapter: 'sqlite3', database: '/tmp/one.sqlite3' }, namespace: 'ops')
+      expect(url_backend).to eq(database: :sqlite_db, namespace: 'ops')
+      expect(database_backend).to eq(database: :sqlite_db, namespace: 'ops')
+      expect do
+        described_class.build('sqlite', backend_config: {}, namespace: 'ops', runtime_context:)
+      end.to raise_error(Kaal::ConfigurationError, /sqlite backend requires/)
+    end
+
+    it 'builds postgres backends from connection or url and validates missing urls' do
+      sequel_module = Module.new
+      sequel_module.define_singleton_method(:connect) { |url| [:connected, url] }
+      stub_const('Sequel', sequel_module)
+      allow(described_class).to receive(:normalize_connection_hash).and_return({ adapter: 'postgresql', database: 'kaal' })
+      allow(described_class).to receive(:require_sequel!)
+      allow(Kaal::Backend::Postgres).to receive(:new) { |**kwargs| kwargs }
+
+      connection_backend = described_class.build('postgres', backend_config: { connection: { database: 'kaal' } }, namespace: 'ops')
+      url_backend = described_class.build('postgres', backend_config: { url: 'postgres://localhost/kaal' }, namespace: 'ops')
+
+      expect(connection_backend).to eq(connection: { adapter: 'postgresql', database: 'kaal' }, namespace: 'ops')
+      expect(url_backend).to eq(database: [:connected, 'postgres://localhost/kaal'], namespace: 'ops')
+      expect do
+        described_class.build('postgres', backend_config: {}, namespace: 'ops')
+      end.to raise_error(Kaal::ConfigurationError, /postgres backend requires/)
+    end
+
+    it 'builds mysql backends from connection or url with optional skip-locked' do
+      sequel_module = Module.new
+      sequel_module.define_singleton_method(:connect) { |url| [:connected, url] }
+      stub_const('Sequel', sequel_module)
+      allow(described_class).to receive(:normalize_connection_hash).and_return({ adapter: 'mysql2', database: 'kaal' })
+      allow(described_class).to receive(:require_sequel!)
+      allow(Kaal::Backend::MySQL).to receive(:new) { |**kwargs| kwargs }
+
+      expect(
+        described_class.build('mysql', backend_config: { connection: { database: 'kaal' } }, namespace: 'ops')
+      ).to eq(connection: { adapter: 'mysql2', database: 'kaal' }, namespace: 'ops')
+      expect(
+        described_class.build('mysql', backend_config: { connection: { database: 'kaal' }, use_skip_locked: true }, namespace: 'ops')
+      ).to eq(connection: { adapter: 'mysql2', database: 'kaal' }, namespace: 'ops', use_skip_locked: true)
+      expect(
+        described_class.build('mysql', backend_config: { url: 'mysql2://localhost/kaal' }, namespace: 'ops')
+      ).to eq(database: [:connected, 'mysql2://localhost/kaal'], namespace: 'ops')
+      expect(
+        described_class.build('mysql', backend_config: { url: 'mysql2://localhost/kaal', use_skip_locked: false }, namespace: 'ops')
+      ).to eq(database: [:connected, 'mysql2://localhost/kaal'], namespace: 'ops', use_skip_locked: false)
+      expect do
+        described_class.build('mysql', backend_config: {}, namespace: 'ops')
+      end.to raise_error(Kaal::ConfigurationError, /mysql backend requires/)
+    end
+
+    it 'normalizes connection hashes, resolves sqlite paths, and rejects unsupported connection values' do
+      allow(described_class).to receive(:resolve_sqlite_database_path).and_return('/tmp/kaal/resolved.sqlite3')
+
+      expect(described_class.normalize_connection_hash('sqlite:///tmp/kaal.sqlite3', 'sqlite3', runtime_context)).to eq('sqlite:///tmp/kaal.sqlite3')
+      expect(
+        described_class.normalize_connection_hash({ database: 'db/kaal.sqlite3' }, 'sqlite3', runtime_context)
+      ).to eq(adapter: 'sqlite3', database: '/tmp/kaal/resolved.sqlite3')
+      expect(
+        described_class.normalize_connection_hash({ adapter: 'postgresql', database: 'kaal' }, 'sqlite3', runtime_context)
+      ).to eq(adapter: 'postgresql', database: 'kaal')
+      expect do
+        described_class.normalize_connection_hash(123, 'sqlite3', runtime_context)
+      end.to raise_error(Kaal::ConfigurationError, /backend_config.connection/)
+    end
+
+    it 'resolves sqlite paths and sequel connections across all path shapes' do
+      sequel_module = Module.new
+      calls = []
+      sequel_module.define_singleton_method(:connect) do |*args, **kwargs|
+        calls << (kwargs.empty? ? args.first : kwargs)
+        kwargs.empty? ? [:url, args.first] : [:hash, kwargs]
+      end
+      stub_const('Sequel', sequel_module)
+      allow(described_class).to receive(:ensure_sqlite_directory!) { |path| "ensured:#{path}" }
+
+      expect(described_class.resolve_sqlite_database_path('', runtime_context)).to eq('')
+      expect(described_class.resolve_sqlite_database_path('sqlite:///tmp/kaal.sqlite3', runtime_context)).to eq('sqlite:///tmp/kaal.sqlite3')
+      expect(described_class.resolve_sqlite_database_path('/tmp/absolute.sqlite3', runtime_context)).to eq('ensured:/tmp/absolute.sqlite3')
+      expect(described_class.resolve_sqlite_database_path('db/relative.sqlite3', runtime_context)).to eq('ensured:/tmp/kaal/spec.sqlite3')
+      expect(described_class.resolve_sqlite_database_path('db/relative.sqlite3', nil)).to eq('ensured:db/relative.sqlite3')
+
+      expect(described_class.sequel_sqlite_database('sqlite:///tmp/kaal.sqlite3', runtime_context)).to eq([:url, 'sqlite:///tmp/kaal.sqlite3'])
+      expect(described_class.sequel_sqlite_database('db/local.sqlite3',
+                                                    runtime_context)).to eq([:hash, { adapter: 'sqlite', database: 'ensured:/tmp/kaal/spec.sqlite3' }])
+      expect(calls).to include('sqlite:///tmp/kaal.sqlite3', { adapter: 'sqlite', database: 'ensured:/tmp/kaal/spec.sqlite3' })
+    end
+
+    it 'covers sqlite directory creation and adapter-name helpers' do
+      Dir.mktmpdir('kaal-backend-factory-') do |root|
+        database_path = File.join(root, 'nested', 'kaal.sqlite3')
+        current_dir_path = File.join(root, 'kaal.sqlite3')
+
+        expect(described_class.ensure_sqlite_directory!(database_path)).to eq(database_path)
+        expect(File.directory?(File.join(root, 'nested'))).to be(true)
+        expect(described_class.ensure_sqlite_directory!(File.basename(current_dir_path))).to eq(File.basename(current_dir_path))
+      end
+
+      expect(described_class.adapter_name_for_error('postgresql')).to eq('postgres')
+      expect(described_class.adapter_name_for_error('mysql2')).to eq('mysql')
+      expect(described_class.string_value("  ops \n")).to eq('ops')
+    end
+  end
+
+  describe Kaal::Config::FileLoader do
+    subject(:loader) { described_class.new(configuration:, runtime_context:, env:) }
+
+    let(:configuration) { Kaal::Configuration.new }
+    let(:runtime_context) { Kaal::RuntimeContext.new(root_path: Dir.pwd, environment_name: 'test') }
+    let(:env) { {} }
+
+    it 'covers env coercion branches and invalid yaml sections' do
+      expect(loader.send(:coerce_env_value, :enable_dispatch_recovery, 'true')).to be(true)
+      expect(loader.send(:coerce_env_value, :enable_dispatch_recovery, 'off')).to be(false)
+      expect(loader.send(:coerce_env_value, :scheduler_conflict_policy, 'file_wins')).to eq(:file_wins)
+      expect(loader.send(:coerce_env_value, :delayed_job_allowed_class_prefixes, 'Reports::, Billing::')).to eq(['Reports::', 'Billing::'])
+      expect(loader.send(:coerce_env_value, :namespace, ' ops ')).to eq('ops')
+      Dir.mktmpdir('kaal-file-loader-') do |root|
+        path = File.join(root, 'kaal.yml')
+        File.write(path, "---\n- item\n")
+        expect do
+          loader.send(:parse_yaml, path)
+        end.to raise_error(Kaal::ConfigurationError, /root to be a mapping/)
+      end
+      expect { loader.send(:hash_section, ['bad']) }.to raise_error(Kaal::ConfigurationError, /sections must be mappings/)
+    end
+
+    it 'wraps erb evaluation failures in configuration errors' do
+      Dir.mktmpdir('kaal-file-loader-erb-') do |root|
+        path = File.join(root, 'kaal.yml')
+        File.write(path, "defaults:\n  backend: <%= raise 'boom' %>\n")
+
+        expect do
+          loader.send(:parse_yaml, path)
+        end.to raise_error(Kaal::ConfigurationError, /Failed to evaluate Kaal config ERB/)
+      end
+    end
+
+    it 'applies backend url overrides to connection configs and ignores unknown assignment keys' do
+      env['KAAL_BACKEND_URL'] = '  postgres://override  '
+      overridden = loader.send(:apply_env_overrides, { 'backend_config' => { 'connection' => { 'database' => 'kaal' } } })
+
+      expect(overridden.fetch('backend_config')).to eq('connection' => 'postgres://override')
+
+      expect { loader.send(:apply_configuration_value, :unknown_key, 'value') }.not_to raise_error
     end
   end
 

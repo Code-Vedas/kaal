@@ -21,23 +21,12 @@ RSpec.describe Kaal, integration: :pg do
       KaalIntegrationSupport.create_pg_mysql_schema(database)
 
       KaalIntegrationSupport.write_scheduler(root, key:)
-      KaalIntegrationSupport.write_config(root, <<~RUBY)
-        require 'kaal'
-
-        database = Sequel.connect(ENV.fetch('DATABASE_URL'))
-
-        Kaal.configure do |config|
-          config.backend = Kaal::Backend::Postgres.new(database: database)
-          config.namespace = '#{namespace}'
-          config.window_lookback = 65
-          config.window_lookahead = 0
-          config.lease_ttl = 120
-          config.enable_log_dispatch_registry = true
-          config.enable_dispatch_recovery = false
-          config.recovery_startup_jitter = 0
-          config.scheduler_config_path = 'config/scheduler.yml'
-        end
-      RUBY
+      KaalIntegrationSupport.write_runtime_config(
+        root,
+        backend: :postgres,
+        namespace:,
+        backend_config: { url: ENV.fetch('DATABASE_URL') }
+      )
 
       job_calls = KaalIntegrationSupport.perform_tick_flow(root, key:)
       lock_keys = job_calls.map do |job_call|

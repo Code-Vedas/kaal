@@ -23,7 +23,7 @@ RSpec.describe Kaal::SchedulerFileLoader do
     stub_const('ExampleSchedulerJob', job_class)
     FileUtils.mkdir_p(File.join(root, 'config'))
     File.write(
-      File.join(root, 'config', 'scheduler.yml'),
+      File.join(root, 'config', 'kaal-scheduler.yml'),
       <<~YAML
         defaults:
           jobs:
@@ -63,7 +63,7 @@ RSpec.describe Kaal::SchedulerFileLoader do
   end
 
   it 'handles missing scheduler files according to policy' do
-    FileUtils.rm_f(File.join(root, 'config', 'scheduler.yml'))
+    FileUtils.rm_f(File.join(root, 'config', 'kaal-scheduler.yml'))
 
     loader = described_class.new(
       configuration: Kaal.configuration,
@@ -225,7 +225,6 @@ RSpec.describe Kaal::SchedulerFileLoader do
     expect(perform_calls).to eq([[['perform'], {}]])
   end
 
-  # rubocop:disable RSpec/ExampleLength
   it 'covers job applier rollback and callback error paths' do
     loader = described_class.new(
       configuration: Kaal.configuration,
@@ -291,7 +290,6 @@ RSpec.describe Kaal::SchedulerFileLoader do
       loader.send(:validate_placeholders, '{{ bad-placeholder }}', key: 'job')
     end.to raise_error(Kaal::SchedulerConfigError, /Malformed placeholder/)
   end
-  # rubocop:enable RSpec/ExampleLength
 
   it 'covers payload loader parsing failures and helper wrapper methods' do
     loader = described_class.new(
@@ -302,20 +300,20 @@ RSpec.describe Kaal::SchedulerFileLoader do
       runtime_context: runtime_context
     )
     payload_loader = loader.send(:payload_loader)
-    File.write(File.join(root, 'config', 'scheduler.yml'), "<%= raise 'erb boom' %>")
+    File.write(File.join(root, 'config', 'kaal-scheduler.yml'), "<%= raise 'erb boom' %>")
     expect do
-      payload_loader.send(:parse_yaml, File.join(root, 'config', 'scheduler.yml'))
+      payload_loader.send(:parse_yaml, File.join(root, 'config', 'kaal-scheduler.yml'))
     end.to raise_error(Kaal::SchedulerConfigError, /Failed to evaluate scheduler ERB/)
 
-    File.write(File.join(root, 'config', 'scheduler.yml'), ":\n")
+    File.write(File.join(root, 'config', 'kaal-scheduler.yml'), ":\n")
     expect do
-      payload_loader.send(:parse_yaml, File.join(root, 'config', 'scheduler.yml'))
+      payload_loader.send(:parse_yaml, File.join(root, 'config', 'kaal-scheduler.yml'))
     end.to raise_error(Kaal::SchedulerConfigError, /Failed to parse scheduler YAML/)
 
     Kaal.configure { |config| config.scheduler_config_path = ' ' }
     expect { payload_loader.send(:scheduler_file_path) }.to raise_error(Kaal::SchedulerConfigError, /cannot be blank/)
 
-    Kaal.configure { |config| config.scheduler_config_path = 'config/scheduler.yml' }
+    Kaal.configure { |config| config.scheduler_config_path = 'config/kaal-scheduler.yml' }
     expect(loader.send(:skip_due_to_conflict?, key: 'job', existing_definition: nil)).to be(false)
     expect(
       loader.send(
@@ -375,7 +373,7 @@ RSpec.describe Kaal::SchedulerFileLoader do
       logger: Logger.new(StringIO.new),
       runtime_context: runtime_context
     )
-    allow(loader.send(:payload_loader)).to receive(:load).and_return([File.join(root, 'config', 'scheduler.yml'), {}])
+    allow(loader.send(:payload_loader)).to receive(:load).and_return([File.join(root, 'config', 'kaal-scheduler.yml'), {}])
     allow(loader).to receive_messages(
       extract_jobs: [{ 'key' => 'job:a', 'cron' => '* * * * *', 'job_class' => 'ExampleSchedulerJob' }],
       validate_unique_keys: nil,
@@ -413,7 +411,7 @@ RSpec.describe Kaal::SchedulerFileLoader do
       payload_loader.validate_unique_keys([[]])
     end.to raise_error(Kaal::SchedulerConfigError, /Each jobs entry must be a mapping/)
 
-    scheduler_path = File.join(root, 'config', 'scheduler.yml')
+    scheduler_path = File.join(root, 'config', 'kaal-scheduler.yml')
     File.write(scheduler_path, "---\n- bad\n")
     expect do
       payload_loader.send(:parse_yaml, scheduler_path)
@@ -424,7 +422,6 @@ RSpec.describe Kaal::SchedulerFileLoader do
     end.to raise_error(Kaal::SchedulerConfigError, /defaults/)
   end
 
-  # rubocop:disable RSpec/ExampleLength
   it 'covers job applier rollback and callback error branches' do
     loader = described_class.new(
       configuration: Kaal.configuration,
@@ -558,7 +555,6 @@ RSpec.describe Kaal::SchedulerFileLoader do
       )
     ).to include('execution' => include('target' => 'ruby', 'job_class' => 'SchedulerLoaderUnknownTarget'))
   end
-  # rubocop:enable RSpec/ExampleLength
 
   it 'covers direct job normalizer branches' do
     loader = described_class.new(

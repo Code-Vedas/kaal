@@ -6,25 +6,23 @@ permalink: /configuration
 
 # Configuration
 
-Primary runtime configuration lives in `config/kaal.rb`.
+Primary runtime configuration lives in `config/kaal.yml`.
 
 ## Core engine example
 
-```ruby
-require "kaal"
-
-Kaal.configure do |config|
-  config.backend = Kaal::Backend::MemoryAdapter.new
-  config.tick_interval = 5
-  config.window_lookback = 120
-  config.window_lookahead = 0
-  config.lease_ttl = 125
-  config.namespace = "kaal"
-  config.scheduler_config_path = "config/scheduler.yml"
-  config.enable_dispatch_recovery = true
-  config.enable_log_dispatch_registry = false
-  config.delayed_job_allowed_class_prefixes = []
-end
+```yaml
+defaults:
+  backend: memory
+  namespace: kaal
+  tick_interval: 5
+  window_lookback: 120
+  window_lookahead: 0
+  lease_ttl: 125
+  scheduler_config_path: config/kaal-scheduler.yml
+  enable_dispatch_recovery: true
+  enable_log_dispatch_registry: false
+  delayed_job_allowed_class_prefixes: []
+  backend_config: {}
 ```
 
 For the documented at-most-once dispatch guarantee, enable the dispatch log registry and keep `lease_ttl >= window_lookback + tick_interval`. See [At-Most-Once Dispatch Guarantee](/dispatch-guarantee).
@@ -35,10 +33,11 @@ Delayed jobs reuse the configured backend. No separate delayed-job backend setti
 
 Optional delayed-job class restrictions are prefix-based:
 
-```ruby
-Kaal.configure do |config|
-  config.delayed_job_allowed_class_prefixes = ["Reports::", "Billing::"]
-end
+```yaml
+defaults:
+  delayed_job_allowed_class_prefixes:
+    - Reports::
+    - Billing::
 ```
 
 Behavior:
@@ -51,47 +50,33 @@ For local or otherwise trusted deployments, an empty list is valid. On shared Re
 
 ## Sequel adapter example
 
-```ruby
-require "kaal"
-require "sequel"
-
-database = Sequel.connect(adapter: "sqlite", database: File.expand_path("../db/kaal.sqlite3", __dir__))
-
-Kaal.configure do |config|
-  config.backend = Kaal::Backend::SQLite.new(database: database)
-  config.scheduler_config_path = "config/scheduler.yml"
-end
+```yaml
+defaults:
+  backend: sqlite
+  scheduler_config_path: config/kaal-scheduler.yml
+  backend_config:
+    url: db/kaal.sqlite3
 ```
 
 Alternative SQL backends:
 
-```ruby
-config.backend = Kaal::Backend::Postgres.new(database: database)
-config.backend = Kaal::Backend::MySQL.new(database: database)
-```
+Use `backend: postgres` or `backend: mysql` with `backend_config.url`.
 
 ## Active Record adapter example
 
-```ruby
-require "kaal"
-
-Kaal.configure do |config|
-  config.backend = Kaal::Backend::SQLite.new(
-    connection: {
-      adapter: "sqlite3",
-      database: File.expand_path("../db/kaal.sqlite3", __dir__)
-    }
-  )
-  config.scheduler_config_path = "config/scheduler.yml"
-end
+```yaml
+defaults:
+  backend: sqlite
+  scheduler_config_path: config/kaal-scheduler.yml
+  backend_config:
+    connection:
+      adapter: sqlite3
+      database: db/kaal.sqlite3
 ```
 
 Alternative SQL backends:
 
-```ruby
-config.backend = Kaal::Backend::Postgres.new(connection: ENV.fetch("DATABASE_URL"))
-config.backend = Kaal::Backend::MySQL.new(connection: ENV.fetch("DATABASE_URL"))
-```
+Use `backend: postgres` or `backend: mysql` with `backend_config.url` or `KAAL_BACKEND_URL`.
 
 ## Rails plugin behavior
 
@@ -120,20 +105,14 @@ bundle exec rails generate kaal:install --backend=mysql
 bundle exec rails db:migrate
 ```
 
-Explicit overrides still win:
-
-```ruby
-Kaal.configure do |config|
-  config.backend = Kaal::Backend::MemoryAdapter.new
-end
-```
+`kaal-rails` now installs `config/kaal.yml`; if that file omits `backend`, Rails adapter detection still fills it in.
 
 ## Sinatra addon behavior
 
 When you use `kaal-sinatra`, the addon chooses the backend in this order:
 
 - preserve `Kaal.configuration.backend` if one is already set
-- use `backend:` when you pass an explicit backend object
+- load `config/kaal.yml` first
 - use `redis:` when you pass a redis client
 - use `database:` and infer SQLite / PostgreSQL / MySQL from the Sequel adapter
 - fall back to `Kaal::Backend::MemoryAdapter` when nothing else is provided
@@ -151,8 +130,7 @@ require "kaal/sinatra"
 
 Kaal::Sinatra.register!(
   settings,
-  backend: Kaal::Backend::MemoryAdapter.new,
-  scheduler_config_path: "config/scheduler.yml",
+  scheduler_config_path: "config/kaal-scheduler.yml",
   namespace: "my-app",
   start_scheduler: false
 )
@@ -163,29 +141,23 @@ Redis setup:
 ```ruby
 require "redis"
 
-redis = Redis.new(url: ENV.fetch("REDIS_URL"))
+redis = Redis.new(url: "redis://127.0.0.1:6379/0")
 
 Kaal::Sinatra.register!(
   settings,
   redis: redis,
-  scheduler_config_path: "config/scheduler.yml"
+  scheduler_config_path: "config/kaal-scheduler.yml"
 )
 ```
 
-Explicit backend overrides still win:
-
-```ruby
-Kaal.configure do |config|
-  config.backend = Kaal::Backend::MemoryAdapter.new
-end
-```
+Set `backend: memory|redis|sqlite|postgres|mysql` in `config/kaal.yml` for the primary runtime path.
 
 ## Roda addon behavior
 
 When you use `kaal-roda`, the addon chooses the backend in this order:
 
 - preserve `Kaal.configuration.backend` if one is already set
-- use `backend:` when you pass an explicit backend object
+- load `config/kaal.yml` first
 - use `redis:` when you pass a redis client
 - use `database:` and infer SQLite / PostgreSQL / MySQL from the Sequel adapter
 - fall back to `Kaal::Backend::MemoryAdapter` when nothing else is provided
@@ -204,8 +176,7 @@ require "kaal/roda"
 class App < Roda
   plugin :kaal
 
-  kaal backend: Kaal::Backend::MemoryAdapter.new,
-       scheduler_config_path: "config/scheduler.yml",
+  kaal scheduler_config_path: "config/kaal-scheduler.yml",
        namespace: "my-app",
        start_scheduler: false
 end
@@ -216,30 +187,24 @@ Redis setup:
 ```ruby
 require "redis"
 
-redis = Redis.new(url: ENV.fetch("REDIS_URL"))
+redis = Redis.new(url: "redis://127.0.0.1:6379/0")
 
 class App < Roda
   plugin :kaal
 
   kaal redis: redis,
-       scheduler_config_path: "config/scheduler.yml"
+       scheduler_config_path: "config/kaal-scheduler.yml"
 end
 ```
 
-Explicit backend overrides still win:
-
-```ruby
-Kaal.configure do |config|
-  config.backend = Kaal::Backend::MemoryAdapter.new
-end
-```
+Set `backend` and `backend_config` in `config/kaal.yml` for the primary runtime path.
 
 ## Hanami addon behavior
 
 When you use `kaal-hanami`, the addon chooses the backend in this order:
 
 - preserve `Kaal.configuration.backend` if one is already set
-- use `backend:` when you pass an explicit backend object
+- load `config/kaal.yml` first
 - use `redis:` when you pass a redis client
 - use `database:` and infer SQLite / PostgreSQL / MySQL from the Sequel adapter
 - fall back to `Kaal::Backend::MemoryAdapter` when nothing else is provided
@@ -259,8 +224,7 @@ module MyApp
   class App < Hanami::App
     Kaal::Hanami.configure!(
       self,
-      backend: Kaal::Backend::MemoryAdapter.new,
-      scheduler_config_path: "config/scheduler.yml",
+      scheduler_config_path: "config/kaal-scheduler.yml",
       namespace: "my-app",
       start_scheduler: false
     )
@@ -273,35 +237,30 @@ Redis setup:
 ```ruby
 require "redis"
 
-redis = Redis.new(url: ENV.fetch("REDIS_URL"))
+redis = Redis.new(url: "redis://127.0.0.1:6379/0")
 
 module MyApp
   class App < Hanami::App
-    Kaal::Hanami.configure!(self, redis: redis, scheduler_config_path: "config/scheduler.yml")
+    Kaal::Hanami.configure!(self, redis: redis, scheduler_config_path: "config/kaal-scheduler.yml")
   end
 end
 ```
 
-Explicit backend overrides still win:
-
-```ruby
-Kaal.configure do |config|
-  config.backend = Kaal::Backend::MemoryAdapter.new
-end
-```
+Set `backend` and `backend_config` in `config/kaal.yml` for the primary runtime path.
 
 ## Key Options
 
 | Setting                        | Default                  | Meaning                                                                |
 | ------------------------------ | ------------------------ | ---------------------------------------------------------------------- |
-| `backend`                      | `nil`                    | Coordination or datastore backend                                      |
+| `backend`                      | `nil`                    | Runtime backend name such as `memory`, `redis`, `sqlite`, `postgres`, or `mysql` |
+| `backend_config`               | `{}`                     | Backend connection settings; `KAAL_BACKEND_URL` overrides `backend_config.url` |
 | `tick_interval`                | `5`                      | Seconds between scheduler ticks                                        |
 | `window_lookback`              | `120`                    | Recovery window for missed runs                                        |
 | `window_lookahead`             | `0`                      | Optional future lookahead                                              |
 | `lease_ttl`                    | `125`                    | Lock TTL for TTL-based adapters                                        |
 | `namespace`                    | `"kaal"`                 | Prefix for coordination keys                                           |
 | `time_zone`                    | `nil`                    | Scheduler interpretation zone; defaults to UTC                         |
-| `scheduler_config_path`        | `"config/scheduler.yml"` | Scheduler file path                                                    |
+| `scheduler_config_path`        | `"config/kaal-scheduler.yml"` | Scheduler file path                                                    |
 | `enable_dispatch_recovery`     | `true`                   | Replay missed runs on startup                                          |
 | `enable_log_dispatch_registry` | `false`                  | Persist dispatch records used by the documented at-most-once guarantee |
 

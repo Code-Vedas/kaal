@@ -57,7 +57,7 @@ Add the gem to your Rails app and configure only if you need overrides:
 
 ```ruby
 Kaal.configure do |config|
-  config.scheduler_config_path = Rails.root.join('config/scheduler.yml')
+  config.scheduler_config_path = Rails.root.join('config/kaal-scheduler.yml')
 end
 ```
 

@@ -121,6 +121,33 @@ RSpec.describe Kaal do
     expect(logger_io.string.scan('delayed_job_allowed_class_prefixes is empty').length).to eq(1)
   end
 
+  it 'loads config files through the public API' do
+    Dir.mktmpdir('kaal-config-load-') do |root|
+      FileUtils.mkdir_p(File.join(root, 'config'))
+      File.write(
+        File.join(root, 'config', 'kaal.yml'),
+        <<~YAML
+          defaults:
+            backend: memory
+            namespace: file-default
+            tick_interval: 9
+            lease_ttl: 129
+            backend_config: {}
+          test:
+            namespace: file-test
+        YAML
+      )
+
+      described_class.load_config_file!(
+        runtime_context: Kaal::RuntimeContext.new(root_path: root, environment_name: 'test')
+      )
+
+      expect(described_class.tick_interval).to eq(9)
+      expect(described_class.namespace).to eq('file-test')
+      expect(described_class.backend).to be_a(Kaal::Backend::MemoryAdapter)
+    end
+  end
+
   it 'resets configuration, registry, and coordinator state' do
     described_class.register(key: 'job:a', cron: '* * * * *', enqueue: ->(**) {})
     coordinator = instance_double(Kaal::Coordinator, running?: true, stop!: true)
@@ -186,10 +213,10 @@ RSpec.describe Kaal do
       cli = described_class.new([], {}, shell:)
 
       expect(cli.send(:root_path)).to eq(Dir.pwd)
-      expect(cli.send(:config_path)).to eq(File.join(Dir.pwd, 'config', 'kaal.rb'))
-      expect(cli.send(:scheduler_path)).to eq(File.join(Dir.pwd, 'config', 'scheduler.yml'))
-      expect(cli.send(:render_config_template, 'memory')).to include('MemoryAdapter')
-      expect(cli.send(:render_config_template, 'redis')).to include('RedisAdapter')
+      expect(cli.send(:config_path)).to eq(File.join(Dir.pwd, 'config', 'kaal.yml'))
+      expect(cli.send(:scheduler_path)).to eq(File.join(Dir.pwd, 'config', 'kaal-scheduler.yml'))
+      expect(cli.send(:render_config_template, 'memory')).to include('backend: memory')
+      expect(cli.send(:render_config_template, 'redis')).to include('backend: redis')
       expect { cli.send(:render_config_template, 'unknown') }.to raise_error(Thor::Error)
       expect(cli.send(:scheduler_template)).to include('example:heartbeat')
     end
@@ -261,16 +288,16 @@ RSpec.describe Kaal do
 
     it 'loads project files and installs foreground handlers' do
       root = Dir.mktmpdir
-      cli = described_class.new([], { root: root, config: File.join(root, 'config', 'custom.rb') }, shell:)
+      cli = described_class.new([], { root: root, config: File.join(root, 'config', 'custom.yml') }, shell:)
       FileUtils.mkdir_p(File.join(root, 'config'))
-      File.write(File.join(root, 'config', 'custom.rb'), <<~RUBY)
-        Kaal.configure do |config|
-          config.tick_interval = 9
-          config.backend = Kaal::Backend::RedisAdapter.new(SpecSupport::FakeRedisClient.new)
-          config.logger = Logger.new(StringIO.new)
-        end
-      RUBY
-      File.write(File.join(root, 'config', 'scheduler.yml'), "defaults:\n  jobs: []\n")
+      File.write(File.join(root, 'config', 'custom.yml'), <<~YAML)
+        defaults:
+          backend: memory
+          tick_interval: 9
+          lease_ttl: 129
+          backend_config: {}
+      YAML
+      File.write(File.join(root, 'config', 'kaal-scheduler.yml'), "defaults:\n  jobs: []\n")
       allow(Kaal).to receive(:load_scheduler_file!).and_return([])
       allow(Kaal::SignalHandlerInstaller).to receive(:new).and_return(
         instance_double(Kaal::SignalHandlerInstaller, install: { 'TERM' => 'DEFAULT' })
@@ -346,12 +373,39 @@ RSpec.describe Kaal do
       root = Dir.mktmpdir
       cli = described_class.new([], { root: root }, shell:)
       FileUtils.mkdir_p(File.join(root, 'config'))
-      File.write(File.join(root, 'config', 'kaal.rb'), "Kaal.configure { |config| config.tick_interval = 9 }\n")
+      File.write(File.join(root, 'config', 'kaal.yml'), <<~YAML)
+        defaults:
+          backend: memory
+          tick_interval: 9
+          lease_ttl: 129
+          scheduler_missing_file_policy: warn
+          backend_config: {}
+      YAML
       allow(Kaal).to receive(:load_scheduler_file!)
 
       cli.send(:load_project!)
 
-      expect(Kaal).not_to have_received(:load_scheduler_file!)
+      expect(Kaal).to have_received(:load_scheduler_file!)
+    ensure
+      FileUtils.remove_entry(root)
+    end
+
+    it 'loads a project using the configured scheduler path' do
+      root = Dir.mktmpdir
+      cli = described_class.new([], { root: root }, shell:)
+      FileUtils.mkdir_p(File.join(root, 'config/custom'))
+      File.write(File.join(root, 'config', 'kaal.yml'), <<~YAML)
+        defaults:
+          backend: memory
+          scheduler_config_path: config/custom/scheduler.yml
+          backend_config: {}
+      YAML
+      File.write(File.join(root, 'config/custom/scheduler.yml'), "defaults:\n  jobs: []\n")
+      allow(Kaal).to receive(:load_scheduler_file!).and_call_original
+
+      expect { cli.send(:load_project!) }.not_to raise_error
+
+      expect(Kaal.configuration.scheduler_config_path).to eq('config/custom/scheduler.yml')
     ensure
       FileUtils.remove_entry(root)
     end
