@@ -373,12 +373,39 @@ RSpec.describe Kaal do
       root = Dir.mktmpdir
       cli = described_class.new([], { root: root }, shell:)
       FileUtils.mkdir_p(File.join(root, 'config'))
-      File.write(File.join(root, 'config', 'kaal.rb'), "Kaal.configure { |config| config.tick_interval = 9 }\n")
+      File.write(File.join(root, 'config', 'kaal.yml'), <<~YAML)
+        defaults:
+          backend: memory
+          tick_interval: 9
+          lease_ttl: 129
+          scheduler_missing_file_policy: warn
+          backend_config: {}
+      YAML
       allow(Kaal).to receive(:load_scheduler_file!)
 
       cli.send(:load_project!)
 
-      expect(Kaal).not_to have_received(:load_scheduler_file!)
+      expect(Kaal).to have_received(:load_scheduler_file!)
+    ensure
+      FileUtils.remove_entry(root)
+    end
+
+    it 'loads a project using the configured scheduler path' do
+      root = Dir.mktmpdir
+      cli = described_class.new([], { root: root }, shell:)
+      FileUtils.mkdir_p(File.join(root, 'config/custom'))
+      File.write(File.join(root, 'config', 'kaal.yml'), <<~YAML)
+        defaults:
+          backend: memory
+          scheduler_config_path: config/custom/scheduler.yml
+          backend_config: {}
+      YAML
+      File.write(File.join(root, 'config/custom/scheduler.yml'), "defaults:\n  jobs: []\n")
+      allow(Kaal).to receive(:load_scheduler_file!).and_call_original
+
+      expect { cli.send(:load_project!) }.not_to raise_error
+
+      expect(Kaal.configuration.scheduler_config_path).to eq('config/custom/scheduler.yml')
     ensure
       FileUtils.remove_entry(root)
     end

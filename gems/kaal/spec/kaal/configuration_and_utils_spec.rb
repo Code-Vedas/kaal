@@ -168,6 +168,15 @@ RSpec.describe Kaal::Configuration do
       end
     end
 
+    it 'does not retain symbolic backend state when backend build fails' do
+      configuration.backend_config = {}
+
+      expect { configuration.backend = :redis }.to raise_error(Kaal::ConfigurationError, /redis backend requires/)
+
+      configuration.namespace = 'after-failure'
+      expect(configuration.backend).to be_nil
+    end
+
     it 'returns unknown keys unchanged in private normalization' do
       expect(configuration.send(:normalize_value, :unknown_key, 123)).to eq(123)
     end
@@ -520,8 +529,19 @@ RSpec.describe Kaal::Configuration do
       expect { loader.send(:hash_section, ['bad']) }.to raise_error(Kaal::ConfigurationError, /sections must be mappings/)
     end
 
+    it 'wraps erb evaluation failures in configuration errors' do
+      Dir.mktmpdir('kaal-file-loader-erb-') do |root|
+        path = File.join(root, 'kaal.yml')
+        File.write(path, "defaults:\n  backend: <%= raise 'boom' %>\n")
+
+        expect do
+          loader.send(:parse_yaml, path)
+        end.to raise_error(Kaal::ConfigurationError, /Failed to evaluate Kaal config ERB/)
+      end
+    end
+
     it 'applies backend url overrides to connection configs and ignores unknown assignment keys' do
-      env['KAAL_BACKEND_URL'] = 'postgres://override'
+      env['KAAL_BACKEND_URL'] = '  postgres://override  '
       overridden = loader.send(:apply_env_overrides, { 'backend_config' => { 'connection' => { 'database' => 'kaal' } } })
 
       expect(overridden.fetch('backend_config')).to eq('connection' => 'postgres://override')

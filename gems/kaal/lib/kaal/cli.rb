@@ -22,7 +22,7 @@ module Kaal
         runtime_context = RuntimeContext.default(root_path: root_path)
         Kaal.load_config_file!(path: config_path, runtime_context:)
         Kaal.warn_on_risky_configuration!
-        Kaal.load_scheduler_file!(runtime_context: runtime_context) if File.exist?(scheduler_path)
+        Kaal.load_scheduler_file!(runtime_context: runtime_context)
       end
 
       def root_path

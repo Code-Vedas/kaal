@@ -27,12 +27,13 @@ when 'memory'
   )
 when 'redis'
   namespace = ENV.fetch('KAAL_TEST_NAMESPACE', 'kaal-rails-test')
+  redis_url = ENV.fetch('REDIS_URL')
   File.write(
     Rails.root.join('config/kaal.yml'),
     <<~YAML
       defaults:
         backend: redis
-        namespace: #{namespace}
+        namespace: #{namespace.dump}
         tick_interval: 5
         window_lookback: 120
         window_lookahead: 0
@@ -42,7 +43,7 @@ when 'redis'
         enable_log_dispatch_registry: false
         delayed_job_allowed_class_prefixes: []
         backend_config:
-          url: #{ENV.fetch('REDIS_URL')}
+          url: #{redis_url.dump}
     YAML
   )
 end

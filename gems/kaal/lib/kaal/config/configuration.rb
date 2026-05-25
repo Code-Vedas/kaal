@@ -269,13 +269,14 @@ module Kaal
       end
 
       normalized_backend_name = Kaal::Config::BackendFactory.normalize_name(value)
-      @backend_name = normalized_backend_name
-      Kaal::Config::BackendFactory.build(
+      backend = Kaal::Config::BackendFactory.build(
         normalized_backend_name,
         backend_config: @values[:backend_config],
         namespace: @values[:namespace],
         runtime_context: @backend_runtime_context
       )
+      @backend_name = normalized_backend_name
+      backend
     end
 
     def apply_backend_runtime_context(runtime_context)

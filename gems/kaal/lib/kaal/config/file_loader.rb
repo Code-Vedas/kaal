@@ -105,13 +105,19 @@ module Kaal
       private
 
       def parse_yaml(path)
-        rendered = ERB.new(File.read(path), trim_mode: '-').result
+        rendered = render_yaml(path)
         parsed = YAML.safe_load(rendered, aliases: true) || {}
         raise Kaal::ConfigurationError, "Expected Kaal config YAML root to be a mapping in #{path}" unless parsed.is_a?(Hash)
 
         Kaal::Support::HashTools.stringify_keys(parsed)
       rescue Psych::Exception => e
         raise Kaal::ConfigurationError, "Failed to parse Kaal config YAML at #{path}: #{e.message}"
+      end
+
+      def render_yaml(path)
+        ERB.new(File.read(path), trim_mode: '-').result
+      rescue StandardError, SyntaxError => e
+        raise Kaal::ConfigurationError, "Failed to evaluate Kaal config ERB at #{path}: #{e.message}"
       end
 
       def merge_environment_config(payload)
@@ -141,8 +147,8 @@ module Kaal
           merged[config_key.to_s] = coerce_env_value(config_key, @env.fetch(env_key))
         end
 
-        backend_url = @env['KAAL_BACKEND_URL']
-        if backend_url
+        backend_url = @env['KAAL_BACKEND_URL']&.to_s&.strip
+        if @env.key?('KAAL_BACKEND_URL')
           backend_config = hash_section(merged['backend_config'])
           if backend_config.key?('connection')
             backend_config['connection'] = backend_url
