@@ -58,7 +58,7 @@ RSpec.describe Kaal::CLI, integration: :memory do
       )
 
       status_output = KaalCliIntegrationSupport.run!('status', '--root', root)
-      expect(status_output).to include('Kaal v0.5.0', 'Registered jobs: 1', 'example:heartbeat')
+      expect(status_output).to include('Kaal v0.6.0', 'Registered jobs: 1', 'example:heartbeat')
 
       tick_output = KaalCliIntegrationSupport.run!('tick', '--root', root)
       expect(tick_output).to include('Kaal tick completed')

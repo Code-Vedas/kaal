@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## [0.6.0](https://github.com/code-vedas/kaal/tree/v0.6.0) (2026-05-25)
+
+### 🚀 Features
+
+- feat: RBS signatures for Kaal gems @niteshpurohit (#112)
+- feat: introduce Kaal configuration file loader @niteshpurohit (#111)
+
+[Full Changelog](https://github.com/code-vedas/kaal/compare/v0.5.0...v0.6.0)
+
 ## [0.5.0](https://github.com/code-vedas/kaal/tree/v0.5.0) (2026-05-23)
 
 [Full Changelog](https://github.com/code-vedas/kaal/compare/v0.4.0...v0.5.0)
