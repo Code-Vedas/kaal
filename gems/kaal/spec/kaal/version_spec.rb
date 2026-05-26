@@ -8,6 +8,6 @@ require 'spec_helper'
 
 RSpec.describe 'Kaal::VERSION' do
   it 'matches the gem version string' do
-    expect(Kaal::VERSION).to eq('0.5.0')
+    expect(Kaal::VERSION).to eq('0.6.0')
   end
 end

@@ -6,6 +6,6 @@
 # LICENSE file in the root directory of this source tree.
 module Kaal
   module Roda
-    VERSION = '0.5.0'
+    VERSION = '0.6.0'
   end
 end
