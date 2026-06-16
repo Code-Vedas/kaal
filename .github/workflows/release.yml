@@ -42,7 +42,7 @@ jobs:
           bundler-cache: true
           working-directory: ${{ github.workspace }}/gems/kaal
       - name: Configure RubyGems Credentials
-        uses: rubygems/configure-rubygems-credentials@762a4b77c3300434bb57c7ce80b20e36231927aa
+        uses: rubygems/configure-rubygems-credentials@dc5a8d8553e6ee01fc26761a49e99e733d17954a
       - name: Build and push gem
         working-directory: ${{ github.workspace }}/gems/kaal
         run: |
@@ -87,7 +87,7 @@ jobs:
           bundler-cache: true
           working-directory: ${{ github.workspace }}/gems/kaal-rails
       - name: Configure RubyGems Credentials
-        uses: rubygems/configure-rubygems-credentials@762a4b77c3300434bb57c7ce80b20e36231927aa
+        uses: rubygems/configure-rubygems-credentials@dc5a8d8553e6ee01fc26761a49e99e733d17954a
       - name: Build and push gem
         working-directory: ${{ github.workspace }}/gems/kaal-rails
         run: |
@@ -132,7 +132,7 @@ jobs:
           bundler-cache: true
           working-directory: ${{ github.workspace }}/gems/kaal-hanami
       - name: Configure RubyGems Credentials
-        uses: rubygems/configure-rubygems-credentials@762a4b77c3300434bb57c7ce80b20e36231927aa
+        uses: rubygems/configure-rubygems-credentials@dc5a8d8553e6ee01fc26761a49e99e733d17954a
       - name: Build and push gem
         working-directory: ${{ github.workspace }}/gems/kaal-hanami
         run: |
@@ -177,7 +177,7 @@ jobs:
           bundler-cache: true
           working-directory: ${{ github.workspace }}/gems/kaal-roda
       - name: Configure RubyGems Credentials
-        uses: rubygems/configure-rubygems-credentials@762a4b77c3300434bb57c7ce80b20e36231927aa
+        uses: rubygems/configure-rubygems-credentials@dc5a8d8553e6ee01fc26761a49e99e733d17954a
       - name: Build and push gem
         working-directory: ${{ github.workspace }}/gems/kaal-roda
         run: |
@@ -222,7 +222,7 @@ jobs:
           bundler-cache: true
           working-directory: ${{ github.workspace }}/gems/kaal-sinatra
       - name: Configure RubyGems Credentials
-        uses: rubygems/configure-rubygems-credentials@762a4b77c3300434bb57c7ce80b20e36231927aa
+        uses: rubygems/configure-rubygems-credentials@dc5a8d8553e6ee01fc26761a49e99e733d17954a
       - name: Build and push gem
         working-directory: ${{ github.workspace }}/gems/kaal-sinatra
         run: |
