@@ -43,7 +43,7 @@ jobs:
           ruby-version: ${{ matrix.ruby_version }}
           bundler-cache: false
       - name: Restore bundle cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ${{ env.BUNDLE_PATH }}
           key: ${{ runner.os }}-ruby-${{ matrix.ruby_version }}-bundle-${{ hashFiles('core/**/Gemfile.lock', 'core/**/gemfiles/*.gemfile.lock', 'gems/**/Gemfile.lock', 'gems/**/gemfiles/*.gemfile.lock') }}
@@ -81,7 +81,7 @@ jobs:
           ruby-version: ${{ matrix.ruby_version }}
           bundler-cache: false
       - name: Restore bundle cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ${{ env.BUNDLE_PATH }}
           key: ${{ runner.os }}-ruby-${{ matrix.ruby_version }}-bundle-${{ hashFiles('core/**/Gemfile.lock', 'core/**/gemfiles/*.gemfile.lock', 'gems/**/Gemfile.lock', 'gems/**/gemfiles/*.gemfile.lock') }}
@@ -119,7 +119,7 @@ jobs:
           ruby-version: ${{ matrix.ruby_version }}
           bundler-cache: false
       - name: Restore bundle cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ${{ env.BUNDLE_PATH }}
           key: ${{ runner.os }}-ruby-${{ matrix.ruby_version }}-bundle-${{ hashFiles('core/**/Gemfile.lock', 'core/**/gemfiles/*.gemfile.lock', 'gems/**/Gemfile.lock', 'gems/**/gemfiles/*.gemfile.lock') }}
@@ -158,7 +158,7 @@ jobs:
           ruby-version: ${{ matrix.ruby_version }}
           bundler-cache: false
       - name: Restore bundle cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ${{ env.BUNDLE_PATH }}
           key: ${{ runner.os }}-ruby-${{ matrix.ruby_version }}-bundle-${{ hashFiles('core/**/Gemfile.lock', 'core/**/gemfiles/*.gemfile.lock', 'gems/**/Gemfile.lock', 'gems/**/gemfiles/*.gemfile.lock') }}
@@ -244,7 +244,7 @@ jobs:
           ruby-version: ${{ matrix.ruby_version }}
           bundler-cache: false
       - name: Restore bundle cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ${{ env.BUNDLE_PATH }}
           key: ${{ runner.os }}-ruby-${{ matrix.ruby_version }}-bundle-${{ hashFiles('core/**/Gemfile.lock', 'core/**/gemfiles/*.gemfile.lock', 'gems/**/Gemfile.lock', 'gems/**/gemfiles/*.gemfile.lock') }}
