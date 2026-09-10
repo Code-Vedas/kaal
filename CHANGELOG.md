@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## [0.6.1](https://github.com/code-vedas/kaal/tree/v0.6.0) (2026-09-09)
+## [0.6.1](https://github.com/code-vedas/kaal/tree/v0.6.1) (2026-09-09)
 - dependencies updates
 
 [Full Changelog](https://github.com/code-vedas/kaal/compare/v0.6.0...v0.6.1)
