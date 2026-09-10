@@ -26,13 +26,12 @@ module KaalCliIntegrationSupport
     ERROR
   end
 
-  # rubocop:disable Style/ArgumentsForwarding
+  # rubocop:disable-next Style/ArgumentsForwarding
   def start!(*args, env: {})
     stdin, output, wait_thread = Open3.popen2e(env, EXECUTABLE, *args, chdir: GEM_ROOT)
     stdin.close
     [output, wait_thread]
   end
-  # rubocop:enable Style/ArgumentsForwarding
 
   def wait_for_output(output, pattern, timeout: 10)
     buffer = +''

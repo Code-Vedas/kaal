@@ -5,7 +5,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# rubocop:disable Rails/RootPathnameMethods
+# rubocop:disable-next Rails/RootPathnameMethods
 case ENV.fetch('KAAL_TEST_BACKEND', nil)
 when 'memory'
   File.write(
@@ -47,4 +47,3 @@ when 'redis'
     YAML
   )
 end
-# rubocop:enable Rails/RootPathnameMethods
